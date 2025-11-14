@@ -46,7 +46,6 @@ yarn-error.log*
 .npm
 .yarn/
 .pnp.*
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 ## }}}1
