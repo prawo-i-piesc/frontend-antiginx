@@ -1,6 +1,18 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+## {{{1 os
+.DS_Store
+*.pem
+## }}}1
 
-# dependencies
+## {{{1 ide
+.idea
+.vscode
+## }}}1
+
+# {{{1 Testing
+/coverage
+# }}}1
+
+## {{{1 Node/next.js
 /node_modules
 /.pnp
 .pnp.*
@@ -9,33 +21,64 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+# }}}1
 
-# testing
-/coverage
-
-# next.js
+# {{{1 Next
 /.next/
 /out/
+# }}}1
 
-# production
+# {{{1 Production
 /build
+# }}}1
 
-# misc
-.DS_Store
-*.pem
+# {{{1 Vercel
+.vercel
+# }}}1
 
-# debug
+# {{{1 TS
+*.tsbuildinfo
+next-env.d.ts
+## }}}1
+
+## {{{1 logs/debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+## }}}1
 
-# env files (can opt-in for committing if needed)
+## {{{1 env files
 .env*
+## }}}1
 
-# vercel
-.vercel
+## {{{1 archives
+*.7z
+*.bz2
+*.bzip
+*.bzip2
+*.cab
+*.gz
+*.gzip
+*.jar
+*.lzma
+*.rar
+*.tar.gz
+*.tgz
+*.xar
+*.xz
+*.zip
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+*.iso
+*.dmg
+
+*.deb
+*.egg
+*.gem
+*.msi
+*.msm
+*.msp
+*.rpm
+*.txz
+*.xpi
+## }}}1

@@ -1,0 +1,16 @@
+# CodeOwners and README
+.github/CODEOWNERS @Kogut01
+
+.github/README.md @pajojeku
+
+# DevOps and Project Config
+.github/workflows/** @Kogut01
+.github/*.yaml @Kogut01
+.github/*.yml @Kogut01
+.gitignore @Kogut01
+.dockerignore @Kogut01
+Dockerfile @Kogut01
+
+# Frontend App
+app/** @pajojeku
+public/** @pajojeku
