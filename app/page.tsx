@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import SecurityReport from './components/SecurityReport';
 import UrlScanner from './components/UrlScanner';
 import Footer from './components/Footer';
@@ -63,14 +64,16 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-2">
-                <Image
-                  src="/logo.png"
-                  alt="Antiginx Logo"
-                  width={96}
-                  height={32}
-                  className="h-8 w-auto"
-                />
-                <span className="text-xl font-bold text-white">Antiginx</span>
+                <Link href="/" className="flex items-center space-x-2">
+                  <Image
+                    src="/logo.png"
+                    alt="Antiginx Logo"
+                    width={96}
+                    height={32}
+                    className="h-8 w-auto"
+                  />
+                  <span className="text-xl font-bold text-white">Antiginx</span>
+                </Link>
               </div>
               <div className="flex items-center space-x-5">
                 <nav className="hidden md:flex items-center space-x-6">
@@ -79,9 +82,9 @@ export default function HomePage() {
                   <a href="#api" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">API</a>
                   <a href="#documentation" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Documentation</a>
                 </nav>
-                <button className="px-5 py-2 bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
+                <Link href="/login" className="px-5 py-2 inline-block bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
                   Sign in
-                </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -105,7 +108,7 @@ export default function HomePage() {
             <button onClick={scrollToScanner} className="px-3 lg:px-5 py-1 lg:py-3 bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
               Try it out for free!
             </button>
-            <button onClick={scrollToFeatures} className="px-3 lg:px-5 py-2 lg:py-3  bg-zinc-800/50 text-zinc-300 rounded-lg hover:bg-zinc-700/50 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm border border-zinc-700/40">
+            <button onClick={scrollToFeatures} className="px-3 lg:px-5 py-2 lg:py-3  bg-zinc-800/50 text-zinc-300 rounded-lg hover:bg-zinc-700/50 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm border border-zinc-600/50">
               Learn more
             </button>
           </div>
