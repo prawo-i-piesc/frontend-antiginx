@@ -78,9 +78,11 @@ export default function HomePage() {
               <div className="flex items-center space-x-5">
                 <nav className="hidden md:flex items-center space-x-6">
                   <a href="#features" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Features</a>
-                  <a href="#pricing" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Pricing</a>
-                  <a href="#api" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">API</a>
-                  <a href="#documentation" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Documentation</a>
+                  {
+                  //<a href="#pricing" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Pricing</a>
+                  //<a href="#api" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">API</a>
+                  }
+                  <a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Documentation</a>
                 </nav>
                 <Link href="/login" className="px-5 py-2 inline-block bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
                   Sign in
