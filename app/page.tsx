@@ -1,37 +1,28 @@
 "use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import SecurityReport from './components/SecurityReport';
-import UrlScanner from './components/UrlScanner';
+import HeroSection from './components/HeroSection';
+import ScannerSection from './components/ScannerSection';
+import ScanResultModal from './components/ScanResultModal';
+import ScanErrorModal from './components/ScanErrorModal';
 import Footer from './components/Footer';
+import { useScanModal } from './hooks/useScanModal';
+import { useDebugModals } from './hooks/useDebugModals';
 
 export default function HomePage() {
-  const [scanResult, setScanResult] = useState<any>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const {
+    scanResult,
+    isScanning,
+    scanError,
+    isModalOpen,
+    handleScan,
+    closeModal,
+    setScanResult,
+    setScanError,
+    setIsModalOpen
+  } = useScanModal();
 
-  const handleScan = async (url: string) => {
-    setIsScanning(true);
-    // Simulation of scanning
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const mockResult = {
-      url,
-      threatLevel: Math.floor(Math.random() * 100),
-      isPhishing: Math.random() > 0.7,
-      scanTime: new Date().toISOString(),
-      details: {
-        domainAge: Math.floor(Math.random() * 365) + 1,
-        sslCertificate: Math.random() > 0.3,
-        suspiciousPatterns: Math.floor(Math.random() * 5),
-        reputation: Math.random() > 0.5 ? 'good' : 'suspicious',
-      },
-    };
-
-    setScanResult(mockResult);
-    setIsScanning(false);
-  };
+  // Debug helpers (only in development)
+  useDebugModals({ setScanResult, setScanError, setIsModalOpen });
 
   const scrollToScanner = () => {
     const el = document.getElementById('scanner');
@@ -45,131 +36,33 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Hero Section with Navigation */}
-      <section className="relative min-h-screen flex flex-col  pt-2 lg:pt-6">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-linear-to-br from-zinc-950 via-zinc-900 to-zinc-950"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.1),transparent_50%)]"></div>
-
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-size-[40px_40px]"></div>
-
-        {/* Floating Elements */}
-        <div className="absolute top-16 left-8 w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
-        <div className="absolute top-32 right-16 w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>
-        <div className="absolute bottom-32 left-16 w-1 h-1 bg-cyan-600 rounded-full animate-pulse"></div>
-
-        {/* Header */}
-        <header className="top-0 z-50 relative">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-2">
-                <Link href="/" className="flex items-center space-x-2">
-                  <Image
-                    src="/logo.png"
-                    alt="Antiginx Logo"
-                    width={96}
-                    height={32}
-                    className="h-8 w-auto"
-                  />
-                  <span className="text-xl font-bold text-white">Antiginx</span>
-                </Link>
-              </div>
-              <div className="flex items-center space-x-5">
-                <nav className="hidden md:flex items-center space-x-6">
-                  <a href="#features" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Features</a>
-                  {
-                  //<a href="#pricing" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Pricing</a>
-                  //<a href="#api" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">API</a>
-                  }
-                  <a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Documentation</a>
-                </nav>
-                <Link href="/login" className="px-5 py-2 inline-block bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
-                  Sign in
-                </Link>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex-1 flex flex-col justify-center pt-5">
-          <div className="mb-0">
-            <h1 className="text-5xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Scan <span className="bg-linear-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent">website security</span>
-              <br />before you visit
-            </h1>
-
-            <p className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed mb-10">
-              The most advanced website security scanner powered by artificial intelligence 
-              and comprehensive threat analysis algorithms.
-            </p>
-            </div>
-
-          {/* Action buttons in Hero */}
-          <div className="flex justify-center gap-6 lg:gap-10 mb-8">
-            <button onClick={scrollToScanner} className="px-3 lg:px-5 py-1 lg:py-3 bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
-              Try it out for free!
-            </button>
-            <button onClick={scrollToFeatures} className="px-3 lg:px-5 py-2 lg:py-3  bg-zinc-800/50 text-zinc-300 rounded-lg hover:bg-zinc-700/50 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm border border-zinc-600/50">
-              Learn more
-            </button>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400 mb-1">99.8%</div>
-              <div className="text-zinc-400 text-xs">Accuracy</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400 mb-1">30.0+</div>
-              <div className="text-zinc-400 text-xs">Scans</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400 mb-1">150+</div>
-              <div className="text-zinc-400 text-xs">Threats blocked</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400 mb-1">&lt;2s</div>
-              <div className="text-zinc-400 text-xs">Scan time</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Section */}
+      <HeroSection 
+        onScrollToScanner={scrollToScanner}
+        onScrollToFeatures={scrollToFeatures}
+      />
 
       {/* Scanner Section */}
-  <section id="scanner" className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        
-        <div className="max-w-5xl mx-auto text-center mb-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-wider">
-                          <i className="ri-spy-fill pr-3"></i>
-            Try it out!
-            </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">Check a website for potential threats before visiting  <strong className='tracking-wider text-cyan-400'>for free</strong>.</p>
-        </div>
+      <ScannerSection 
+        onScan={handleScan}
+        isScanning={isScanning}
+      />
 
-        {/* big glows placed in section background and clipped by section bounds */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div
-            className="absolute top-0 left-1/2 -translate-x-1/3 w-[900px] h-[900px] bg-[radial-gradient(closest-side,rgba(6,182,212,0.65),rgba(6,182,212,0.28),transparent_50%)] rounded-full blur-4xl opacity-40 transform rotate-6 animate-pulse"
-            style={{ animationDuration: '7s' }}
-          />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.32),rgba(6,182,212,0.16),transparent_60%)] rounded-full blur-3xl opacity-40" />
-          <div className="absolute bottom-0 right-1/3 w-[520px] h-[300px] bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.36),transparent_50%)] rounded-full blur-3xl opacity-35 transform -rotate-6" />
-        </div>
+      {/* Modals */}
+      {isModalOpen && scanError && (
+        <ScanErrorModal 
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          error={scanError}
+        />
+      )}
 
-        <div className="max-w-3xl mx-auto relative z-10">
-          <UrlScanner onScan={handleScan} isScanning={isScanning} />
-        </div>
-      </section>
-
-      {/* Results Section */}
-      {scanResult && (
-        <section className="py-4 px-4 sm:px-6 lg:px-8 bg-zinc-950/50">
-          <div className="max-w-5xl mx-auto">
-            <SecurityReport result={scanResult} />
-          </div>
-        </section>
+      {isModalOpen && scanResult && !scanError && (
+        <ScanResultModal 
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          scanResult={scanResult}
+        />
       )}
 
       {/* Features Section */}
