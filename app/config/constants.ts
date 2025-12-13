@@ -7,7 +7,7 @@ export const SCAN_CONFIG = {
   POLL_INTERVAL: 2000,
   
   /** Maximum number of poll attempts before giving up */
-  MAX_POLL_ATTEMPTS: 5000,
+  MAX_POLL_ATTEMPTS: 5,
 } as const;
 
 export const API_CONFIG = {

@@ -171,8 +171,10 @@ export function getStatusColor(status: ScanStatus): string {
       return 'text-green-400';
     case 'FAILED':
       return 'text-red-400';
-    case 'PENDING':
+    case 'RUNNING':
       return 'text-yellow-400';
+    case 'PENDING':
+      return 'text-blue-400';
     default:
       return 'text-zinc-400';
   }

@@ -21,6 +21,18 @@ export function useScanModal() {
     };
   }, [isModalOpen]);
 
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isModalOpen]);
+
   const handleScan = async (url: string) => {
     setIsScanning(true);
     setScanError(null);
@@ -35,7 +47,7 @@ export function useScanModal() {
           setScanResult(scan);
           console.log('Scan status:', scan.status, 'Results:', scan.results.length);
           
-          // Otwórz modal tylko gdy status zmieni się na RUNNING bez wyników (pokazuje spinner)
+          // Open modal only when status changes to RUNNING without results (shows spinner)
           if (scan.status === 'RUNNING' && scan.results.length === 0 && !isModalOpen) {
             setIsModalOpen(true);
             setIsScanning(false);
@@ -47,7 +59,7 @@ export function useScanModal() {
 
       setScanResult(completedScan);
       
-      // Otwórz modal z wynikami tylko gdy scan się zakończy (COMPLETED)
+      // Open modal with results only when scan is completed (COMPLETED)
       if (completedScan.status === 'COMPLETED' && !isModalOpen) {
         setIsModalOpen(true);
       }
