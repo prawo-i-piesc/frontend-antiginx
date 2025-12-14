@@ -61,44 +61,45 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen text-white" style={{ backgroundColor: '#09090b' }}>
       {/* Hero Section with Navigation */}
-      <section className="relative min-h-[60vh] flex flex-col pt-2 lg:pt-6 bg-linear-to-br from-zinc-950 via-zinc-900 to-zinc-950">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(6,182,212,0.08),transparent_50%)]"></div>
+      <section className="relative min-h-[60vh] flex flex-col pt-2 lg:pt-6">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_150%_90%_at_50%_0%,rgba(6,182,212,0.15),transparent_70%)] opacity-40"></div>
 
         {/* Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.02)_1px,transparent_1px)] bg-size-[40px_40px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:120px_120px]"></div>
 
-        {/* Floating Elements */}
-        <div className="absolute top-16 left-8 w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
-        <div className="absolute top-32 right-16 w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>
-        <div className="absolute bottom-32 left-16 w-1 h-1 bg-cyan-600 rounded-full animate-pulse"></div>
+        {/* Floating Particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute bottom-0 left-[10%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-2s', animationDuration: '16s'}}></div>
+          <div className="absolute bottom-0 left-[30%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-8s', animationDuration: '19s'}}></div>
+          <div className="absolute bottom-0 left-[50%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-10s', animationDuration: '18s'}}></div>
+          <div className="absolute bottom-0 left-[70%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-3s', animationDuration: '17s'}}></div>
+          <div className="absolute bottom-0 left-[90%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-6s', animationDuration: '18s'}}></div>
+        </div>
 
         {/* Header */}
         <header className="top-0 z-50 relative">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-2">
-                <Link href="/" className="flex items-center space-x-2">
+            <div className="flex items-center justify-between h-14 sm:h-16">
+              <div className="flex items-center">
+                <Link href="/" className="flex items-center">
                   <Image
-                    src="/logo.png"
+                    src="/logotype.png"
                     alt="Antiginx Logo"
-                    width={96}
-                    height={32}
-                    className="h-8 w-auto"
+                    width={150}
+                    height={60}
+                    className="h-8 sm:h-10 md:h-12 w-auto"
                   />
-                  <span className="text-xl font-bold text-white">Antiginx</span>
                 </Link>
               </div>
-              <div className="flex items-center space-x-5">
-                <nav className="hidden md:flex items-center space-x-6">
-                  <Link href="/#features" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Features</Link>
-                  <Link href="/pricing" className="text-white transition-colors font-semibold text-sm">Pricing</Link>
-                  <a href="#api" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">API</a>
-                  <a href="#documentation" className="text-zinc-300 hover:text-white transition-colors font-semibold text-sm">Documentation</a>
+              <div className="flex items-center space-x-3 sm:space-x-5">
+                <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
+                  <Link href="/#features" className="text-shadow-white hover:text-white transition-colors font-normal text-sm">Features</Link>
+                  <a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-shadow-white hover:text-white transition-colors font-normal text-sm">Documentation</a>
                 </nav>
-                <Link href="/login" className="px-5 py-2 inline-block bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm">
+                <Link href="/login" className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-xs sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm">
                   Sign in
                 </Link>
               </div>
@@ -121,7 +122,7 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing Cards Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-zinc-950">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-zinc-900">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 lg:gap-6">
             {plans.map((plan, index) => (
@@ -191,7 +192,7 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-zinc-950 border-t border-zinc-800/50">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-zinc-900 border-t border-zinc-800/50">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
             Frequently Asked <span className="bg-linear-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent">Questions</span>

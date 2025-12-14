@@ -15,11 +15,11 @@ export default function ScanErrorModal({ isOpen, onClose, error }: ScanErrorModa
       onClick={onClose}
     >
       <div 
-        className="bg-zinc-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-zinc-800/50 max-w-2xl w-full"
+        className="bg-black/60 backdrop-blur-xl rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/30 max-w-2xl w-full"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-zinc-800/50 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-cyan-500/20 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">Error</h2>
           <button 
             onClick={onClose}

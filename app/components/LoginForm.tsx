@@ -83,8 +83,8 @@ export default function LoginForm() {
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <Link href="/" className="mx-auto w-16 h-16 relative inline-block">
-            <Image src="/logo.png" alt="Antiginx" fill className="object-contain" />
+          <Link href="/" className="mx-auto w-48 h-16 relative inline-block mb-4">
+            <Image src="/logotype.png" alt="Antiginx" fill className="object-contain" />
           </Link>
           <h1 className="text-2xl font-bold text-white">Sign in</h1>
           <p className="text-zinc-400 text-sm mt-2">Welcome back! Enter your login details.</p>

@@ -1,57 +1,86 @@
+import Image from 'next/image';
+
 export default function Footer() {
   return (
-    <footer className="bg-zinc-950 text-white py-12 px-4 sm:px-6 lg:px-8 border-t border-zinc-800/50">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-2">
-            <div className="flex items-center space-x-3 mb-5">
-              <span className="text-2xl font-bold">Antiginx</span>
-            </div>
-            <p className="text-zinc-400 leading-relaxed mb-5 max-w-sm text-sm">
-              The most advanced website security scanner. 
-              We protect users worldwide from online threats.
+    <footer className="relative text-white py-12 px-4 sm:px-6 lg:px-8">
+
+      <div className="max-w-7xl mx-auto relative">
+        {/* Main Footer Content */}
+        <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-8">
+          {/* Brand Section */}
+          <div className="flex-1 max-w-sm">
+            <Image
+              src="/logotype.png"
+              alt="Antiginx"
+              width={150}
+              height={32}
+              className="h-8 w-auto mb-3"
+            />
+            <p className="text-zinc-500 text-sm leading-relaxed mb-4">
+              Advanced AI-powered website security scanner protecting users from online threats.
             </p>
-            <div className="flex space-x-3">
-              <a href="#" className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 transition-colors cursor-pointer">
-                <i className="ri-linkedin-line text-zinc-400 text-sm"></i>
-              </a>
-              <a href="#" className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 transition-colors cursor-pointer">
-                <i className="ri-github-line text-zinc-400 text-sm"></i>
-              </a>
+          </div>
+
+          {/* Links Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 flex-1">
+            {/* Product */}
+            <div>
+              <h5 className="font-semibold text-sm text-white/90 mb-3">Product</h5>
+              <ul className="space-y-2">
+                <li><a href="#features" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Features</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">API</a></li>
+                <li><a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Docs</a></li>
+                <li><a href="/pricing" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Pricing</a></li>
+              </ul>
             </div>
-          </div>
 
-          <div>
-            <h5 className="font-bold mb-5 text-base text-white">Product</h5>
-            <ul className="space-y-2 text-zinc-400 text-sm">
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">Features</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">API</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">Documentation</a></li>
-            </ul>
-          </div>
+            {/* Company */}
+            <div>
+              <h5 className="font-semibold text-sm text-white/90 mb-3">Company</h5>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">About</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Blog</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Careers</a></li>
+              </ul>
+            </div>
 
-          <div>
-            <h5 className="font-bold mb-5 text-base text-white">Support</h5>
-            <ul className="space-y-2 text-zinc-400 text-sm">
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">Contact</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">System Status</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">Report Bug</a></li>
-            </ul>
-          </div>
+            {/* Support */}
+            <div>
+              <h5 className="font-semibold text-sm text-white/90 mb-3">Support</h5>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Help</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Contact</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Status</a></li>
+              </ul>
+            </div>
 
-          <div>
-            <h5 className="font-bold mb-5 text-base text-white">Company</h5>
-            <ul className="space-y-2 text-zinc-400 text-sm">
-              <li><a href="#" className="hover:text-cyan-400 transition-colors cursor-pointer">About</a></li>
-            </ul>
+            {/* Legal */}
+            <div>
+              <h5 className="font-semibold text-sm text-white/90 mb-3">Legal</h5>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Privacy</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Terms</a></li>
+                <li><a href="#" className="text-zinc-500 hover:text-cyan-400 transition-colors text-sm cursor-pointer">Cookies</a></li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-zinc-800/50 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-zinc-400 text-sm">© 2025 Antiginx. All rights reserved.</p>
-          <div className="flex items-center space-x-5 mt-3 md:mt-0">
-            <a href="#" className="text-zinc-400 hover:text-cyan-400 transition-colors cursor-pointer text-xs">Privacy Policy</a>
-            <a href="#" className="text-zinc-400 hover:text-cyan-400 transition-colors cursor-pointer text-xs">Terms of Service</a>
+        {/* Bottom Bar */}
+        <div className="pt-6 border-t border-zinc-800/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-zinc-600 text-xs">
+            © 2025 Antiginx. All rights reserved.
+          </p>
+          <div className="flex items-center gap-3">
+            <a href="#" className="text-zinc-600 hover:text-cyan-400 transition-colors cursor-pointer">
+              <i className="ri-twitter-x-line text-sm"></i>
+            </a>
+            <a href="#" className="text-zinc-600 hover:text-cyan-400 transition-colors cursor-pointer">
+              <i className="ri-linkedin-line text-sm"></i>
+            </a>
+            <a href="#" className="text-zinc-600 hover:text-cyan-400 transition-colors cursor-pointer">
+              <i className="ri-github-line text-sm"></i>
+            </a>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
+import FireCanvas from './FireCanvas';
 
 interface ScanResult {
   id: number;
@@ -19,10 +20,10 @@ export default function ScanResultItem({ result, index }: ScanResultItemProps) {
   const getSeverityColor = (severity: string) => {
     const s = severity.toLowerCase();
     if (s === 'critical') return 'border-red-600/50 bg-red-900/20';
-    if (s === 'high') return 'border-red-500/40 bg-red-900/15';
-    if (s === 'medium') return 'border-orange-500/40 bg-orange-900/15';
-    if (s === 'low') return 'border-yellow-500/40 bg-yellow-900/15';
-    return 'border-blue-500/40 bg-blue-900/15';
+    if (s === 'high') return 'border-orange-600/50 bg-orange-900/20';
+    if (s === 'medium') return 'border-yellow-600/50 bg-yellow-900/20';
+    if (s === 'low') return 'border-yellow-700/40 bg-yellow-950/15';
+    return 'border-zinc-600/50 bg-zinc-900/20';
   };
 
   const getSeverityTextColor = (severity: string) => {
@@ -41,41 +42,44 @@ export default function ScanResultItem({ result, index }: ScanResultItemProps) {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={{ 
-        duration: 0.4,
-        delay: index * 0.3,
-        ease: [0.25, 0.1, 0.25, 1]
+        duration: 0.2,
+        delay: index * 0.2
       }}
       className={`rounded-lg p-3 border relative overflow-hidden ${
         result.passed ? 'bg-green-900/10 border-green-600/20' : getSeverityColor(result.severity)
-      }`}
+      } ${isCritical && !result.passed ? 'shadow-[0_0_20px_rgba(251,146,60,0.2),0_0_40px_rgba(234,88,12,0.1)] border-orange-500/40' : ''}`}
     >
       {/* Fire effect for critical */}
       {isCritical && !result.passed && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-0 w-full h-full bg-linear-to-t from-red-600/0 via-red-500/10 to-orange-500/20 animate-pulse" style={{ animationDuration: '1.5s' }}></div>
-          <div className="absolute left-[10%] text-2xl" style={{ animation: 'fire-fall 3s infinite', animationDelay: '0s' }}>🔥</div>
-          <div className="absolute left-[30%] text-xl" style={{ animation: 'fire-fall 3.5s infinite', animationDelay: '0.5s' }}>🔥</div>
-          <div className="absolute left-[50%] text-3xl" style={{ animation: 'fire-fall 2.8s infinite', animationDelay: '1s' }}>🔥</div>
-          <div className="absolute left-[70%] text-xl" style={{ animation: 'fire-fall 3.2s infinite', animationDelay: '1.5s' }}>🔥</div>
-          <div className="absolute left-[85%] text-2xl" style={{ animation: 'fire-fall 3s infinite', animationDelay: '2s' }}>🔥</div>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <FireCanvas />
         </div>
       )}
       
-      <div className="flex items-start gap-2.5 relative z-10">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-          result.passed ? 'bg-green-600/30' : 'bg-zinc-800/50'
+      <div className="flex items-center gap-3 relative z-10">
+        {/* Status Icon */}
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+          result.passed ? 'bg-green-600/25 border border-green-500/30' : 'bg-red-600/20 border border-red-500/30'
         }`}>
           <i className={`${
-            result.passed ? 'ri-checkbox-circle-line text-green-400' : 'ri-close-circle-line text-red-400'
+            result.passed ? 'ri-checkbox-circle-fill text-green-400' : 'ri-close-circle-fill text-red-400'
           } text-base`}></i>
         </div>
+        
+        {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h4 className="font-semibold text-white text-sm">{result.test_name}</h4>
-            <span className={`text-xs font-medium shrink-0 ${getSeverityTextColor(result.severity)}`}>
+          <div className="flex items-center justify-between gap-3 mb-1">
+            <h4 className="font-semibold text-white text-sm leading-tight">{result.test_name}</h4>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide shrink-0 ${
+              result.severity.toLowerCase() === 'critical' ? 'bg-red-500/20 text-red-400' :
+              result.severity.toLowerCase() === 'high' ? 'bg-orange-500/20 text-orange-400' :
+              result.severity.toLowerCase() === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+              result.severity.toLowerCase() === 'low' ? 'bg-yellow-600/15 text-yellow-500' :
+              'bg-zinc-500/20 text-zinc-400'
+            }`}>
               {result.severity}
             </span>
           </div>
