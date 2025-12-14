@@ -65,11 +65,11 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
       onClick={onClose}
     >
       <div 
-        className="bg-zinc-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-zinc-800/50 max-w-2xl w-full max-h-[85vh] overflow-hidden"
+        className="bg-black/60 backdrop-blur-xl rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/30 max-w-2xl w-full max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-zinc-800/50">
+        <div className="px-5 py-3 border-b border-cyan-500/20">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
