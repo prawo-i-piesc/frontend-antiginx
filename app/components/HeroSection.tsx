@@ -95,9 +95,9 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
               }}></div>
             </div>
             <Image
-              src="/logotype.png"
+              src="/logo.png"
               alt="Logo"
-              width={150}
+              width={96}
               height={32}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-6 sm:h-8 w-auto opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-150 group-hover:-translate-y-12 sm:group-hover:-translate-y-16 transition-all duration-500 pointer-events-none"
               style={{ zIndex: 5 }}
