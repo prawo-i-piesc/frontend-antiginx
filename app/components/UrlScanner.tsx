@@ -20,14 +20,16 @@ export default function UrlScanner({ onScan, isScanning }: UrlScannerProps) {
   return (
     <div className="w-full px-4 sm:w-4/5 max-w-4xl mx-auto">
       <form onSubmit={handleSubmit}>
-        <div className="bg-zinc-800/50 backdrop-blur-xl border border-zinc-700/50 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 hover:border-cyan-500/30 transition-all duration-300">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <div className="bg-black/60 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.05)] hover:shadow-[0_0_40px_rgba(6,182,212,0.15)] font-mono">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-cyan-400 text-sm sm:text-base select-none">$</span>
+            <span className="text-purple-400 text-sm sm:text-base select-none">scan</span>
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="example.com"
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-transparent text-white placeholder-zinc-500 focus:outline-none text-sm sm:text-lg"
+              className="flex-1 px-2 py-1 bg-transparent text-white placeholder-zinc-600 focus:outline-none text-sm sm:text-base caret-cyan-400"
               disabled={isScanning}
               aria-label="URL to scan"
             />
@@ -35,18 +37,28 @@ export default function UrlScanner({ onScan, isScanning }: UrlScannerProps) {
             <button
               type="submit"
               disabled={isScanning || !url.trim()}
-              className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-linear-to-r from-cyan-600 to-blue-600 rounded-lg hover:from-cyan-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer shrink-0"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-center bg-cyan-500/20 border border-cyan-500/40 rounded hover:bg-cyan-500/30 hover:border-cyan-400/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer shrink-0 text-cyan-400 text-xs sm:text-sm"
               aria-label="Start scan"
               title="Scan"
             >
               {isScanning ? (
-                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent" />
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-cyan-400 border-t-transparent mr-2" />
+                  <span>SCANNING</span>
+                </>
               ) : (
-                <i className="ri-search-line text-white text-base sm:text-lg" aria-hidden="true"></i>
+                <>
+                  <i className="ri-arrow-right-line text-cyan-400 mr-1" aria-hidden="true"></i>
+                  <span>RUN</span>
+                </>
               )}
             </button>
           </div>
         </div>
+        
+        <p className="text-center text-zinc-500 text-xs sm:text-sm mt-3 px-2">
+          By scanning, you confirm that you have the right to analyze this domain
+        </p>
       </form>
     </div>
   );
