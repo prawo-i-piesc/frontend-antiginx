@@ -13,6 +13,11 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
+# Build argument for backend URL
+ARG BACKEND_URL=http://10.10.0.1:8080
+ENV BACKEND_URL=${BACKEND_URL}
+
+
 # Build
 RUN npm run build
 
