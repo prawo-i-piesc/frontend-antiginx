@@ -12,5 +12,5 @@ export const SCAN_CONFIG = {
 
 export const API_CONFIG = {
   /** Base URL for API requests (from environment variable) */
-  BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:8080',
+  BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080',
 } as const;
