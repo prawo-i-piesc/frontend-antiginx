@@ -17,13 +17,14 @@ COPY . .
 ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:8080
 ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 
-
 # Build
 RUN npm run build
 
-
 # Final stage: a minimal image to run the application
 FROM node:20-alpine AS runner
+
+# Install ca-certificates
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
