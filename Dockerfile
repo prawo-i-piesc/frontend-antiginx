@@ -13,7 +13,7 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Build argument for backend URL
+# Build argument for backend URL example
 ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
 ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 
