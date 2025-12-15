@@ -1,0 +1,21 @@
+services:
+  frontend-antiginx:
+    image: ghcr.io/prawo-i-piesc/frontend-antiginx:latest
+
+    container_name: frontend
+    restart: unless-stopped
+
+    ports:
+      - "${FRONTEND_PORT}:3000"
+
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+
+    mem_limit: 1024m
+
+    networks:
+      - vpn-net
+
+networks:
+  vpn-net:
+    external: true
