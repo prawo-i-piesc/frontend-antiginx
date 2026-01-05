@@ -41,11 +41,10 @@ export default function RegisterForm() {
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <Link href="/" className="mx-auto w-48 h-auto relative inline-block mb-4">
+          <Link href="/" className="mx-auto w-48 h-16 relative inline-block mb-0">
             <Image src="/logotype.png" alt="Antiginx" fill className="object-contain" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Create account</h1>
-          <p className="text-zinc-400 text-sm mt-2">Join AntiGinx — create your account to get started.</p>
+          <p className="text-zinc-400 text-sm mt-2">Create your account to get started.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-zinc-900/40 border border-zinc-800/40 rounded-xl p-6 space-y-4">
