@@ -50,7 +50,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mt-2 sm:mt-0 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center">
               <Link href="/" className="flex items-center">
@@ -59,7 +59,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
                   alt="Antiginx Logo"
                   width={100}
                   height={40}
-                  className="h-4 sm:h-10 md:h-9 w-auto hover:scale-101 transition-transform duration-200"
+                  className="h-8 sm:h-10  w-auto hover:scale-101 transition-transform duration-200"
                 />
               </Link>
             </div>
@@ -69,7 +69,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
                 <a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Documentation</a>
                 <a href="/pricing" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Pricing</a>
               </nav>
-              <Link href="/login" className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-xs sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm">
+              <Link href="/login" className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-l sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm">
                 Sign in
               </Link>
             </div>
@@ -77,10 +77,10 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
         </div>
       </motion.header>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex-1 flex flex-col justify-center sm:pt-5 pb-8">
+      <div className="relative z-10 max-w-5xl mx-auto px-1 sm:px-6 lg:px-8 text-center flex-1 flex flex-col justify-center sm:pt-5 pb-8">
         <div className="mb-0">
           <motion.h1 
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 md:mb-6 leading-tight px-2"
+            className="text-[2.1rem] lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 md:mb-6 leading-tight px-0 md:px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -92,7 +92,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
           </motion.h1>
 
           <motion.p 
-            className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed mb-5 sm:mb-6 md:mb-8 lg:mb-10 px-4 sm:px-2"
+            className="text-l sm:text-sm md:text-base lg:text-lg xl:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed mb-5 sm:mb-6 md:mb-8 lg:mb-10 px-4 sm:px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
@@ -126,11 +126,11 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-6 sm:h-8 w-auto opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-150 group-hover:-translate-y-12 sm:group-hover:-translate-y-16 transition-all duration-500 pointer-events-none"
               style={{ zIndex: 5 }}
             />
-            <button onClick={onScrollToScanner} className="relative w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]" style={{ zIndex: 10 }}>
+            <button onClick={onScrollToScanner} className="relative w-3/4 sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]" style={{ zIndex: 10 }}>
               Try it out for free!
             </button>
           </div>
-          <button onClick={onScrollToFeatures} className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-transparent text-white rounded-full hover:bg-white/10 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base border-2 border-white/30 hover:border-white/50">
+          <button onClick={onScrollToFeatures} className="mx-auto sm:mx-0 w-3/4 sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-transparent text-white rounded-full hover:bg-white/10 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base border-2 border-white/30 hover:border-white/50">
             Learn more
           </button>
         </motion.div>
