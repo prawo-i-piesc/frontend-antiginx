@@ -21,13 +21,19 @@ export function ThemeProvider({
 
   useEffect(() => {
     // Load theme from localStorage on mount
-    const savedTheme = localStorage.getItem("theme") as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.className = savedTheme;
-    } else {
-      // Set dark as default theme
-      localStorage.setItem("theme", "dark");
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const savedTheme = localStorage.getItem("theme") as Theme;
+      if (savedTheme) {
+        setTheme(savedTheme);
+        document.documentElement.className = savedTheme;
+      } else {
+        // Set dark as default theme
+        localStorage.setItem("theme", "dark");
+      }
+    } catch (error) {
+      console.warn('Failed to access localStorage:', error);
     }
   }, []);
 

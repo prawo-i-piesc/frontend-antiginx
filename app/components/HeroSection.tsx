@@ -59,7 +59,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
                   alt="Antiginx Logo"
                   width={100}
                   height={40}
-                  className="h-8 sm:h-10  w-auto hover:scale-101 transition-transform duration-200"
+                  className="h-8 sm:h-10 w-auto hover:scale-101 transition-transform duration-200"
                 />
               </Link>
             </div>
@@ -69,7 +69,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
                 <a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Documentation</a>
                 <a href="/pricing" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Pricing</a>
               </nav>
-              <Link href="/login" className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-l sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm">
+              <Link href="/login" className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-md sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm">
                 Sign in
               </Link>
             </div>
@@ -92,7 +92,7 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
           </motion.h1>
 
           <motion.p 
-            className="text-l sm:text-sm md:text-base lg:text-lg xl:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed mb-5 sm:mb-6 md:mb-8 lg:mb-10 px-4 sm:px-2"
+            className="text-lg sm:text-sm md:text-base lg:text-lg xl:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed mb-5 sm:mb-6 md:mb-8 lg:mb-10 px-4 sm:px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}

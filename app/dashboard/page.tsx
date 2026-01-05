@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import React from "react";
 import { useTheme } from "../providers/ThemeProvider";
 import NavLink from "../components/interface/NavLink";
@@ -42,6 +42,9 @@ export default function DashboardPage() {
 
   const [draggedWidget, setDraggedWidget] = useState<DashboardWidget | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [selectedWidgetIndex, setSelectedWidgetIndex] = useState<number | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
   const draggedIndexRef = useRef<number | null>(null);
   const hoverIndexRef = useRef<number | null>(null);
@@ -50,14 +53,15 @@ export default function DashboardPage() {
     widget => !activeWidgets.find(aw => aw.type === widget.type)
   );
 
-  const displayWidgets = draggedIndexRef.current !== null && hoverIndexRef.current !== null && draggedIndexRef.current !== hoverIndexRef.current
-    ? (() => {
-        const widgets = [...activeWidgets];
-        const [removed] = widgets.splice(draggedIndexRef.current, 1);
-        widgets.splice(hoverIndexRef.current, 0, removed);
-        return widgets;
-      })()
-    : activeWidgets;
+  const displayWidgets = useMemo(() => {
+    if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
+      const widgets = [...activeWidgets];
+      const [removed] = widgets.splice(draggedIndex, 1);
+      widgets.splice(hoverIndex, 0, removed);
+      return widgets;
+    }
+    return activeWidgets;
+  }, [activeWidgets, draggedIndex, hoverIndex]);
 
   function handleMouseDown(e: React.MouseEvent, widget: DashboardWidget, index: number) {
     if (!customizeMode) return;
@@ -72,6 +76,7 @@ export default function DashboardPage() {
     };
     
     setDraggedWidget(widget);
+    setDraggedIndex(index);
     draggedIndexRef.current = index;
     setMousePos({ x: e.clientX, y: e.clientY });
     
@@ -88,6 +93,8 @@ export default function DashboardPage() {
       }
       
       setDraggedWidget(null);
+      setDraggedIndex(null);
+      setHoverIndex(null);
       draggedIndexRef.current = null;
       hoverIndexRef.current = null;
       
@@ -113,6 +120,7 @@ export default function DashboardPage() {
     };
     
     setDraggedWidget(widget);
+    setDraggedIndex(index);
     draggedIndexRef.current = index;
     setMousePos({ x: touch.clientX, y: touch.clientY });
     
@@ -131,6 +139,7 @@ export default function DashboardPage() {
       if (widgetElement) {
         const newIndex = parseInt(widgetElement.getAttribute('data-widget-index') || '-1');
         if (newIndex >= 0 && newIndex !== draggedIndexRef.current) {
+          setHoverIndex(newIndex);
           hoverIndexRef.current = newIndex;
         }
       }
@@ -145,6 +154,8 @@ export default function DashboardPage() {
       }
       
       setDraggedWidget(null);
+      setDraggedIndex(null);
+      setHoverIndex(null);
       draggedIndexRef.current = null;
       hoverIndexRef.current = null;
       
@@ -162,22 +173,60 @@ export default function DashboardPage() {
     document.addEventListener('touchcancel', handleTouchEndLocal);
   }
 
-  function handleMouseMove(e: MouseEvent) {
-    setMousePos({ x: e.clientX, y: e.clientY });
-  }
-
-  function handleMouseUp() {
-    setDraggedWidget(null);
-    draggedIndexRef.current = null;
-    hoverIndexRef.current = null;
-    
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  }
 
   function handleWidgetMouseEnter(index: number) {
     if (draggedWidget) {
+      setHoverIndex(index);
       hoverIndexRef.current = index;
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent, index: number) {
+    if (!customizeMode) return;
+
+    // Select widget with Enter or Space
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (selectedWidgetIndex === index) {
+        setSelectedWidgetIndex(null);
+      } else {
+        setSelectedWidgetIndex(index);
+      }
+      return;
+    }
+
+    // Cancel selection with Escape
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setSelectedWidgetIndex(null);
+      return;
+    }
+
+    // Move widget with arrow keys
+    if (selectedWidgetIndex === index) {
+      let newIndex = index;
+      
+      if (e.key === 'ArrowUp' && index > 0) {
+        e.preventDefault();
+        newIndex = index - 1;
+      } else if (e.key === 'ArrowDown' && index < activeWidgets.length - 1) {
+        e.preventDefault();
+        newIndex = index + 1;
+      } else if (e.key === 'ArrowLeft' && index > 0) {
+        e.preventDefault();
+        newIndex = index - 1;
+      } else if (e.key === 'ArrowRight' && index < activeWidgets.length - 1) {
+        e.preventDefault();
+        newIndex = index + 1;
+      }
+
+      if (newIndex !== index) {
+        const widgets = [...activeWidgets];
+        const [removed] = widgets.splice(index, 1);
+        widgets.splice(newIndex, 0, removed);
+        setActiveWidgets(widgets);
+        setSelectedWidgetIndex(newIndex);
+      }
     }
   }
 
@@ -347,7 +396,7 @@ export default function DashboardPage() {
               </button>
 
               {/* User Dropdown */}
-              <button className="hidden sm:flex items-center gap-3 pl-3 pr-4 py-2transition-all group">
+              <button className="hidden sm:flex items-center gap-3 pl-3 pr-4 py-2 transition-all group">
                 <div className="relative">
                   <div className="w-9 h-9 bg-linear-to-br from-zinc-500 to-zinc-600 rounded-lg flex items-center justify-center">
                     <span className="text-zinc-100 font-bold text-sm">JK</span>
@@ -377,6 +426,8 @@ export default function DashboardPage() {
               </div>
               <button 
                 onClick={() => setCustomizeMode(!customizeMode)}
+                aria-pressed={customizeMode}
+                aria-label={customizeMode ? 'Exit customize mode' : 'Enter customize mode'}
                 className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer rounded-xl border transition-all font-medium ${
                   customizeMode 
                     ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 dark:bg-cyan-500/10' 
@@ -389,6 +440,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Active Widgets Grid */}
+            <div id="widget-instructions" className="sr-only">
+              Press Enter or Space to select a widget. Use arrow keys to move the selected widget. Press Escape to deselect.
+            </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-4 relative" style={{ transition: 'all 0.3s ease-out' }}>
               {displayWidgets.map((widget, index) => {
                 const isDragging = draggedIndexRef.current === activeWidgets.indexOf(widget);
@@ -399,11 +453,6 @@ export default function DashboardPage() {
                   "2x2": "col-span-2 row-span-2",
                 };
                 
-                // Check if previous widget would block grid flow (create empty space)
-                const prevWidget = index > 0 ? displayWidgets[index - 1] : null;
-                const shouldShowDropZone = customizeMode && draggedWidget && prevWidget && 
-                  (prevWidget.size === '2x1' || prevWidget.size === '2x2') &&
-                  (widget.size === '2x1' || widget.size === '2x2');
 
                 return (
                   <React.Fragment key={widget.id}>
@@ -411,15 +460,25 @@ export default function DashboardPage() {
                     <div
                       key={widget.id}
                       data-widget-index={index}
+                      tabIndex={customizeMode ? 0 : -1}
+                      role={customizeMode ? 'button' : undefined}
+                      aria-label={customizeMode ? `${widget.type} widget. Press Enter to select, use arrow keys to move` : undefined}
+                      aria-grabbed={selectedWidgetIndex === index}
+                      aria-describedby={customizeMode ? 'widget-instructions' : undefined}
                       className={`group relative h-full ${sizeClasses[widget.size]} ${
                       isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+                        } ${
+                      selectedWidgetIndex === index ? 'ring-2 ring-cyan-500 ring-offset-2 ring-offset-zinc-100 dark:ring-offset-zinc-950' : ''
                         }`}
                         onMouseDown={(e) => handleMouseDown(e, widget, activeWidgets.indexOf(widget))}
                         onTouchStart={(e) => handleTouchStart(e, widget, activeWidgets.indexOf(widget))}
                         onMouseEnter={() => handleWidgetMouseEnter(index)}
+                        onKeyDown={(e) => handleKeyDown(e, index)}
                         style={{
                             cursor: customizeMode ? 'move' : 'default',
-                            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',                            touchAction: customizeMode ? 'none' : 'auto',                        }}
+                            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                            touchAction: customizeMode ? 'none' : 'auto',
+                        }}
                         >
                       {customizeMode && !draggedWidget && (
                         <div className="absolute -top-2 -right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -429,6 +488,7 @@ export default function DashboardPage() {
                               removeWidget(widget.id);
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
+                            aria-label={`Remove ${widget.type} widget`}
                             className="cursor-pointer w-7 h-7 bg-red-500/90 hover:bg-red-500 rounded-lg flex items-center justify-center text-white shadow-lg transition-all"
                           >
                             <i className="ri-close-line text-sm"></i>
