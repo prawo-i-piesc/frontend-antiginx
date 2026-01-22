@@ -39,14 +39,13 @@ COPY --from=build --chown=appuser:appgroup /app/public ./public
 COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
 COPY --from=build --chown=appuser:appgroup /app/package-lock.json ./package-lock.json
 
-# Install only production dependencies and set ownership
-RUN npm install --only=production && \
-    chown -R appuser:appgroup /app/node_modules
+# Install only production dependencies
+RUN npm install --only=production
+
+# Change ownership of node_modules to appuser
+RUN chown -R appuser:appgroup /app
 
 USER appuser
-
-# Disable Next.js telemetry
-ENV NEXT_TELEMETRY_DISABLED=1
 
 # Expose the application port and start the application
 EXPOSE 3000
