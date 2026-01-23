@@ -24,18 +24,29 @@ RUN npm run build
 FROM node:20-alpine AS runner
 
 # Install ca-certificates
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache upgrade && \
+    apk --no-cache add ca-certificates
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
 WORKDIR /app
 
-# Copy only the necessary files from the build stage
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/package-lock.json ./package-lock.json
+# Copy only the necessary files from the build stage with correct ownership
+COPY --from=build --chown=appuser:appgroup /app/.next ./.next
+COPY --from=build --chown=appuser:appgroup /app/public ./public
+COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
+COPY --from=build --chown=appuser:appgroup /app/package-lock.json ./package-lock.json
 
 # Install only production dependencies
 RUN npm install --only=production
 
+# Change ownership of node_modules to appuser
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+# Expose the application port and start the application
 EXPOSE 3000
 CMD ["npm", "run", "start"]
