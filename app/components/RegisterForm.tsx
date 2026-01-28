@@ -108,7 +108,12 @@ export default function RegisterForm() {
 
           <div className="flex items-center mt-2">
             <label className="flex items-center text-sm text-zinc-400">
-              <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="mr-3 w-4 h-4 rounded" />
+              <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="peer sr-only" />
+              <span className="mr-3 w-4 h-4 rounded-sm bg-zinc-800/60 border border-zinc-700 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 peer-checked:[&>svg]:block flex items-center justify-center">
+                <svg className="hidden w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
               I agree to the terms and privacy policy
             </label>
           </div>

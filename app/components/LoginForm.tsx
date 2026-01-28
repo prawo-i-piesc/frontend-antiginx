@@ -74,11 +74,16 @@ export default function LoginForm() {
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="mr-3 w-4 h-4 rounded"
+                  className="peer sr-only"
                 />
+                <span className="mr-2 w-4 h-4 rounded-sm bg-zinc-800/60 border border-zinc-700 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 peer-checked:[&>svg]:block flex items-center justify-center">
+                  <svg className="hidden w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
                 Remember me
               </label>
-              <a href="#" className="text-cyan-400 text-sm">Forgot password?</a>
+              <a href="#" className="text-cyan-400 hover:text-cyan-500 text-sm">Forgot password?</a>
             </div>
 
             <div>
