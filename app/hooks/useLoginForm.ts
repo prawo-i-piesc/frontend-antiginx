@@ -39,7 +39,7 @@ export function useLoginForm() {
     setError(null);
     try {
       const res = await apiLogin({ email, password });
-      await auth.login(res.token);
+      await auth.login(res.token, remember);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err?.message || 'Login failed');

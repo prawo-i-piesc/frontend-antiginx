@@ -14,7 +14,7 @@ interface AuthContextType {
   token: string | null | undefined; // undefined = not initialized yet
   initialized: boolean;
   user: UserProfile | null;
-  login: (token: string) => Promise<void>;
+  login: (token: string, remember?: boolean) => Promise<void>;
   logout: () => void;
 }
 
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const stored = localStorage.getItem('auth.token');
+      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
       if (stored) {
         setToken(stored);
         // validate and fetch user
@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(null);
             setUser(null);
             try { localStorage.removeItem('auth.token'); } catch (e) {}
+            try { sessionStorage.removeItem('auth.token'); } catch (e) {}
           });
         } catch (e) {
           setToken(null);
@@ -49,9 +50,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = async (t: string) => {
+  const login = async (t: string, remember: boolean = true) => {
     setToken(t);
-    try { localStorage.setItem('auth.token', t); } catch (e) {}
+    try {
+      if (remember) {
+        try { localStorage.setItem('auth.token', t); } catch (e) {}
+        try { sessionStorage.removeItem('auth.token'); } catch (e) {}
+      } else {
+        try { sessionStorage.setItem('auth.token', t); } catch (e) {}
+        try { localStorage.removeItem('auth.token'); } catch (e) {}
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+
     try {
       const u = await getMe(t);
       setUser(u);
@@ -60,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(null);
       setUser(null);
       try { localStorage.removeItem('auth.token'); } catch (err) {}
+      try { sessionStorage.removeItem('auth.token'); } catch (err) {}
       throw e;
     }
   };
@@ -68,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     try { localStorage.removeItem('auth.token'); } catch (e) {}
+    try { sessionStorage.removeItem('auth.token'); } catch (e) {}
     // redirect to login
     try { router.replace('/login'); } catch (e) {}
   };
