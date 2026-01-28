@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { register as apiRegister } from '@/app/lib/api';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 export default function RegisterForm() {
   const [name, setName] = useState('');
@@ -12,6 +15,7 @@ export default function RegisterForm() {
   const [accept, setAccept] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const validate = () => {
     if (!name.trim()) return 'Please enter your full name.';
@@ -31,10 +35,15 @@ export default function RegisterForm() {
       return;
     }
     setLoading(true);
-    // simulate registration
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    alert(`Registered: ${email}`);
+    try {
+      await apiRegister({ full_name: name, email, password });
+      setLoading(false);
+      // redirect to login
+      router.push('/login');
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || 'Registration failed');
+    }
   };
 
   return (

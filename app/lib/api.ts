@@ -179,3 +179,81 @@ export function getStatusColor(status: ScanStatus): string {
       return 'text-zinc-400';
   }
 }
+
+// ----------------------
+// Authentication API
+// ----------------------
+
+export interface RegisterPayload {
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  expires_in: number;
+}
+
+export async function register(payload: RegisterPayload): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Registration failed' }));
+    throw new Error(err.error || `HTTP error ${res.status}`);
+  }
+
+  return;
+}
+
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
+  const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Login failed' }));
+    throw new Error(err.error || `HTTP error ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export function authHeader(token?: string): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
+export async function getMe(token: string): Promise<MeResponse> {
+  if (!BACKEND_URL) throw new Error('BACKEND_URL not configured');
+  const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeader(token),
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to fetch user' }));
+    throw new Error(err.error || `HTTP error ${res.status}`);
+  }
+
+  return res.json();
+}

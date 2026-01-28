@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import React from "react";
+import { useRouter } from 'next/navigation';
 import { useTheme } from "../providers/ThemeProvider";
+import useRequireAuth from '@/app/hooks/useRequireAuth';
+import useProfile from '@/app/hooks/useProfile';
 import NavLink from "../components/interface/NavLink";
 import StatsCard from "../components/interface/StatsCard";
 import RecentScansWidget from "../components/widgets/RecentScansWidget";
@@ -27,6 +30,9 @@ const WIDGET_LIBRARY: DashboardWidget[] = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizeMode, setCustomizeMode] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -48,10 +54,10 @@ export default function DashboardPage() {
   const dragOffset = useRef({ x: 0, y: 0 });
   const draggedIndexRef = useRef<number | null>(null);
   const hoverIndexRef = useRef<number | null>(null);
-
-  const availableWidgets = WIDGET_LIBRARY.filter(
-    widget => !activeWidgets.find(aw => aw.type === widget.type)
-  );
+  // auth initialization and redirect logic moved to hooks
+  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const auth = authFromHook;
+  const { profileName, setProfileName } = useProfile(token);
 
   const displayWidgets = useMemo(() => {
     if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
@@ -62,6 +68,15 @@ export default function DashboardPage() {
     }
     return activeWidgets;
   }, [activeWidgets, draggedIndex, hoverIndex]);
+
+  // preserve original render behaviour while keeping hook order stable
+  if (!initialized) return null;
+  if (!token) return null;
+
+  const availableWidgets = WIDGET_LIBRARY.filter(
+    widget => !activeWidgets.find(aw => aw.type === widget.type)
+  );
+
 
   function handleMouseDown(e: React.MouseEvent, widget: DashboardWidget, index: number) {
     if (!customizeMode) return;
@@ -105,6 +120,8 @@ export default function DashboardPage() {
     document.addEventListener('mousemove', handleMouseMoveLocal);
     document.addEventListener('mouseup', handleMouseUpLocal);
   }
+
+  
 
   function handleTouchStart(e: React.TouchEvent, widget: DashboardWidget, index: number) {
     if (!customizeMode) return;
@@ -373,7 +390,7 @@ export default function DashboardPage() {
               {/* Theme Toggle */}
               <button 
                 onClick={(e) => toggleTheme(e)}
-                className="sm:flex w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group"
+                className="cursor-pointersm:flex w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group"
               >
                 {theme === "dark" ? (
                   <i className="ri-moon-line text-zinc-600 dark:text-zinc-400 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors text-lg"></i>
@@ -383,32 +400,45 @@ export default function DashboardPage() {
               </button>
 
               {/* Notifications */}
-              <button className="relative w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl flex items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group">
+              <button className="cursor-pointer relative w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl flex items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group">
                 <i className="ri-notification-3-line text-zinc-600 dark:text-zinc-400 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors"></i>
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-zinc-900"></span>
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
               </button>
 
               {/* Messages */}
-              <button className="sm:flex relative w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group">
+              <button className="cursor-pointer sm:flex relative w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group">
                 <i className="ri-message-3-line text-zinc-600 dark:text-zinc-400 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors"></i>
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-zinc-900"></span>
               </button>
 
-              {/* User Dropdown */}
-              <button className="hidden sm:flex items-center gap-3 pl-3 pr-4 py-2 transition-all group">
-                <div className="relative">
-                  <div className="w-9 h-9 bg-linear-to-br from-zinc-500 to-zinc-600 rounded-lg flex items-center justify-center">
-                    <span className="text-zinc-100 font-bold text-sm">JK</span>
+              {/* Logout Button */}
+              <div
+                className="flex items-center gap-3 pl-3 pr-4 py-2 transition-all group"
+              >
+                {/* Avatar + name (non-clickable) + icon-only logout button */}
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-9 h-9 bg-linear-to-br from-zinc-500 to-zinc-600 rounded-lg flex items-center justify-center">
+                      <span className="text-zinc-100 font-bold text-sm">{(profileName || 'U').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase()}</span>
+                    </div>
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
+
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors">{profileName ? profileName.split(' ')[0] + " " + (profileName.split(' ')[1] ? profileName.split(' ')[1][0] + "." : '') : 'User'}</div>
+                    <div className="text-xs text-zinc-600 dark:text-zinc-500">Premium</div>
+                  </div>
+
+                  <button
+                    onClick={() => auth.logout()}
+                    aria-label="Logout"
+                    title="Logout"
+                    className="flex items-center justify-center transition-colors text-zinc-600 dark:text-zinc-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer"
+                  >
+                    <i className="ri-logout-box-line text-lg" />
+                  </button>
                 </div>
-                <div className="hidden sm:block text-left">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors">Jan K.</div>
-                  <div className="text-xs text-zinc-600 dark:text-zinc-500">Premium</div>
-                </div>
-                <i className="hidden sm:flex ri-arrow-down-s-line text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors text-lg"></i>
-              </button>
+              </div>
             </div>
           </div>
         </header>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '../components/Footer';
 import { motion } from 'framer-motion';
+  import SiteHeader from '../components/SiteHeader';
 
 export default function PricingPage() {
   const plans = [
@@ -96,39 +97,7 @@ export default function PricingPage() {
           <div className="absolute bottom-0 left-[8%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-9s', animationDuration: '16s'}}></div>
         </div>
 
-        {/* Header */}
-        <motion.header 
-          className="top-0 z-50 relative"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-14 sm:h-16">
-              <div className="flex items-center">
-                <Link href="/" className="flex items-center">
-                  <Image
-                    src="/logotype.png"
-                    alt="Antiginx Logo"
-                    width={100}
-                    height={40}
-                    className="h-4 sm:h-10 md:h-9 w-auto hover:scale-101 transition-transform duration-200"
-                  />
-                </Link>
-              </div>
-              <div className="flex items-center space-x-3 sm:space-x-5">
-                <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
-                  <Link href="/#features" className="text-shadow-white hover:text-cyan-300 transition-colors font-normal text-sm duration-300">Features</Link>
-                  <a href="https://prawo-i-piesc.github.io/engine-antiginx/" target="_blank" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Documentation</a>
-                  <a href="/pricing" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Pricing</a>
-                </nav>
-                <Link href="/login" className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-xs sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm">
-                  Sign in
-                </Link>
-              </div>
-            </div>
-          </div>
-        </motion.header>
+        <SiteHeader />
 
         {/* Hero Content */}
         <div className="relative z-10 pb-20 mt-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex-1 flex flex-col justify-center pt-10">
@@ -164,9 +133,9 @@ export default function PricingPage() {
                 key={index}
                 className={`relative rounded-2xl p-8 lg:p-10 ${
                   plan.popular
-                    ? 'bg-zinc-900/60 border-2 border-cyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-sm scale-105'
-                    : 'bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm'
-                } hover:scale-[1.02] hover:shadow-[0_0_50px_rgba(6,182,212,0.2)]`}
+                    ? 'bg-zinc-900/60 border-2 border-cyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-sm scale-105 hover:scale-108'
+                    : 'bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm hover:scale-102'
+                } hover:shadow-[0_0_50px_rgba(6,182,212,0.2)]`}
                 style={{ transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
