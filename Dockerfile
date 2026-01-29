@@ -21,7 +21,7 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 RUN npm run build
 
 # Final stage: a minimal image to run the application
-FROM node:25-alpine AS runner
+FROM node:24-alpine AS runner
 
 # Install ca-certificates
 RUN apk --no-cache upgrade && \
