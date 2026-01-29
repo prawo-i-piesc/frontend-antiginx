@@ -1,5 +1,5 @@
 # Build stage: compile the application
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY package.json ./
 COPY package-lock.json ./
 
 # Download the Node.js dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy the rest of the application code
 COPY . .
@@ -21,7 +21,7 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 RUN npm run build
 
 # Final stage: a minimal image to run the application
-FROM node:22-alpine AS runner
+FROM node:25-alpine AS runner
 
 # Install ca-certificates
 RUN apk --no-cache upgrade && \
@@ -40,7 +40,7 @@ COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
 COPY --from=build --chown=appuser:appgroup /app/package-lock.json ./package-lock.json
 
 # Install only production dependencies
-RUN npm install --only=production
+RUN npm install --only=production --legacy-peer-deps
 
 # Change ownership of node_modules to appuser
 RUN chown -R appuser:appgroup /app
