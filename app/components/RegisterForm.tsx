@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { register as apiRegister } from '@/app/lib/api';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 export default function RegisterForm() {
   const [name, setName] = useState('');
@@ -12,6 +15,7 @@ export default function RegisterForm() {
   const [accept, setAccept] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const validate = () => {
     if (!name.trim()) return 'Please enter your full name.';
@@ -31,10 +35,15 @@ export default function RegisterForm() {
       return;
     }
     setLoading(true);
-    // simulate registration
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    alert(`Registered: ${email}`);
+    try {
+      await apiRegister({ full_name: name, email, password });
+      setLoading(false);
+      // redirect to login
+      router.push('/login');
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || 'Registration failed');
+    }
   };
 
   return (
@@ -99,7 +108,12 @@ export default function RegisterForm() {
 
           <div className="flex items-center mt-2">
             <label className="flex items-center text-sm text-zinc-400">
-              <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="mr-3 w-4 h-4 rounded" />
+              <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="peer sr-only" />
+              <span className="mr-3 w-4 h-4 rounded-sm bg-zinc-800/60 border border-zinc-700 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 peer-checked:[&>svg]:block flex items-center justify-center">
+                <svg className="hidden w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
               I agree to the terms and privacy policy
             </label>
           </div>

@@ -1,0 +1,102 @@
+"use client";
+
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { getMe } from '@/app/lib/api';
+import { useRouter } from "next/navigation";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
+interface AuthContextType {
+  token: string | null | undefined; // undefined = not initialized yet
+  initialized: boolean;
+  user: UserProfile | null;
+  login: (token: string, remember?: boolean) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [token, setToken] = useState<string | null | undefined>(undefined);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
+      if (stored) {
+        setToken(stored);
+        // validate and fetch user
+        try {
+          getMe(stored).then((u) => setUser(u)).catch(() => {
+            setToken(null);
+            setUser(null);
+            try { localStorage.removeItem('auth.token'); } catch (e) {}
+            try { sessionStorage.removeItem('auth.token'); } catch (e) {}
+          });
+        } catch (e) {
+          setToken(null);
+          setUser(null);
+        }
+      } else setToken(null);
+    } catch (e) {
+      setToken(null);
+      setUser(null);
+    }
+  }, []);
+
+  const login = async (t: string, remember: boolean = true) => {
+    setToken(t);
+    try {
+      if (remember) {
+        try { localStorage.setItem('auth.token', t); } catch (e) {}
+        try { sessionStorage.removeItem('auth.token'); } catch (e) {}
+      } else {
+        try { sessionStorage.setItem('auth.token', t); } catch (e) {}
+        try { localStorage.removeItem('auth.token'); } catch (e) {}
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+
+    try {
+      const u = await getMe(t);
+      setUser(u);
+    } catch (e) {
+      // invalid token -> clear
+      setToken(null);
+      setUser(null);
+      try { localStorage.removeItem('auth.token'); } catch (err) {}
+      try { sessionStorage.removeItem('auth.token'); } catch (err) {}
+      throw e;
+    }
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    try { localStorage.removeItem('auth.token'); } catch (e) {}
+    try { sessionStorage.removeItem('auth.token'); } catch (e) {}
+    // redirect to login
+    try { router.replace('/login'); } catch (e) {}
+  };
+
+  return (
+    <AuthContext.Provider value={{ token, initialized: token !== undefined, user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}
+
+export default AuthProvider;

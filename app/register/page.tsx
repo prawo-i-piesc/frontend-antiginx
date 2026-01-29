@@ -1,7 +1,26 @@
+"use client";
 import RegisterForm from '../components/RegisterForm';
 import Footer from '../components/Footer';
+import { useEffect } from 'react';
+import { useAuth } from '../providers/AuthProvider';
+import { useRouter } from 'next/navigation';
+
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const auth = useAuth();
+
+  useEffect(() => {
+    if (!auth.initialized) return;
+    if (auth.token) {
+      try { router.replace('/dashboard'); } catch (e) { if (typeof window !== 'undefined') window.location.replace('/dashboard'); }
+    }
+  }, [auth.initialized, auth.token, router]);
+
+  // Wait until auth is initialized; if token exists effect will redirect.
+  if (!auth.initialized) return (<div className="min-h-screen text-white" style={{ backgroundColor: '#09090b' }}></div>);
+  if (auth.token) return (<div className="min-h-screen text-white" style={{ backgroundColor: '#09090b' }}></div>);
+
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: '#09090b' }}>
       <section className="relative min-h-screen flex flex-col">

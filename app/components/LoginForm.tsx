@@ -1,83 +1,36 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [otpSentAt, setOtpSentAt] = useState<number | null>(null);
-  const [resendCountdown, setResendCountdown] = useState(0);
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    remember,
+    setRemember,
+    loading,
+    showOtp,
+    setShowOtp,
+    otp,
+    setOtp,
+    otpSentAt,
+    resendCountdown,
+    error,
+    handleSubmit,
+    handleVerifyOtp,
+    handleResend,
+    handleBackToLogin,
+  } = (function lazyHook() {
+    // lazy require to avoid circular imports in module scope
+    const m = require('@/app/hooks/useLoginForm');
+    return m.useLoginForm();
+  })();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    // simulate sending OTP
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setShowOtp(true);
-    setOtp('');
-    const now = Date.now();
-    setOtpSentAt(now);
-    setResendCountdown(30); // 30s cooldown
-  };
 
-  useEffect(() => {
-    if (resendCountdown <= 0) return;
-    const t = setInterval(() => {
-      setResendCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(t);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [resendCountdown]);
-
-  const handleVerifyOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (otp.trim().length < 4) {
-      alert('Please enter the verification code.');
-      return;
-    }
-    setLoading(true);
-    // simulate verification
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    // for mock, accept any code that is numeric
-    if (/^\d+$/.test(otp.trim())) {
-      alert('Verified — logged in');
-      // reset form
-      setShowOtp(false);
-      setEmail('');
-      setPassword('');
-      setOtp('');
-    } else {
-      alert('Invalid code');
-    }
-  };
-
-  const handleResend = async () => {
-    if (resendCountdown > 0) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setOtpSentAt(Date.now());
-    setResendCountdown(30);
-    alert('A new verification code was sent (mock).');
-  };
-
-  const handleBackToLogin = () => {
-    setShowOtp(false);
-    setOtp('');
-  };
+  // handlers are provided by useLoginForm
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -121,11 +74,16 @@ export default function LoginForm() {
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="mr-3 w-4 h-4 rounded"
+                  className="peer sr-only"
                 />
+                <span className="mr-2 w-4 h-4 rounded-sm bg-zinc-800/60 border border-zinc-700 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 peer-checked:[&>svg]:block flex items-center justify-center">
+                  <svg className="hidden w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
                 Remember me
               </label>
-              <a href="#" className="text-cyan-400 text-sm">Forgot password?</a>
+              <a href="#" className="text-cyan-400 hover:text-cyan-500 text-sm">Forgot password?</a>
             </div>
 
             <div>
