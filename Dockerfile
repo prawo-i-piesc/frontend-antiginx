@@ -1,5 +1,5 @@
 # Build stage: compile the application
-FROM node:24-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 RUN npm run build
 
 # Final stage: a minimal image to run the application
-FROM node:24-alpine AS runner
+FROM node:22-alpine AS runner
 
 # Install ca-certificates
 RUN apk --no-cache upgrade && \
