@@ -1,0 +1,85 @@
+name: Vuln Verification
+run-name: >-
+    ${{ 
+        github.event_name == 'pull_request' 
+        && format('Vulnerability Verification for CI: PR #{0} -> {1}', github.event.number, github.event.pull_request.title)
+    }}
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+jobs:
+    vuln-ci-test:
+        name: Testing
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        steps:
+        - name: 📥 Git -- Checkout repository
+          uses: actions/checkout@v6
+
+        - name: 📘 Node -- Set up
+          uses: actions/setup-node@v3
+          with:
+            node-version-file: 'package.json'
+            cache: npm
+
+        - name: 🐳 Docker -- Set up
+          uses: docker/setup-buildx-action@v3
+
+        - name: 📦 Node -- Install dependencies
+          run: npm ci
+
+        - name: 🐳 Docker -- Build Image for Scanning
+          uses: docker/build-push-action@v6
+          with:
+            context: .
+            push: false
+            load: true
+            tags: ${{ github.repository }}:pr-${{ github.event.pull_request.number }}-test
+            cache-from: type=gha
+            cache-to: type=gha,mode=max
+
+        - name: 🧪 Node -- Test Vulnerability -> Modules
+          run: | 
+            echo "⚙️ Running npm audit on Node modules:"
+            if npm audit --audit-level=moderate; then
+                echo ""
+                echo "✅ No vulnerabilities found in Node modules."
+            else
+                echo ""
+                echo "❌ Vulnerabilities found in Node modules."
+                exit 1
+            fi
+
+        - name: 🧪 Trivy -- Test Vuln, Secret, Misconfig -> File System
+          uses: aquasecurity/trivy-action@master
+          with:
+            scan-type: fs
+            ignore-unfixed: true
+            scanners: vuln,secret,misconfig
+            format: table
+            severity: CRITICAL,HIGH,MEDIUM
+            exit-code: '1'
+
+        - name: 🧪 Trivy -- Test Vuln, Secret, Misconfig -> Container Image
+          uses: aquasecurity/trivy-action@master
+          with:
+            scan-type: image
+            image-ref: ${{ github.repository }}:pr-${{ github.event.pull_request.number }}-test
+            ignore-unfixed: true
+            scanners: vuln,secret,misconfig
+            vuln-type: os,library
+            format: table
+            severity: CRITICAL,HIGH,MEDIUM
+            exit-code: '1'
