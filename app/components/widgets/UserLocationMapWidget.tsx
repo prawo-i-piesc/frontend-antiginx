@@ -27,7 +27,6 @@ export default function UserLocationMapWidget() {
   }, []);
 
   const maxUsers = Math.max(...locations.map((l) => l.count), 1);
-  const totalUsers = locations.reduce((sum, l) => sum + l.count, 0);
 
   const getCountryFlag = (code: string) => {
     const codePoints = code
