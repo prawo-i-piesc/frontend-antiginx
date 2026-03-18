@@ -8,8 +8,6 @@ run-name: >-
 on:
     pull_request:
         types: [opened, synchronize, reopened]
-    push:
-        branches: [main]
 
 permissions:
     contents: read
@@ -62,41 +60,19 @@ jobs:
                 exit 1
             fi
 
-        - name: 🧪 Trivy -- Test Vulnerability -> File System
-          uses: aquasecurity/trivy-action@master
+        - name: 🧪 Trivy -- Test Vuln, Secret, Misconfig -> File System
+          uses: aquasecurity/trivy-action@0.35.0
           with:
             scan-type: fs
             scan-ref: .
             ignore-unfixed: true
-            scanners: vuln
-            format: table
-            severity: CRITICAL,HIGH,MEDIUM
-            exit-code: '1'
-
-        - name: 🧪 Trivy -- Test Secret -> File System
-          uses: aquasecurity/trivy-action@master
-          with:
-            scan-type: fs
-            scan-ref: .
-            ignore-unfixed: true
-            scanners: secret
-            format: table
-            severity: CRITICAL,HIGH,MEDIUM
-            exit-code: '1'
-
-        - name: 🧪 Trivy -- Test Misconfig -> File System
-          uses: aquasecurity/trivy-action@master
-          with:
-            scan-type: fs
-            scan-ref: .
-            ignore-unfixed: true
-            scanners: misconfig
+            scanners: vuln,secret,misconfig
             format: table
             severity: CRITICAL,HIGH,MEDIUM
             exit-code: '1'
 
         - name: 🧪 Trivy -- Test Vuln, Secret, Misconfig -> Container Image
-          uses: aquasecurity/trivy-action@master
+          uses: aquasecurity/trivy-action@0.35.0
           with:
             scan-type: image
             image-ref: ${{ github.repository }}:pr-${{ github.event.pull_request.number }}-test
