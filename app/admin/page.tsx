@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo } from "react";
 import React from "react";
 import { useRouter } from 'next/navigation';
 import { useTheme } from "../providers/ThemeProvider";
