@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useRef, useMemo } from "react";
 import React from "react";
-import { useRouter } from 'next/navigation';
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
@@ -30,7 +29,6 @@ const WIDGET_LIBRARY: AdminWidget[] = [
 ];
 
 export default function AdminPage() {
-  const router = useRouter();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizeMode, setCustomizeMode] = useState(false);
