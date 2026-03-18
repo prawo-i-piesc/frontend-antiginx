@@ -57,7 +57,7 @@ export default function AdminPage() {
 
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName, setProfileName } = useProfile(token);
+  const { profileName } = useProfile(token);
 
   // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
