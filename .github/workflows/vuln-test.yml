@@ -31,7 +31,7 @@ jobs:
         - name: 📘 Node -- Set up
           uses: actions/setup-node@v3
           with:
-            node-version-file: 'package.json'
+            node-version: '22'
             cache: npm
 
         - name: 🐳 Docker -- Set up
