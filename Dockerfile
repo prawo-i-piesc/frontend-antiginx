@@ -8,7 +8,7 @@ COPY package.json ./
 COPY package-lock.json ./
 
 # Download the Node.js dependencies
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
 # Copy the rest of the application code
 COPY . .
@@ -19,6 +19,9 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 
 # Build
 RUN npm run build
+
+# Remove development dependencies to reduce image size
+RUN npm prune --production
 
 # Final stage: a minimal image to run the application
 FROM node:25-alpine AS runner
@@ -39,8 +42,8 @@ COPY --from=build --chown=appuser:appgroup /app/public ./public
 COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
 COPY --from=build --chown=appuser:appgroup /app/package-lock.json ./package-lock.json
 
-# Install only production dependencies
-RUN npm install --only=production --legacy-peer-deps
+# Copy node_modules from the build stage to the runner stage with correct ownership  
+COPY --from=build --chown=appuser:appgroup /app/node_modules ./node_modules
 
 # Change ownership of node_modules to appuser
 RUN chown -R appuser:appgroup /app
