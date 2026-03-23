@@ -8,7 +8,9 @@ COPY package.json ./
 COPY package-lock.json ./
 
 # Update npm to the latest version
-RUN npm install -g npm@latest
+RUN npm install -g npm@latest \
+    tar@7.5.11 \
+    minimatch@10.2.3
 
 # Download the Node.js dependencies
 RUN npm ci --legacy-peer-deps
