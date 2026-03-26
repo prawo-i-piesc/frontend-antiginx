@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { getMe } from '@/app/lib/api';
+import { useEffect, useState } from "react";
+import { getMe } from "@/app/lib/api";
 
 export function useProfile(token?: string | null | undefined) {
   const [profileName, setProfileName] = useState<string | null>(null);
@@ -9,8 +9,13 @@ export function useProfile(token?: string | null | undefined) {
   useEffect(() => {
     let mounted = true;
     if (!token) {
-      setProfileName(null);
-      return () => { mounted = false; };
+      // clear profile asynchronously to avoid sync setState inside effect
+      Promise.resolve().then(() => {
+        if (mounted) setProfileName(null);
+      });
+      return () => {
+        mounted = false;
+      };
     }
 
     (async () => {
@@ -22,7 +27,9 @@ export function useProfile(token?: string | null | undefined) {
       }
     })();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [token]);
 
   return { profileName, setProfileName };

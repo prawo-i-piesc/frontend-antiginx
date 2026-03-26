@@ -51,9 +51,12 @@ export default function DashboardPage() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [selectedWidgetIndex, setSelectedWidgetIndex] = useState<number | null>(null);
+  const [blockBodyScroll, setBlockBodyScroll] = useState(false);
+  const [dragOffsetState, setDragOffsetState] = useState({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
   const draggedIndexRef = useRef<number | null>(null);
   const hoverIndexRef = useRef<number | null>(null);
+  const nextWidgetId = useRef(0);
   // auth initialization and redirect logic moved to hooks
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
@@ -68,14 +71,30 @@ export default function DashboardPage() {
     }
     return activeWidgets;
   }, [activeWidgets, draggedIndex, hoverIndex]);
+  const availableWidgets = WIDGET_LIBRARY.filter(
+    widget => !activeWidgets.find(aw => aw.type === widget.type)
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (blockBodyScroll) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    return () => {
+      if (typeof document === 'undefined') return;
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [blockBodyScroll]);
 
   // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
   if (!token) return null;
-
-  const availableWidgets = WIDGET_LIBRARY.filter(
-    widget => !activeWidgets.find(aw => aw.type === widget.type)
-  );
 
 
   function handleMouseDown(e: React.MouseEvent, widget: DashboardWidget, index: number) {
@@ -89,6 +108,7 @@ export default function DashboardPage() {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
+    setDragOffsetState({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     
     setDraggedWidget(widget);
     setDraggedIndex(index);
@@ -135,15 +155,15 @@ export default function DashboardPage() {
       x: touch.clientX - rect.left,
       y: touch.clientY - rect.top,
     };
+    setDragOffsetState({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
     
     setDraggedWidget(widget);
     setDraggedIndex(index);
     draggedIndexRef.current = index;
     setMousePos({ x: touch.clientX, y: touch.clientY });
     
-    // Prevent body scrolling during drag
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
+    // Prevent body scrolling during drag via effect
+    setBlockBodyScroll(true);
     
     const handleTouchMoveLocal = (e: TouchEvent) => {
       e.preventDefault();
@@ -176,9 +196,8 @@ export default function DashboardPage() {
       draggedIndexRef.current = null;
       hoverIndexRef.current = null;
       
-      // Restore body scrolling
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      // Restore body scrolling via effect
+      setBlockBodyScroll(false);
       
       document.removeEventListener('touchmove', handleTouchMoveLocal);
       document.removeEventListener('touchend', handleTouchEndLocal);
@@ -252,7 +271,8 @@ export default function DashboardPage() {
   }
 
   function addWidget(widget: DashboardWidget) {
-    const newWidget = { ...widget, id: `${widget.type}-${Date.now()}` };
+    const id = `${widget.type}-${nextWidgetId.current++}`;
+    const newWidget = { ...widget, id };
     setActiveWidgets([...activeWidgets, newWidget]);
   }
 
@@ -475,7 +495,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-4 relative" style={{ transition: 'all 0.3s ease-out' }}>
               {displayWidgets.map((widget, index) => {
-                const isDragging = draggedIndexRef.current === activeWidgets.indexOf(widget);
+                const isDragging = draggedIndex === activeWidgets.indexOf(widget);
                 const sizeClasses = {
                   "1x1": "",
                   "2x1": "col-span-2",
@@ -536,8 +556,8 @@ export default function DashboardPage() {
                 <div
                   className="fixed pointer-events-none z-50 opacity-80"
                   style={{
-                    left: mousePos.x - dragOffset.current.x,
-                    top: mousePos.y - dragOffset.current.y,
+                    left: mousePos.x - dragOffsetState.x,
+                    top: mousePos.y - dragOffsetState.y,
                     width: draggedWidget.size.includes('2x') 
                       ? 'min(616px, calc(100vw - 2rem))' 
                       : 'min(300px, calc(50vw - 1rem))',

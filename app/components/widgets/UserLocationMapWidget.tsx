@@ -17,14 +17,9 @@ const DEMO_DATA: UserLocation[] = [
 ];
 
 export default function UserLocationMapWidget() {
-  const [locations, setLocations] = useState<UserLocation[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // For now, just use demo data
-    setLocations(DEMO_DATA);
-    setLoading(false);
-  }, []);
+  // initialize with demo data synchronously to avoid setState in mount effect
+  const [locations] = useState<UserLocation[]>(DEMO_DATA);
+  const [loading] = useState(false);
 
   const maxUsers = Math.max(...locations.map((l) => l.count), 1);
 
@@ -75,7 +70,7 @@ export default function UserLocationMapWidget() {
                     {/* Progress bar */}
                     <div className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-blue-500/50"
+                        className="h-full bg-linear-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-blue-500/50"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>

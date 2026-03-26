@@ -21,44 +21,56 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null | undefined>(undefined);
+  const [token, setToken] = useState<string | null | undefined>(() => {
+    if (typeof window === 'undefined') return undefined;
+    try {
+      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
+      return stored ? stored : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [user, setUser] = useState<UserProfile | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
-      if (stored) {
-        setToken(stored);
-        // validate and fetch user
-        try {
-          getMe(stored).then((u) => setUser(u)).catch(() => {
-            setToken(null);
-            setUser(null);
-            try { localStorage.removeItem('auth.token'); } catch (e) {}
-            try { sessionStorage.removeItem('auth.token'); } catch (e) {}
-          });
-        } catch (e) {
-          setToken(null);
-          setUser(null);
-        }
-      } else setToken(null);
-    } catch (e) {
-      setToken(null);
-      setUser(null);
+    let mounted = true;
+    if (!token) {
+      // ensure user is cleared when there's no token
+      // schedule asynchronously to avoid synchronous setState inside effect
+      Promise.resolve().then(() => {
+        if (mounted) setUser(null);
+      });
+      return () => { mounted = false; };
     }
-  }, []);
+
+    // validate and fetch user asynchronously
+    getMe(token)
+      .then((u) => {
+        if (!mounted) return;
+        setUser(u);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setUser(null);
+        setToken(null);
+        try { localStorage.removeItem('auth.token'); } catch {}
+        try { sessionStorage.removeItem('auth.token'); } catch {}
+      });
+
+    return () => { mounted = false; };
+  }, [token]);
 
   const login = async (t: string, remember: boolean = true) => {
     setToken(t);
     try {
       if (remember) {
-        try { localStorage.setItem('auth.token', t); } catch (e) {}
-        try { sessionStorage.removeItem('auth.token'); } catch (e) {}
+        try { localStorage.setItem('auth.token', t); } catch {}
+        try { sessionStorage.removeItem('auth.token'); } catch {}
       } else {
-        try { sessionStorage.setItem('auth.token', t); } catch (e) {}
-        try { localStorage.removeItem('auth.token'); } catch (e) {}
+        try { sessionStorage.setItem('auth.token', t); } catch {}
+        try { localStorage.removeItem('auth.token'); } catch {}
       }
     } catch (e) {
       // ignore storage errors
@@ -71,8 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // invalid token -> clear
       setToken(null);
       setUser(null);
-      try { localStorage.removeItem('auth.token'); } catch (err) {}
-      try { sessionStorage.removeItem('auth.token'); } catch (err) {}
+      try { localStorage.removeItem('auth.token'); } catch {}
+      try { sessionStorage.removeItem('auth.token'); } catch {}
       throw e;
     }
   };
@@ -80,10 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
-    try { localStorage.removeItem('auth.token'); } catch (e) {}
-    try { sessionStorage.removeItem('auth.token'); } catch (e) {}
+    try { localStorage.removeItem('auth.token'); } catch {}
+    try { sessionStorage.removeItem('auth.token'); } catch {}
     // redirect to login
-    try { router.replace('/login'); } catch (e) {}
+    try { router.replace('/login'); } catch {}
   };
 
   return (

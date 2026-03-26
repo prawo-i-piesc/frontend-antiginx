@@ -16,26 +16,28 @@ export function ThemeProvider({
 }: { 
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    try {
+      const saved = localStorage.getItem('theme') as Theme | null;
+      return saved || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // keep document class and storage in sync when theme changes
   useEffect(() => {
-    // Load theme from localStorage on mount
     if (typeof window === 'undefined') return;
-    
     try {
-      const savedTheme = localStorage.getItem("theme") as Theme;
-      if (savedTheme) {
-        setTheme(savedTheme);
-        document.documentElement.className = savedTheme;
-      } else {
-        // Set dark as default theme
-        localStorage.setItem("theme", "dark");
-      }
+      document.documentElement.className = theme;
+      localStorage.setItem('theme', theme);
     } catch (error) {
-      console.warn('Failed to access localStorage:', error);
+      // ignore storage errors
     }
-  }, []);
+  }, [theme]);
 
   const toggleTheme = (event?: React.MouseEvent) => {
     if (isAnimating || typeof window === 'undefined') return;
@@ -55,13 +57,15 @@ export function ThemeProvider({
     setIsAnimating(true);
     
     // Use View Transition API if available
-    if ((document as any).startViewTransition) {
-      const transition = (document as any).startViewTransition(() => {
+    type ViewTransition = { ready: Promise<void>; finished: Promise<void> };
+    const docWithVT = (document as unknown) as { startViewTransition?: (cb: () => void) => ViewTransition };
+    if (docWithVT.startViewTransition) {
+      const transition = docWithVT.startViewTransition(() => {
         setTheme(newTheme);
-        localStorage.setItem("theme", newTheme);
+        try { localStorage.setItem("theme", newTheme); } catch {}
         document.documentElement.className = newTheme;
       });
-      
+
       transition.ready.then(() => {
         // Animate with custom clip-path
         document.documentElement.animate(
@@ -78,7 +82,7 @@ export function ThemeProvider({
           }
         );
       });
-      
+
       transition.finished.then(() => {
         setIsAnimating(false);
       });
