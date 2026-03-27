@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import React from "react";
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
@@ -49,18 +49,35 @@ export default function AdminPage() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [selectedWidgetIndex, setSelectedWidgetIndex] = useState<number | null>(null);
+  const [blockBodyScroll, setBlockBodyScroll] = useState(false);
+  const [dragOffsetState, setDragOffsetState] = useState({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
   const draggedIndexRef = useRef<number | null>(null);
   const hoverIndexRef = useRef<number | null>(null);
+  const nextWidgetId = useRef(0);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (blockBodyScroll) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    return () => {
+      if (typeof document === 'undefined') return;
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [blockBodyScroll]);
 
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile(token);
 
-  // preserve original render behaviour while keeping hook order stable
-  if (!initialized) return null;
-  if (!token) return null;
-
+  // keep hook order stable: call memo before any early returns
   const displayWidgets = useMemo(() => {
     if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
       const widgets = [...activeWidgets];
@@ -70,6 +87,10 @@ export default function AdminPage() {
     }
     return activeWidgets;
   }, [activeWidgets, draggedIndex, hoverIndex]);
+
+  // preserve original render behaviour while keeping hook order stable
+  if (!initialized) return null;
+  if (!token) return null;
 
   const availableWidgets = WIDGET_LIBRARY.filter(
     widget => !activeWidgets.find(aw => aw.type === widget.type)
@@ -86,6 +107,7 @@ export default function AdminPage() {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
+    setDragOffsetState({ x: e.clientX - rect.left, y: e.clientY - rect.top });
 
     setDraggedWidget(widget);
     setDraggedIndex(index);
@@ -130,14 +152,15 @@ export default function AdminPage() {
       x: touch.clientX - rect.left,
       y: touch.clientY - rect.top,
     };
+    setDragOffsetState({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
 
     setDraggedWidget(widget);
     setDraggedIndex(index);
     draggedIndexRef.current = index;
     setMousePos({ x: touch.clientX, y: touch.clientY });
 
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
+    // avoid modifying globals during handlers directly — toggle via effect
+    setBlockBodyScroll(true);
 
     const handleTouchMoveLocal = (e: TouchEvent) => {
       e.preventDefault();
@@ -169,8 +192,7 @@ export default function AdminPage() {
       draggedIndexRef.current = null;
       hoverIndexRef.current = null;
 
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      setBlockBodyScroll(false);
 
       document.removeEventListener('touchmove', handleTouchMoveLocal);
       document.removeEventListener('touchend', handleTouchEndLocal);
@@ -240,7 +262,8 @@ export default function AdminPage() {
   }
 
   function addWidget(widget: AdminWidget) {
-    const newWidget = { ...widget, id: `${widget.type}-${Date.now()}` };
+    const id = `${widget.type}-${nextWidgetId.current++}`;
+    const newWidget = { ...widget, id };
     setActiveWidgets([...activeWidgets, newWidget]);
   }
 
@@ -453,7 +476,7 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-4 relative" style={{ transition: 'all 0.3s ease-out' }}>
               {displayWidgets.map((widget, index) => {
-                const isDragging = draggedIndexRef.current === activeWidgets.indexOf(widget);
+                const isDragging = draggedIndex === activeWidgets.indexOf(widget);
                 const sizeClasses = {
                   "1x1": "",
                   "2x1": "col-span-2",
@@ -512,8 +535,8 @@ export default function AdminPage() {
                 <div
                   className="fixed pointer-events-none z-50 opacity-80"
                   style={{
-                    left: mousePos.x - dragOffset.current.x,
-                    top: mousePos.y - dragOffset.current.y,
+                    left: mousePos.x - dragOffsetState.x,
+                    top: mousePos.y - dragOffsetState.y,
                     width: draggedWidget.size.includes('2x')
                       ? 'min(616px, calc(100vw - 2rem))'
                       : 'min(300px, calc(50vw - 1rem))',
