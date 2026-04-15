@@ -16,17 +16,22 @@ export function ThemeProvider({
 }: { 
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    try {
-      const saved = localStorage.getItem('theme') as Theme | null;
-      return saved || 'dark';
-    } catch {
-      return 'dark';
-    }
-  });
+  // Keep first server/client render identical; hydrate preferred theme in an effect.
+  const [theme, setTheme] = useState<Theme>('dark');
 
   const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('theme') as Theme | null;
+      if (saved) {
+        setTheme(saved);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   // keep document class and storage in sync when theme changes
   useEffect(() => {

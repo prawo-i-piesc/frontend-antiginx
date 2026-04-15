@@ -21,18 +21,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null | undefined>(() => {
-    if (typeof window === 'undefined') return undefined;
-    try {
-      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
-      return stored ? stored : null;
-    } catch {
-      return null;
-    }
-  });
+  // Keep initial server/client render identical; hydrate token from storage after mount.
+  const [token, setToken] = useState<string | null | undefined>(undefined);
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
+      setToken(stored ? stored : null);
+    } catch {
+      setToken(null);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
