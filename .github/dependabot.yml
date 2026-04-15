@@ -35,39 +35,3 @@ updates:
       prefix: 'deps: '
 
     open-pull-requests-limit: 3
-
-
-  - package-ecosystem: 'npm'
-    directory: '/'
-
-    schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '19:00'
-      timezone: 'Europe/Warsaw'
-
-    commit-message:
-      prefix: 'deps: '
-
-    open-pull-requests-limit: 5
-
-    groups:
-      react-ecosystem:
-        patterns:
-          - "react*"
-          - "next*"
-
-      types:
-        patterns:
-          - "@types/*"
-
-      dev-tools:
-        patterns:
-          - "eslint*"
-          - "prettier*"
-
-    ignore:
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "next"
-        update-types: ["version-update:semver-major"]
