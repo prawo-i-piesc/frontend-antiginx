@@ -19,7 +19,7 @@ export default function HomePage() {
     setScanResult,
     setScanError,
     setIsModalOpen
-  } = useScanModal();
+  } = useScanModal({ mode: "free" });
 
   // Debug helpers (only in development)
   useDebugModals({ setScanResult, setScanError, setIsModalOpen });

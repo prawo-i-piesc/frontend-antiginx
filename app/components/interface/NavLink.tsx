@@ -12,12 +12,10 @@ export default function NavLink({ href, icon, label, isActive = false }: NavLink
     return (
       <Link
         href={href}
-        className="group relative flex items-center gap-3.5 rounded-l py-3 px-4 text-sm font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/30 overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md"
+        className="group flex items-center gap-3 rounded-lg py-2.5 px-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-200/70 dark:bg-zinc-800/70 border border-zinc-300/70 dark:border-zinc-700/70 transition-colors"
       >
-        <div className="absolute inset-0 bg-linear-to-r from-cyan-500/5 to-transparent dark:from-cyan-400/5 pointer-events-none"></div>
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-linear-to-b from-cyan-500 to-cyan-600 dark:from-cyan-400 dark:to-cyan-500"></div>
-        <i className={`${icon} text-lg relative z-10 drop-shadow-sm`}></i>
-        <span className="relative z-10">{label}</span>
+        <i className={`${icon} text-base text-zinc-700 dark:text-zinc-300`}></i>
+        <span>{label}</span>
       </Link>
     );
   }
@@ -25,11 +23,10 @@ export default function NavLink({ href, icon, label, isActive = false }: NavLink
   return (
     <Link
       href={href}
-      className="group relative flex items-center gap-3.5 rounded-l py-3 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/40 transition-all duration-300 hover:pl-5 overflow-hidden"
+      className="group flex items-center gap-3 rounded-lg py-2.5 px-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/90 dark:hover:bg-zinc-800/40 border border-transparent transition-colors"
     >
-      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-linear-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-      <i className={`${icon} text-lg transition-transform group-hover:scale-110 duration-300`}></i>
-      <span className="transition-all duration-300 relative z-10">{label}</span>
+      <i className={`${icon} text-base`}></i>
+      <span>{label}</span>
     </Link>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ScanResponse } from '@/app/lib/api';
+import { getCompletedScanResults, ScanResponse } from '@/app/lib/api';
 import { downloadScanReport } from '@/app/lib/report';
 import ScanResultItem from './ScanResultItem';
 
@@ -17,7 +17,10 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
     downloadScanReport(scanResult as any);
   };
 
-  const sortedResults = [...scanResult.results].sort((a, b) => {
+  const completedResults = getCompletedScanResults(scanResult.results || []);
+
+
+  const sortedResults = [...completedResults].sort((a, b) => {
     const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'INFO': 4 };
     const aOrder = severityOrder[a.severity.toUpperCase() as keyof typeof severityOrder] ?? 5;
     const bOrder = severityOrder[b.severity.toUpperCase() as keyof typeof severityOrder] ?? 5;
@@ -30,7 +33,7 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
       onClick={onClose}
     >
       <div 
-        className="bg-black/60 backdrop-blur-xl rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/30 max-w-2xl w-full max-h-[85vh] overflow-hidden"
+        className="bg-black/60 backdrop-blur-xl rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/30 max-w-2xl w-full  overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -66,8 +69,8 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
         </div>
         
         {/* Modal Content */}
-        <div className="p-4 overflow-y-auto max-h-[calc(85vh-120px)]">
-          {scanResult.results.length === 0 ? (
+        <div className="p-4 overflow-y-auto scrollbar-hidden max-h-[calc(85vh-120px)]">
+          {sortedResults.length === 0 ? (
             <div className="text-center py-8">
               <div className="inline-flex items-center justify-center w-12 h-12 mb-2">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
@@ -87,12 +90,12 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
         {/* Modal Footer */}
         <div className="px-5 py-3 border-t border-zinc-800/50 flex items-center justify-between">
           <div className="text-xs text-zinc-400 hidden lg:flex items-center gap-3">
-            {scanResult.results.length > 0 && (
-              <span>{scanResult.results.length} test{scanResult.results.length !== 1 ? 's' : ''} completed</span>
+            {sortedResults.length > 0 && (
+              <span>{sortedResults.length} test{sortedResults.length !== 1 ? 's' : ''} completed</span>
             )}
           </div>
           <div className="flex items-center gap-2.5 ml-auto">
-            {scanResult.results.length > 0 && (
+            {sortedResults.length > 0 && (
               <button 
                 onClick={handleExport}
                 className="px-3.5 py-1.5 bg-cyan-600/20 text-cyan-300 rounded-lg hover:bg-cyan-600/30 transition-all font-medium text-xs border border-cyan-500/30 cursor-pointer flex items-center gap-1.5"

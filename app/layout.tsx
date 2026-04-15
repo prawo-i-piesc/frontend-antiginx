@@ -33,19 +33,6 @@ export default function RootLayout({
         {/* Remix Icon stylesheet (CDN) - enables classes like ri-*/}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        {/* Prevent flash - runs synchronously before render */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const theme = localStorage.getItem('theme') || 'dark';
-                  document.documentElement.className = theme;
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -64,3 +64,14 @@ html {
 .animate-shimmer {
   animation: shimmer 3s ease-in-out infinite;
 }
+
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

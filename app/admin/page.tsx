@@ -362,6 +362,28 @@ export default function AdminPage() {
             </ul>
           </div>
         </nav>
+
+        <div className="px-4 py-4 border-t border-zinc-200/60 dark:border-zinc-800/40 bg-white/90 dark:bg-zinc-950/80">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                  {profileName ? profileName.split(' ')[0] + " " + (profileName.split(' ')[1] ? profileName.split(' ')[1][0] + "." : '') : 'Admin'}
+                </div>
+                <div className="text-xs text-cyan-500 dark:text-cyan-400 font-medium">Administrator</div>
+              </div>
+            </div>
+            <button
+              onClick={() => auth.logout()}
+              aria-label="Logout"
+              title="Logout"
+              className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-200 hover:text-red-500 dark:hover:text-red-400 hover:border-red-500/40 transition-colors"
+            >
+              <i className="ri-logout-box-line text-base" />
+              <span className="text-xs font-medium">Logout</span>
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content Wrapper */}
@@ -409,35 +431,6 @@ export default function AdminPage() {
                   <i className="ri-sun-line text-zinc-600 group-hover:text-cyan-500 transition-colors text-lg"></i>
                 )}
               </button>
-
-
-              {/* User + Logout */}
-              <div className="flex items-center gap-3 pl-3 pr-4 py-2 transition-all group">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-9 h-9 bg-linear-to-br from-cyan-600 to-cyan-700 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{(profileName || 'A').split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase()}</span>
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-cyan-500 rounded-full border-2 border-white dark:border-zinc-950 flex items-center justify-center">
-                      <i className="ri-shield-fill text-white" style={{ fontSize: '7px' }}></i>
-                    </span>
-                  </div>
-
-                  <div className="hidden sm:block text-left">
-                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors">{profileName ? profileName.split(' ')[0] + " " + (profileName.split(' ')[1] ? profileName.split(' ')[1][0] + "." : '') : 'Admin'}</div>
-                    <div className="text-xs text-cyan-500 dark:text-cyan-400 font-medium">Administrator</div>
-                  </div>
-
-                  <button
-                    onClick={() => auth.logout()}
-                    aria-label="Logout"
-                    title="Logout"
-                    className="flex items-center justify-center transition-colors text-zinc-600 dark:text-zinc-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer"
-                  >
-                    <i className="ri-logout-box-line text-lg" />
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </header>
