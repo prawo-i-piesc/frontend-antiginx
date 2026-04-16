@@ -9,22 +9,15 @@ import DashboardSidebar from "@/app/components/layout/DashboardSidebar";
 import ScanResultModal from "@/app/components/ScanResultModal";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
 import { useScanModal } from "@/app/hooks/useScanModal";
-import { ApiRequestError, calculateThreatLevel, getUserScans, UserScanResponse } from "@/app/lib/api";
+import {
+  ApiRequestError,
+  calculateThreatLevel,
+  getPremiumScanConfig,
+  getUserScans,
+  ScanTestOption,
+  UserScanResponse,
+} from "@/app/lib/api";
 import { downloadScanReport } from "@/app/lib/report";
-
-const TEST_OPTIONS = [
-  { id: "https", label: "HTTPS" },
-  { id: "hsts", label: "HSTS" },
-  { id: "serv-h-a", label: "Server Header" },
-  { id: "csp", label: "Content Security Policy" },
-  { id: "cookie-sec", label: "Cookie Security" },
-  { id: "js-obf", label: "JavaScript Obfuscation" },
-  { id: "xframe", label: "X-Frame-Options" },
-  { id: "permissions-policy", label: "Permissions Policy" },
-  { id: "x-content-type-options", label: "X-Content-Type-Options" },
-  { id: "referrer-policy", label: "Referrer Policy" },
-  { id: "cross-origin-x", label: "Cross-Origin" },
-] as const;
 
 type ScanRow = {
   id: string;
@@ -82,11 +75,18 @@ export default function DashboardScannerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "safe" | "warning" | "danger">("all");
   const [url, setUrl] = useState("");
-  const [selectedTests, setSelectedTests] = useState<string[]>(TEST_OPTIONS.map((t) => t.id));
+  const [testOptions, setTestOptions] = useState<ScanTestOption[]>([]);
+  const [selectedTests, setSelectedTests] = useState<string[]>([]);
+  const [authorizedTester, setAuthorizedTester] = useState(false);
+  const [authorizationCopy, setAuthorizationCopy] = useState(
+    "I confirm that I am authorized to test this domain with antiginx antibot scanner, and that I have obtained all necessary permissions to perform security testing on the target website.",
+  );
+  const [testsLoading, setTestsLoading] = useState(false);
   const [userScans, setUserScans] = useState<UserScanResponse[]>([]);
   const [scanRows, setScanRows] = useState<ScanRow[]>([]);
   const [isLoadingScans, setIsLoadingScans] = useState(false);
   const [scanListError, setScanListError] = useState<string | null>(null);
+  const [testsError, setTestsError] = useState<string | null>(null);
 
   const { theme, toggleTheme } = useTheme();
   const { token, initialized, auth: authFromHook } = useRequireAuth();
@@ -146,6 +146,43 @@ export default function DashboardScannerPage() {
     };
   }, [token, scanResult?.id]);
 
+  useEffect(() => {
+    if (!token) return;
+
+    let active = true;
+    const loadTestConfig = async () => {
+      setTestsLoading(true);
+      setTestsError(null);
+
+      try {
+        const config = await getPremiumScanConfig(token);
+        if (!active) return;
+
+        const options = Array.isArray(config.tests) ? config.tests : [];
+        setTestOptions(options);
+        setSelectedTests(options.map((test) => test.id));
+      } catch (error) {
+        if (!active) return;
+
+        if (error instanceof ApiRequestError) {
+          setTestsError(error.message);
+        } else if (error instanceof Error) {
+          setTestsError(error.message);
+        } else {
+          setTestsError("Failed to load available tests");
+        }
+      } finally {
+        if (active) setTestsLoading(false);
+      }
+    };
+
+    loadTestConfig();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
   const filteredScans = useMemo(() => {
     return scanRows.filter((row) => {
       const matchesText = row.url.toLowerCase().includes(searchQuery.toLowerCase());
@@ -169,7 +206,10 @@ export default function DashboardScannerPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (selectedTests.length === 0) return;
-    await handleScan(url.trim(), selectedTests);
+
+    await handleScan(url.trim(), selectedTests, {
+      authorizedTester,
+    });
   }
 
   function threatBarColor(level: number) {
@@ -304,7 +344,11 @@ export default function DashboardScannerPage() {
                   <div className="flex items-end">
                     <button
                       type="submit"
-                      disabled={isScanning || selectedTests.length === 0}
+                      disabled={
+                        isScanning ||
+                        testsLoading ||
+                        selectedTests.length === 0
+                      }
                       className="h-12 px-5 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-500/60 transition-all whitespace-nowrap cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                     >
                       {isScanning ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-play-circle-line" />}
@@ -315,8 +359,11 @@ export default function DashboardScannerPage() {
 
                 <div>
                   <label className="block text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider mb-2">Test scope</label>
+                  {testsError ? (
+                    <p className="mb-3 text-sm text-rose-500">{testsError}</p>
+                  ) : null}
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5">
-                    {TEST_OPTIONS.map((test) => (
+                    {testOptions.map((test) => (
                       <label
                         key={test.id}
                         className={`rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition-all ${
@@ -331,13 +378,28 @@ export default function DashboardScannerPage() {
                             checked={selectedTests.includes(test.id)}
                             onChange={() => toggleTest(test.id)}
                             className="h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
-                            disabled={isScanning}
+                            disabled={isScanning || testsLoading}
                           />
                           <span className="font-medium">{test.label}</span>
                         </div>
                       </label>
                     ))}
                   </div>
+                </div>
+
+                <div className="mt-5 px-4 py-3">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={authorizedTester}
+                      onChange={(e) => setAuthorizedTester(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
+                      disabled={isScanning}
+                    />
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                      {authorizationCopy}
+                    </span>
+                  </label>
                 </div>
               </form>
             )}

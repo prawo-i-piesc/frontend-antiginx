@@ -74,6 +74,16 @@ export interface UserScanResponse extends ScanResponse {
 export interface CreateScanRequest {
   target_url: string;
   tests?: string[];
+  authorized_tester?: boolean;
+}
+
+export interface ScanTestOption {
+  id: string;
+  label: string;
+}
+
+export interface PremiumScanConfigResponse {
+  tests: ScanTestOption[];
 }
 
 export interface CreateScanResponse {
@@ -86,6 +96,10 @@ export type ScanAccessMode = "free" | "premium";
 export interface ScanRequestOptions {
   mode?: ScanAccessMode;
   token?: string | null;
+}
+
+export interface PremiumScanCompliance {
+  authorizedTester: boolean;
 }
 
 export class ApiRequestError extends Error {
@@ -129,12 +143,16 @@ async function readErrorMessage(
 export async function createScan(
   targetUrl: string,
   tests?: string[],
+  compliance?: PremiumScanCompliance,
   options?: ScanRequestOptions,
 ): Promise<CreateScanResponse> {
   const mode = options?.mode ?? "free";
   const payload: CreateScanRequest = { target_url: targetUrl };
   if (tests && tests.length > 0) {
     payload.tests = tests;
+  }
+  if (mode === "premium" && compliance) {
+    payload.authorized_tester = compliance.authorizedTester;
   }
 
   let response: Response;
@@ -165,6 +183,74 @@ export async function createScan(
   }
 
   return response.json();
+}
+
+export async function getPremiumScanConfig(
+  token: string,
+): Promise<PremiumScanConfigResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}/api/utils/tests`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeader(token),
+      },
+    });
+  } catch (error) {
+    throw new ApiRequestError("Cannot connect to scanner service", {
+      code: "NETWORK_ERROR",
+      cause: error,
+    });
+  }
+
+  if (!response.ok) {
+    throw new ApiRequestError(
+      await readErrorMessage(
+        response,
+        "Failed to fetch scan test configuration",
+      ),
+      {
+        status: response.status,
+        code: `HTTP_${response.status}`,
+      },
+    );
+  }
+
+  const payload = (await response.json()) as {
+    available_tests?: unknown;
+    tests?: unknown;
+  };
+
+  const source = Array.isArray(payload.available_tests)
+    ? payload.available_tests
+    : Array.isArray(payload.tests)
+      ? payload.tests
+      : [];
+
+  const tests = source
+    .filter((item): item is string => typeof item === "string")
+    .map((id) => ({ id, label: humanizeTestId(id) }));
+
+  return { tests };
+}
+
+function humanizeTestId(id: string): string {
+  const names: Record<string, string> = {
+    https: "HTTPS",
+    hsts: "HSTS",
+    "serv-h-a": "Server Header",
+    csp: "Content Security Policy",
+    "cookie-sec": "Cookie Security",
+    "js-obf": "JavaScript Obfuscation",
+    xframe: "X-Frame-Options",
+    "permissions-policy": "Permissions Policy",
+    "x-content-type-options": "X-Content-Type-Options",
+    "referrer-policy": "Referrer Policy",
+    "cross-origin-x": "Cross-Origin",
+  };
+
+  return names[id] ?? id;
 }
 
 export async function getScan(
