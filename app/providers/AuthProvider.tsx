@@ -42,8 +42,8 @@ function writeAuthCookie(token: string | null, remember: boolean = true): void {
     return;
   }
 
-  const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
-  document.cookie = `auth.token=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+  const persistence = remember ? `; Max-Age=${60 * 60 * 24 * 30}` : "";
+  document.cookie = `auth.token=${encodeURIComponent(token)}; Path=/${persistence}; SameSite=Lax${secure}`;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
