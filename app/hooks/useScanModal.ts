@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   ApiRequestError,
   createScan,
+  PremiumScanCompliance,
   ScanAccessMode,
   ScanResponse,
 } from "@/app/lib/api";
@@ -101,13 +102,17 @@ export function useScanModal(options?: UseScanModalOptions) {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isModalOpen]);
 
-  const handleScan = async (url: string, tests?: string[]) => {
+  const handleScan = async (
+    url: string,
+    tests?: string[],
+    compliance?: PremiumScanCompliance,
+  ) => {
     setIsScanning(true);
     setScanError(null);
     setScanResult(null);
 
     try {
-      const { scanId } = await createScan(url.trim(), tests, {
+      const { scanId } = await createScan(url.trim(), tests, compliance, {
         mode,
         token,
       });
