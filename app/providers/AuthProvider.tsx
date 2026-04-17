@@ -8,6 +8,7 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  role: "admin" | "user";
 }
 
 interface AuthContextType {
@@ -20,6 +21,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const encoded = encodeURIComponent(name) + "=";
+  const cookies = document.cookie ? document.cookie.split(";") : [];
+  for (const item of cookies) {
+    const trimmed = item.trim();
+    if (trimmed.startsWith(encoded)) {
+      return decodeURIComponent(trimmed.slice(encoded.length));
+    }
+  }
+  return null;
+}
+
+function writeAuthCookie(token: string | null, remember: boolean = true): void {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  if (!token) {
+    document.cookie = `auth.token=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+    return;
+  }
+
+  const persistence = remember ? `; Max-Age=${60 * 60 * 24 * 30}` : "";
+  document.cookie = `auth.token=${encodeURIComponent(token)}; Path=/${persistence}; SameSite=Lax${secure}`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Keep initial server/client render identical; hydrate token from storage after mount.
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -30,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token');
+      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token') || readCookie('auth.token');
       setToken(stored ? stored : null);
     } catch {
       setToken(null);
@@ -60,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(null);
         try { localStorage.removeItem('auth.token'); } catch {}
         try { sessionStorage.removeItem('auth.token'); } catch {}
+        writeAuthCookie(null);
       });
 
     return () => { mounted = false; };
@@ -75,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try { sessionStorage.setItem('auth.token', t); } catch {}
         try { localStorage.removeItem('auth.token'); } catch {}
       }
+      writeAuthCookie(t, remember);
     } catch (e) {
       // ignore storage errors
     }
@@ -88,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       try { localStorage.removeItem('auth.token'); } catch {}
       try { sessionStorage.removeItem('auth.token'); } catch {}
+      writeAuthCookie(null);
       throw e;
     }
   };
@@ -97,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     try { localStorage.removeItem('auth.token'); } catch {}
     try { sessionStorage.removeItem('auth.token'); } catch {}
+    writeAuthCookie(null);
     // redirect to login
     try { router.replace('/login'); } catch {}
   };
