@@ -1,4 +1,5 @@
 # Variables
+ARG NPM_VERSION=10.9.6
 ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
 
 ARG USERNAME=antiginx_user
@@ -53,6 +54,7 @@ RUN npm prune --production
 # STAGE: Final image to run the application
 FROM base AS runner
 
+ARG NPM_VERSION
 ARG USERNAME
 ARG GROUPNAME
 ARG USER_UID
@@ -63,7 +65,8 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 RUN apk --no-cache upgrade && \
-    apk --no-cache add ca-certificates
+    apk --no-cache add ca-certificates && \
+    npm install -g npm@${NPM_VERSION}
 
 RUN addgroup -g ${USER_GID} -S ${GROUPNAME}
 RUN adduser -u ${USER_UID} -S ${USERNAME} -G ${GROUPNAME}
