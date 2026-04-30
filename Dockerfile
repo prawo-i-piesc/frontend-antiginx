@@ -25,10 +25,10 @@ COPY package.json  ./
 COPY package-lock.json ./
 
 RUN \
-    if [ -f package-lock.json ] && [ -f package.json ]; then \
-        npm ci; \
-    else \
-        echo "No package.json or package-lock.json found" && exit 1; \
+    if [ -f package-lock.json ] && [ -f package.json ]; then          \
+        npm ci;                                                       \
+    else                                                              \
+        echo "No package.json or package-lock.json found" && exit 1;  \
     fi
 # ---
 
@@ -64,8 +64,8 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-RUN apk --no-cache upgrade && \
-    apk --no-cache add ca-certificates && \
+RUN apk --no-cache upgrade &&              \
+    apk --no-cache add ca-certificates &&  \
     npm install -g npm@${NPM_VERSION}
 
 RUN addgroup -g ${USER_GID} -S ${GROUPNAME}
@@ -80,7 +80,6 @@ USER ${USERNAME}
 
 EXPOSE 3000
 
-ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]

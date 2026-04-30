@@ -1,5 +1,5 @@
 # ------------------------------------------
-# 1. Dependencies
+# Dependencies
 # ------------------------------------------
 node_modules/
 .pnpm-store/
@@ -11,7 +11,7 @@ lerna-debug.log*
 
 
 # ------------------------------------------
-# 2. Next.js
+# Next.js
 # ------------------------------------------
 .next/
 out/
@@ -21,7 +21,7 @@ build/
 
 
 # ------------------------------------------
-# 3. Tests and testing output 
+# Tests and testing output 
 # ------------------------------------------
 coverage/
 .nyc_output/
@@ -43,7 +43,7 @@ playwright.config.*
 
 
 # ------------------------------------------
-# 4. Local development and editor files
+# Local development and editor files
 # ------------------------------------------
 .git/
 .gitignore
@@ -57,7 +57,7 @@ playwright.config.*
 
 
 # ------------------------------------------
-# 5. Environment variables
+# Environment variables
 # ------------------------------------------
 .env
 .env*.local
@@ -67,7 +67,7 @@ playwright.config.*
 
 
 # ------------------------------------------
-# 6. Docker configuration files
+# Docker configuration files
 # ------------------------------------------
 Dockerfile*
 .dockerignore
@@ -78,14 +78,14 @@ docker-compose*.yml
 
 
 # ------------------------------------------
-# 7. Documentation
+# Documentation
 # ------------------------------------------
 *.md
 docs/
 
 
 # ------------------------------------------
-# 8. CI/CD configuration files
+# CI/CD configuration files
 # ------------------------------------------
 .github/
 .gitlab-ci.yml
@@ -95,7 +95,7 @@ Jenkinsfile
 
 
 # ------------------------------------------
-# 9. Cache directories and temporary data
+# Cache directories and temporary data
 # ------------------------------------------
 .cache/
 .parcel-cache/
@@ -108,13 +108,13 @@ Jenkinsfile
 
 
 # ------------------------------------------
-# 10. TypeScript build metadata
+# TypeScript build metadata
 # ------------------------------------------
 *.tsbuildinfo
 
 
 # ------------------------------------------
-# 11. Sensitive or unnecessary configuration files
+# Sensitive or unnecessary configuration files
 # ------------------------------------------
 *.pem
 .editorconfig
@@ -130,7 +130,7 @@ stylelint.config.*
 *.iws
 
 # ------------------------------------------
-# 12. OS-specific junk
+# OS-specific junk
 # ------------------------------------------
 .DS_Store
 ._*
