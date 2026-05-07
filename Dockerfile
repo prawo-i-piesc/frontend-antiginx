@@ -1,55 +1,86 @@
-# Build stage: compile the application
-FROM node:25-alpine AS build
+# Variables
+ARG NPM_VERSION=11.13.0
+ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
+
+ARG USERNAME=antiginx_user
+ARG GROUPNAME=antiginx_group
+ARG USER_UID=1001
+ARG USER_GID=1001
+# ---
+
+
+# Base image for stages
+FROM node:25-alpine AS base
+# ---
+
+
+# STAGE: Install dependencies
+FROM base AS deps
+
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Copy the package files
-COPY package.json ./
+COPY package.json  ./
 COPY package-lock.json ./
 
-# Download the Node.js dependencies
-RUN npm ci --legacy-peer-deps
+RUN \
+    if [ -f package-lock.json ] && [ -f package.json ]; then          \
+        npm ci;                                                       \
+    else                                                              \
+        echo "No package.json or package-lock.json found" && exit 1;  \
+    fi
+# ---
 
-# Copy the rest of the application code
-COPY . .
 
-# Build argument for backend URL example
-ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
-ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+# STAGE: Build the application
+FROM base AS build
 
-# Build
-RUN npm run build
-
-# Remove development dependencies to reduce image size
-RUN npm prune --production
-
-# Final stage: a minimal image to run the application
-FROM node:25-alpine AS runner
-
-# Install ca-certificates
-RUN apk --no-cache upgrade && \
-    apk --no-cache add ca-certificates
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+ARG NEXT_PUBLIC_BACKEND_URL
 
 WORKDIR /app
 
-# Copy only the necessary files from the build stage with correct ownership
-COPY --from=build --chown=appuser:appgroup /app/.next ./.next
-COPY --from=build --chown=appuser:appgroup /app/public ./public
-COPY --from=build --chown=appuser:appgroup /app/package.json ./package.json
-COPY --from=build --chown=appuser:appgroup /app/package-lock.json ./package-lock.json
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy node_modules from the build stage to the runner stage with correct ownership  
-COPY --from=build --chown=appuser:appgroup /app/node_modules ./node_modules
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Change ownership of node_modules to appuser
-RUN chown -R appuser:appgroup /app
+RUN npm run build
+RUN npm prune --production
+# ---
 
-USER appuser
 
-# Expose the application port and start the application
+# STAGE: Final image to run the application
+FROM base AS runner
+
+ARG NPM_VERSION
+ARG USERNAME
+ARG GROUPNAME
+ARG USER_UID
+ARG USER_GID
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+RUN apk --no-cache upgrade &&              \
+    apk --no-cache add ca-certificates &&  \
+    npm install -g npm@${NPM_VERSION}
+
+RUN addgroup -g ${USER_GID} -S ${GROUPNAME}
+RUN adduser -u ${USER_UID} -S ${USERNAME} -G ${GROUPNAME}
+
+COPY --from=build --chown=${USERNAME}:${GROUPNAME} /app/public ./public
+
+COPY --from=build --chown=${USERNAME}:${GROUPNAME} /app/.next/standalone ./
+COPY --from=build --chown=${USERNAME}:${GROUPNAME} /app/.next/static ./.next/static
+
+USER ${USERNAME}
+
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
+# ---

@@ -1,152 +1,141 @@
-# {{{1 docker
-**/.classpath
-**/.dockerignore
-**/.env
-**/.git
-**/.gitignore
-**/.project
-**/.settings
-**/.toolstarget
-**/.vs
-**/.vscode
-**/*.*proj.user
-**/*.dbmdl
-**/*.jfm
-**/azds.yaml
-**/bin
-**/charts
-**/docker-compose*
-**/Dockerfile*
-**/node_modules
-**/npm-debug.log
-**/obj
-**/secrets.dev.yaml
-**/values.dev.yaml
-LICENSE
-README.md
-# }}}1
+# ------------------------------------------
+# Dependencies
+# ------------------------------------------
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-## {{{1 next.js
+
+# ------------------------------------------
+# Next.js
+# ------------------------------------------
 .next/
 out/
-build/
 dist/
-.vercel
-.turbo
-*.tsbuildinfo
-next-env.d.ts
-## }}}1
+build/
+.vercel/
 
-## {{{1 node/npm
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-.npm
-.yarn/
-.pnp.*
-yarn.lock
-pnpm-lock.yaml
-## }}}1
 
-## {{{1 typescript
-*.tsbuildinfo
-.tsbuildinfo
-tsconfig.tsbuildinfo
-## }}}1
-
-## {{{1 tailwind/postcss
-.postcssrc
-postcss.config.js.map
-## }}}1
-
-## {{{1 testing
+# ------------------------------------------
+# Tests and testing output 
+# ------------------------------------------
 coverage/
 .nyc_output/
-*.lcov
-test-results/
+__tests__/
+__mocks__/
+jest/
+cypress/
+cypress/screenshots/
+cypress/videos/
 playwright-report/
-## }}}1
+test-results/
+.vitest/
+vitest.config.*
+jest.config.*
+cypress.config.*
+playwright.config.*
+*.test.*
+*.spec.*
 
-## {{{1 logs
-logs/
+
+# ------------------------------------------
+# Local development and editor files
+# ------------------------------------------
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-## }}}1
 
-## {{{1 env files
+
+# ------------------------------------------
+# Environment variables
+# ------------------------------------------
 .env
-.env.*
-.env.local
-.env.development.local
-.env.test.local
+.env*.local
+.env.development
+.env.test
 .env.production.local
-## }}}1
 
-## {{{1 cache/temp
+
+# ------------------------------------------
+# Docker configuration files
+# ------------------------------------------
+Dockerfile*
+.dockerignore
+compose.yaml
+compose.yml
+docker-compose*.yaml
+docker-compose*.yml
+
+
+# ------------------------------------------
+# Documentation
+# ------------------------------------------
+*.md
+docs/
+
+
+# ------------------------------------------
+# CI/CD configuration files
+# ------------------------------------------
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+Jenkinsfile
+
+
+# ------------------------------------------
+# Cache directories and temporary data
+# ------------------------------------------
 .cache/
-.temp/
-.tmp/
-*.tmp
-*.temp
+.parcel-cache/
 .eslintcache
-## }}}1
+.stylelintcache
+.swc/
+.turbo/
+.tmp/
+.temp/
 
-# {{{1 go
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
 
-*.test
+# ------------------------------------------
+# TypeScript build metadata
+# ------------------------------------------
+*.tsbuildinfo
 
-*.out
-go.work
-# }}}1
 
-## {{{1 os
-.DS_Store
+# ------------------------------------------
+# Sensitive or unnecessary configuration files
+# ------------------------------------------
 *.pem
-## }}}1
+.editorconfig
+.prettierrc*
+prettier.config.*
+.eslintrc*
+eslint.config.*
+.stylelintrc*
+stylelint.config.*
+.babelrc*
+*.iml
+*.ipr
+*.iws
 
-## {{{1 ide
-.idea
-.vscode
-## }}}1
-
-## {{{1 archives
-*.7z
-*.bz2
-*.bzip
-*.bzip2
-*.cab
-*.gz
-*.gzip
-*.jar
-*.lzma
-*.rar
-*.tar.gz
-*.tgz
-*.xar
-*.xz
-*.zip
-
-*.iso
-*.dmg
-
-*.deb
-*.egg
-*.gem
-*.msi
-*.msm
-*.msp
-*.rpm
-*.txz
-*.xpi
-## }}}1
+# ------------------------------------------
+# OS-specific junk
+# ------------------------------------------
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
