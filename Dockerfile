@@ -10,7 +10,7 @@ ARG USER_GID=1001
 
 
 # Base image for stages
-FROM node:25-alpine AS base
+FROM node:26-alpine AS base
 # ---
 
 
