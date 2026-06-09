@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useRef, useMemo, useEffect } from "react";
 import React from "react";
-import { useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
@@ -30,8 +30,6 @@ const WIDGET_LIBRARY: AdminWidget[] = [
 ];
 
 export default function AdminPage() {
-  const router = useRouter();
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizeMode, setCustomizeMode] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -79,14 +77,6 @@ export default function AdminPage() {
   const auth = authFromHook;
   const { profileName } = useProfile(token);
 
-  useEffect(() => {
-    if (!initialized) return;
-    if (!token) return;
-    if (auth.user && auth.user.role !== 'admin') {
-      router.replace('/dashboard');
-    }
-  }, [initialized, token, auth.user, router]);
-
   // keep hook order stable: call memo before any early returns
   const displayWidgets = useMemo(() => {
     if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
@@ -101,7 +91,8 @@ export default function AdminPage() {
   // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
   if (!token) return null;
-  if (!auth.user || auth.user.role !== 'admin') return null;
+  if (!auth.user) return null;
+  if (auth.user.role !== 'admin') notFound();
 
   const availableWidgets = WIDGET_LIBRARY.filter(
     widget => !activeWidgets.find(aw => aw.type === widget.type)
