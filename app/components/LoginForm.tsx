@@ -95,7 +95,7 @@ export default function LoginForm() {
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
-
+          {/*}
             <div className="flex items-center gap-4">
               <div className="flex-1 h-px bg-zinc-800/60" />
               <div className="text-zinc-400 text-sm">or</div>
@@ -109,7 +109,7 @@ export default function LoginForm() {
               <button type="button" className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg py-3 text-sm text-zinc-200 flex items-center justify-center gap-3">
                 <i className="ri-github-line" /> Continue with GitHub
               </button>
-            </div>
+            </div>*/}
 
             <p className="text-center text-zinc-400 text-sm mt-2">Don't have an account? <a href="/register" className="text-cyan-400">Sign up</a></p>
           </form>

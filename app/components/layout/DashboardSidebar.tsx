@@ -7,7 +7,7 @@ type DashboardSidebarProps = {
   sidebarOpen: boolean;
   profileName?: string | null;
   onLogout: () => void;
-  activePage: "overview" | "scanner";
+  activePage: "overview" | "scanner" | "charts";
 };
 
 function formatDisplayName(profileName?: string | null) {
@@ -40,7 +40,7 @@ export default function DashboardSidebar({ sidebarOpen, profileName, onLogout, a
         <ul className="space-y-1.5">
           <li><NavLink href="/dashboard" icon="ri-dashboard-line" label="Overview" isActive={activePage === "overview"} /></li>
           <li><NavLink href="/dashboard/scanner" icon="ri-search-line" label="Scanner" isActive={activePage === "scanner"} /></li>
-          <li className="opacity-50"><NavLink href="/dashboard" icon="ri-bar-chart-line" label="Charts" /></li>
+          <li><NavLink href="/dashboard/charts" icon="ri-bar-chart-line" label="Charts" isActive={activePage === "charts"} /></li>
         </ul>
         <div className="mb-3 mt-8 px-1">
           <h3 className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.18em]">Other</h3>
