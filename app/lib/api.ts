@@ -26,6 +26,12 @@ type PartialScanResult = Partial<ScanResultItem> | null | undefined;
 function normalizeSeverity(severity: unknown): SeverityLevel | null {
   if (typeof severity !== "string") return null;
   const upper = severity.trim().toUpperCase();
+
+  // Mapowanie "NONE" bezpośrednio na "INFO"
+  if (upper === "NONE") {
+    return "INFO";
+  }
+
   if (
     upper === "CRITICAL" ||
     upper === "HIGH" ||
@@ -33,7 +39,7 @@ function normalizeSeverity(severity: unknown): SeverityLevel | null {
     upper === "LOW" ||
     upper === "INFO"
   ) {
-    return upper;
+    return upper as SeverityLevel;
   }
   return null;
 }
@@ -54,9 +60,12 @@ export function isCompletedScanResult(
 export function getCompletedScanResults(
   results: PartialScanResult[] = [],
 ): ScanResultItem[] {
-  return results.filter(isCompletedScanResult);
-}
+  return results.filter(isCompletedScanResult).map((result) => ({
+    ...result,
 
+    severity: normalizeSeverity(result.severity) as SeverityLevel,
+  }));
+}
 export interface ScanResponse {
   id: string;
   target_url: string;
