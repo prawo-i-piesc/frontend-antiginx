@@ -10,7 +10,7 @@ export default function RecentScansWidget() {
         </button>
       </div>
 
-      <div className="space-y-3 overflow-y-auto flex-1 pr-2">
+      <div className="space-y-3 overflow-y-auto flex-1 pr-2 scrollbar-theme">
         <ScanItem domain="example.com" timeAgo="2 minutes ago" status="safe" />
         <ScanItem domain="suspicious-site.net" timeAgo="15 minutes ago" status="suspicious" />
         <ScanItem domain="malware-test.com" timeAgo="1 hour ago" status="dangerous" />

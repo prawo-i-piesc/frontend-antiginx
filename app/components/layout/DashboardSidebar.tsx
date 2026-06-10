@@ -33,7 +33,7 @@ export default function DashboardSidebar({ sidebarOpen, profileName, onLogout, a
         </span>
       </div>
 
-      <nav className="flex-1 px-4 py-6 overflow-y-auto bg-white/90 dark:bg-zinc-950/80 backdrop-blur-2xl">
+      <nav className="flex-1 px-4 py-6 overflow-y-auto bg-white/90 dark:bg-zinc-950/80 backdrop-blur-2xl scrollbar-theme">
         <div className="mb-3 px-1">
           <h3 className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.18em]">Menu</h3>
         </div>
