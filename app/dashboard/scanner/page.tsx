@@ -208,7 +208,7 @@ export default function DashboardScannerPage() {
   const paginatedScans = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredScans.slice(start, start + pageSize);
-  }, [filteredScans, currentPage]);
+  }, [filteredScans, currentPage, pageSize]);
 
   const visiblePages = useMemo(() => {
     const maxButtons = 5;
