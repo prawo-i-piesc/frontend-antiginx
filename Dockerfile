@@ -1,6 +1,6 @@
 # Variables
 ARG NPM_VERSION=11.13.0
-ARG NEXT_PUBLIC_BACKEND_URL=http://backend-antiginx:4000
+ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
 
 ARG USERNAME=antiginx_user
 ARG GROUPNAME=antiginx_group
