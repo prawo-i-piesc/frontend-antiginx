@@ -13,7 +13,7 @@ export default function TopThreatsWidget() {
     <div className="rounded-xl bg-white/85 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-300 dark:border-zinc-800/30 p-6 h-full flex flex-col">
       <h4 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100 shrink-0">Top Threats</h4>
 
-      <div className="space-y-5 overflow-y-auto flex-1 pr-2">
+      <div className="space-y-5 overflow-y-auto flex-1 pr-2 scrollbar-theme">
         {threats.map((threat, i) => (
           <ThreatItem key={i} {...threat} />
         ))}

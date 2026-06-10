@@ -29,6 +29,52 @@ const WIDGET_LIBRARY: DashboardWidget[] = [
   { id: 'topThreats', type: 'topThreats', size: '2x2' },
 ];
 
+const DASHBOARD_WIDGETS_STORAGE_KEY = 'dashboard.widgets';
+
+function getDefaultWidgets(): DashboardWidget[] {
+  return [
+    { id: 'totalScans', type: 'totalScans', size: '1x1' },
+    { id: 'safeSites', type: 'safeSites', size: '1x1' },
+    { id: 'threats', type: 'threats', size: '1x1' },
+    { id: 'scheduled', type: 'scheduled', size: '1x1' },
+    { id: 'recentScans', type: 'recentScans', size: '2x2' },
+    { id: 'topThreats', type: 'topThreats', size: '2x2' },
+  ];
+}
+
+function isWidgetType(value: string): value is WidgetType {
+  return WIDGET_LIBRARY.some(widget => widget.type === value);
+}
+
+function normalizeWidgets(widgets: unknown): DashboardWidget[] | null {
+  if (!Array.isArray(widgets)) return null;
+
+  const normalized = widgets
+    .filter((widget): widget is DashboardWidget => {
+      if (!widget || typeof widget !== 'object') return false;
+
+      const candidate = widget as DashboardWidget;
+      return (
+        typeof candidate.id === 'string' &&
+        typeof candidate.type === 'string' &&
+        typeof candidate.size === 'string' &&
+        isWidgetType(candidate.type) &&
+        ['1x1', '2x1', '1x2', '2x2'].includes(candidate.size)
+      );
+    })
+    .filter(widget => WIDGET_LIBRARY.some(available => available.type === widget.type));
+
+  const seenTypes = new Set<WidgetType>();
+  const ordered = normalized.filter(widget => {
+    if (seenTypes.has(widget.type)) return false;
+    seenTypes.add(widget.type);
+    return true;
+  });
+
+  if (ordered.length === 0) return null;
+  return ordered;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -36,15 +82,9 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizeMode, setCustomizeMode] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const [widgetsLoaded, setWidgetsLoaded] = useState(false);
   
-  const [activeWidgets, setActiveWidgets] = useState<DashboardWidget[]>([
-    { id: 'totalScans', type: 'totalScans', size: '1x1' },
-    { id: 'safeSites', type: 'safeSites', size: '1x1' },
-    { id: 'threats', type: 'threats', size: '1x1' },
-    { id: 'scheduled', type: 'scheduled', size: '1x1' },
-    { id: 'recentScans', type: 'recentScans', size: '2x2' },
-    { id: 'topThreats', type: 'topThreats', size: '2x2' },
-  ]);
+  const [activeWidgets, setActiveWidgets] = useState<DashboardWidget[]>(() => getDefaultWidgets());
 
   const [draggedWidget, setDraggedWidget] = useState<DashboardWidget | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -91,6 +131,40 @@ export default function DashboardPage() {
       document.body.style.touchAction = '';
     };
   }, [blockBodyScroll]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const storedWidgets = window.localStorage.getItem(DASHBOARD_WIDGETS_STORAGE_KEY);
+      if (storedWidgets) {
+        const parsedWidgets = normalizeWidgets(JSON.parse(storedWidgets));
+        if (parsedWidgets) {
+          setActiveWidgets(parsedWidgets);
+          const nextId = parsedWidgets.reduce((max, widget) => {
+            const match = widget.id.match(/-(\d+)$/);
+            if (!match) return max;
+            return Math.max(max, Number(match[1]) + 1);
+          }, 0);
+          nextWidgetId.current = nextId;
+        }
+      }
+    } catch {
+      // ignore invalid or unavailable storage
+    } finally {
+      setWidgetsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!widgetsLoaded || typeof window === 'undefined') return;
+
+    try {
+      window.localStorage.setItem(DASHBOARD_WIDGETS_STORAGE_KEY, JSON.stringify(activeWidgets));
+    } catch {
+      // ignore storage errors
+    }
+  }, [activeWidgets, widgetsLoaded]);
 
   // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
@@ -353,7 +427,7 @@ export default function DashboardPage() {
         />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950">
+        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
           <div className="p-6">
             {/* Dashboard Header with Customize */}
             <div className="flex items-center justify-between mb-6">

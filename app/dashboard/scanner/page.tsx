@@ -74,6 +74,7 @@ export default function DashboardScannerPage() {
   const [showNewScan, setShowNewScan] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "safe" | "warning" | "danger">("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [url, setUrl] = useState("");
   const [testOptions, setTestOptions] = useState<ScanTestOption[]>([]);
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
@@ -191,6 +192,46 @@ export default function DashboardScannerPage() {
     });
   }, [scanRows, searchQuery, statusFilter]);
 
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(filteredScans.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedScans = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredScans.slice(start, start + pageSize);
+  }, [filteredScans, currentPage, pageSize]);
+
+  const visiblePages = useMemo(() => {
+    const maxButtons = 5;
+    if (totalPages <= maxButtons) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const halfWindow = Math.floor(maxButtons / 2);
+    let start = Math.max(1, currentPage - halfWindow);
+    let end = start + maxButtons - 1;
+
+    if (end > totalPages) {
+      end = totalPages;
+      start = end - maxButtons + 1;
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  }, [currentPage, totalPages]);
+
+  function goToPage(page: number) {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+  }
+
   if (!initialized) return null;
   if (!token) return null;
 
@@ -292,7 +333,7 @@ export default function DashboardScannerPage() {
           showMessages
         />
 
-        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950">
+        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
           <div className="p-6">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>
@@ -473,6 +514,50 @@ export default function DashboardScannerPage() {
                   </div>
                 </div>
 
+                {!isLoadingScans && !scanListError && filteredScans.length > 0 && (
+                  <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between px-1 sm:px-2">
+                    <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                      Showing <span className="font-medium text-zinc-900 dark:text-zinc-100">{Math.min((currentPage - 1) * pageSize + 1, filteredScans.length)}-{Math.min(currentPage * pageSize, filteredScans.length)}</span> of <span className="font-medium text-zinc-900 dark:text-zinc-100">{filteredScans.length}</span>
+                    </div>
+
+                    <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-zinc-300/80 dark:border-zinc-700/60 bg-white/85 dark:bg-zinc-900/30 backdrop-blur-xl p-1 shadow-sm self-start lg:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="h-8 px-2.5 rounded-full text-xs font-medium border border-transparent bg-zinc-100/90 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Prev
+                      </button>
+
+                      {visiblePages.map((page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() => goToPage(page)}
+                          aria-current={page === currentPage ? "page" : undefined}
+                          className={`h-8 min-w-8 px-2.5 rounded-full text-xs font-medium transition-colors ${
+                            page === currentPage
+                              ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950"
+                              : "bg-transparent text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 px-2.5 rounded-full text-xs font-medium border border-transparent bg-zinc-100/90 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 overflow-hidden shadow-sm">
                   <div className="grid grid-cols-[2.6fr_1.1fr_1.2fr_0.9fr_0.8fr_1fr] gap-4 px-6 py-3 border-b border-zinc-200 dark:border-zinc-700/50 bg-zinc-50/70 dark:bg-zinc-900/40 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                     <span>Target</span>
@@ -496,7 +581,7 @@ export default function DashboardScannerPage() {
                       <div className="px-6 py-8 text-sm text-zinc-500 dark:text-zinc-400">No scans found for this account.</div>
                     )}
 
-                    {!isLoadingScans && !scanListError && filteredScans.map((row) => {
+                    {!isLoadingScans && !scanListError && paginatedScans.map((row) => {
                       const meta = statusMeta(row.status);
                       return (
                         <div

@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
+import DashboardTopBar from "../components/layout/DashboardTopBar";
 import NavLink from "../components/interface/NavLink";
 import StatsCard from "../components/interface/StatsCard";
 import RecentScansWidget from "../components/widgets/RecentScansWidget";
@@ -29,20 +30,57 @@ const WIDGET_LIBRARY: AdminWidget[] = [
   { id: 'recentScans', type: 'recentScans', size: '2x2' },
 ];
 
-export default function AdminPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [customizeMode, setCustomizeMode] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+const ADMIN_WIDGETS_STORAGE_KEY = 'admin.widgets';
 
-  const [activeWidgets, setActiveWidgets] = useState<AdminWidget[]>([
+function getDefaultWidgets(): AdminWidget[] {
+  return [
     { id: 'topCountries', type: 'topCountries', size: '2x2' },
     { id: 'recentScans', type: 'recentScans', size: '2x2' },
     { id: 'totalUsers', type: 'totalUsers', size: '1x1' },
     { id: 'activeScans', type: 'activeScans', size: '1x1' },
     { id: 'threats', type: 'threats', size: '1x1' },
     { id: 'newRegistrations', type: 'newRegistrations', size: '1x1' },
+  ];
+}
 
-  ]);
+function isWidgetType(value: string): value is WidgetType {
+  return WIDGET_LIBRARY.some(widget => widget.type === value);
+}
+
+function normalizeWidgets(widgets: unknown): AdminWidget[] | null {
+  if (!Array.isArray(widgets)) return null;
+
+  const normalized = widgets.filter((widget): widget is AdminWidget => {
+    if (!widget || typeof widget !== 'object') return false;
+
+    const candidate = widget as AdminWidget;
+    return (
+      typeof candidate.id === 'string' &&
+      typeof candidate.type === 'string' &&
+      typeof candidate.size === 'string' &&
+      isWidgetType(candidate.type) &&
+      ['1x1', '2x1', '1x2', '2x2'].includes(candidate.size)
+    );
+  });
+
+  const seenTypes = new Set<WidgetType>();
+  const ordered = normalized.filter(widget => {
+    if (seenTypes.has(widget.type)) return false;
+    seenTypes.add(widget.type);
+    return true;
+  });
+
+  if (ordered.length === 0) return null;
+  return ordered;
+}
+
+export default function AdminPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [customizeMode, setCustomizeMode] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const [widgetsLoaded, setWidgetsLoaded] = useState(false);
+
+  const [activeWidgets, setActiveWidgets] = useState<AdminWidget[]>(() => getDefaultWidgets());
 
   const [draggedWidget, setDraggedWidget] = useState<AdminWidget | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -72,6 +110,40 @@ export default function AdminPage() {
       document.body.style.touchAction = '';
     };
   }, [blockBodyScroll]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const storedWidgets = window.localStorage.getItem(ADMIN_WIDGETS_STORAGE_KEY);
+      if (storedWidgets) {
+        const parsedWidgets = normalizeWidgets(JSON.parse(storedWidgets));
+        if (parsedWidgets) {
+          setActiveWidgets(parsedWidgets);
+          const nextId = parsedWidgets.reduce((max, widget) => {
+            const match = widget.id.match(/-(\d+)$/);
+            if (!match) return max;
+            return Math.max(max, Number(match[1]) + 1);
+          }, 0);
+          nextWidgetId.current = nextId;
+        }
+      }
+    } catch {
+      // ignore invalid or unavailable storage
+    } finally {
+      setWidgetsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!widgetsLoaded || typeof window === 'undefined') return;
+
+    try {
+      window.localStorage.setItem(ADMIN_WIDGETS_STORAGE_KEY, JSON.stringify(activeWidgets));
+    } catch {
+      // ignore storage errors
+    }
+  }, [activeWidgets, widgetsLoaded]);
 
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
@@ -343,7 +415,7 @@ export default function AdminPage() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto bg-white/90 dark:bg-zinc-950/80 backdrop-blur-2xl">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto bg-white/90 dark:bg-zinc-950/80 backdrop-blur-2xl scrollbar-theme">
           <div className="mb-8">
             <h3 className="mb-3 px-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">MANAGEMENT</h3>
             <ul className="space-y-1">
@@ -390,55 +462,19 @@ export default function AdminPage() {
 
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col min-h-screen xl:ml-0">
-        {/* Header */}
-        <header
-          className="sticky h-20 top-0 z-40 bg-white/85 dark:bg-zinc-950 backdrop-blur-2xl border-b border-zinc-200 dark:border-zinc-800/50 flex items-center transition-colors"
-        >
-          <div className="flex items-center justify-between px-6 w-full">
-            {/* Left: Mobile menu + Search */}
-            <div className="flex items-center gap-4 flex-1">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="xl:hidden w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl flex items-center justify-center transition-all border border-zinc-400 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50"
-              >
-                <i className="ri-menu-line text-zinc-700 dark:text-zinc-200 text-xl"></i>
-              </button>
-
-              {/* Search */}
-              <div className="hidden lg:block flex-1 max-w-lg">
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-cyan-500/5 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
-                  <input
-                    type="text"
-                    placeholder="Search users, scans, reports..."
-                    className="relative w-full bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-700/50 rounded-xl pl-11 pr-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:bg-zinc-200 dark:focus:bg-zinc-800/80 transition-all"
-                  />
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 group-focus-within:text-cyan-500 dark:group-focus-within:text-cyan-400 transition-colors">
-                    <i className="ri-search-line text-lg"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2">
-              {/* Theme Toggle */}
-              <button
-                onClick={(e) => toggleTheme(e)}
-                className="cursor-pointer sm:flex w-10 h-10 bg-zinc-100 dark:bg-zinc-800/60 hover:bg-zinc-300 dark:hover:bg-zinc-700/60 rounded-xl items-center justify-center transition-all border border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-500 dark:hover:border-zinc-600/50 group"
-              >
-                {theme === "dark" ? (
-                  <i className="ri-moon-line text-zinc-600 dark:text-zinc-400 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors text-lg"></i>
-                ) : (
-                  <i className="ri-sun-line text-zinc-600 group-hover:text-cyan-500 transition-colors text-lg"></i>
-                )}
-              </button>
-            </div>
-          </div>
-        </header>
+        <DashboardTopBar
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          showSearch
+          searchPlaceholder="Search users, scans, reports..."
+          showNotifications
+          showMessages
+        />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950">
+        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
           <div className="p-6">
             {/* Page Header */}
             <div className="flex items-center justify-between mb-6">

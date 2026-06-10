@@ -45,7 +45,7 @@ export default function UserLocationMapWidget() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto pr-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800/30">
+        <div className="flex-1 overflow-y-auto pr-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800/30 scrollbar-theme">
           <div className="space-y-0">
             {locations.map((location, idx) => {
               const percentage = (location.count / maxUsers) * 100;
