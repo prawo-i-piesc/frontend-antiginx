@@ -34,7 +34,7 @@ export default function UserLocationMapWidget() {
   return (
     <div className="rounded-xl bg-white/85 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-300 dark:border-zinc-800/30 p-6 h-full flex flex-col">
       <div className="mb-6 flex items-center justify-between shrink-0">
-        <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Top Countries</h4>
+        <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Top Countries (WIP)</h4>
         <button className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium">
           View All
         </button>

@@ -80,7 +80,7 @@ export default function AdminSidebar({ sidebarOpen, profileName, onLogout, activ
             className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-200 hover:text-red-500 dark:hover:text-red-400 hover:border-red-500/40 transition-colors"
           >
             <i className="ri-logout-box-line text-base" />
-            <span className="text-xs font-medium">Logout</span>
+            <span className="text-xs font-medium ">Logout</span>
           </button>
         </div>
       </div>

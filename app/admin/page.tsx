@@ -13,6 +13,7 @@ import StatsCard from "../components/interface/StatsCard";
 import RecentScansWidget from "../components/widgets/RecentScansWidget";
 import UserLocationMapWidget from "../components/widgets/UserLocationMapWidget";
 import AdminSidebar from "../components/layout/AdminSidebar";
+import { API_CONFIG } from "@/app/config/constants";
 
 type WidgetType = 'totalUsers' | 'activeScans' | 'threats' | 'newRegistrations' | 'recentScans' | 'topCountries';
 
@@ -20,6 +21,22 @@ interface AdminWidget {
   id: string;
   type: WidgetType;
   size: "1x1" | "2x1" | "1x2" | "2x2";
+}
+
+// Interfejsy dla danych z API
+interface ApiScanData {
+  id: string;
+  target_url: string;
+  status: string;
+  created_at: string;
+  type: string;
+}
+
+interface ApiWidgetsResponse {
+  all_time_scans: number;
+  detected_threats: number;
+  recent_scans: ApiScanData[];
+  total_users: number;
 }
 
 const WIDGET_LIBRARY: AdminWidget[] = [
@@ -35,12 +52,12 @@ const ADMIN_WIDGETS_STORAGE_KEY = 'admin.widgets';
 
 function getDefaultWidgets(): AdminWidget[] {
   return [
-    { id: 'topCountries', type: 'topCountries', size: '2x2' },
+    //{ id: 'topCountries', type: 'topCountries', size: '2x2' },
     { id: 'recentScans', type: 'recentScans', size: '2x2' },
     { id: 'totalUsers', type: 'totalUsers', size: '1x1' },
     { id: 'activeScans', type: 'activeScans', size: '1x1' },
     { id: 'threats', type: 'threats', size: '1x1' },
-    { id: 'newRegistrations', type: 'newRegistrations', size: '1x1' },
+    //{ id: 'newRegistrations', type: 'newRegistrations', size: '1x1' },
   ];
 }
 
@@ -80,6 +97,10 @@ export default function AdminPage() {
   const [customizeMode, setCustomizeMode] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [widgetsLoaded, setWidgetsLoaded] = useState(false);
+
+  // Nowe stany odpowiedzialne za dane z API
+  const [apiData, setApiData] = useState<ApiWidgetsResponse | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   const [activeWidgets, setActiveWidgets] = useState<AdminWidget[]>(() => getDefaultWidgets());
 
@@ -149,6 +170,33 @@ export default function AdminPage() {
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile(token);
+
+  // Hook pobierający dane z endpointu po zaimportowaniu tokenu autoryzacji
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchWidgetsData = async () => {
+      try {
+        const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/admin/widgets`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        setApiData(data);
+      } catch (error) {
+        console.error("Błąd podczas pobierania danych widgetów:", error);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    fetchWidgetsData();
+  }, [token]);
 
   // keep hook order stable: call memo before any early returns
   const displayWidgets = useMemo(() => {
@@ -343,6 +391,12 @@ export default function AdminPage() {
   }
 
   function renderWidgetContent(widget: AdminWidget) {
+    // Pomocnicza funkcja formatująca liczby lub wyświetlająca stan ładowania
+    const formatValue = (val?: number) => {
+      if (isDataLoading) return "...";
+      return val !== undefined ? val.toLocaleString() : "0";
+    };
+
     switch (widget.type) {
       case 'totalUsers':
         return (
@@ -350,9 +404,9 @@ export default function AdminPage() {
             icon="ri-group-line"
             iconColor="text-purple-400"
             iconBgColor="bg-purple-500/10"
-            value="14,382"
+            value={formatValue(apiData?.total_users)}
             label="Total Users"
-            trend={{ value: "5.3%", isPositive: true, color: "text-green-400" }}
+            trend={undefined} // Placeholder trendu
           />
         );
       case 'activeScans':
@@ -361,9 +415,9 @@ export default function AdminPage() {
             icon="ri-scan-line"
             iconColor="text-cyan-400"
             iconBgColor="bg-cyan-500/10"
-            value="2,847"
+            value={formatValue(apiData?.all_time_scans)}
             label="All-time Scans"
-            trend={{ value: "12.5%", isPositive: true, color: "text-green-400" }}
+            trend={undefined} // Placeholder trendu
           />
         );
       case 'threats':
@@ -372,9 +426,9 @@ export default function AdminPage() {
             icon="ri-alert-line"
             iconColor="text-red-400"
             iconBgColor="bg-red-500/10"
-            value="193"
+            value={formatValue(apiData?.detected_threats)}
             label="Detected Threats"
-            trend={{ value: "3.1%", isPositive: false, color: "text-red-400" }}
+            trend={undefined} // Placeholder trendu
           />
         );
       case 'newRegistrations':
@@ -383,15 +437,16 @@ export default function AdminPage() {
             icon="ri-user-add-line"
             iconColor="text-emerald-400"
             iconBgColor="bg-emerald-500/10"
-            value="84"
+            value="0" // Placeholder - brak tego parametru w obecnym API
             label="New Registrations"
-            trend={{ value: "18 today", isPositive: true, color: "text-green-400" }}
+            trend={undefined} // Placeholder trendu
           />
         );
       case 'recentScans':
-        return <RecentScansWidget />;
+        // Przekazujemy tablicę z API bezpośrednio do widgetu, dodając informację o stanie ładowania
+        return <RecentScansWidget scans={apiData?.recent_scans || []} isLoading={isDataLoading} />;
       case 'topCountries':
-        return <UserLocationMapWidget />;
+        return <UserLocationMapWidget />; // Placeholder - brak danych przestrzennych/geograficznych w API
       default:
         return null;
     }
