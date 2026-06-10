@@ -8,7 +8,7 @@ interface StatsCardProps {
     value: string;
     isPositive: boolean;
     color: string;
-  };
+  } | undefined;
 }
 
 export default function StatsCard({
@@ -29,10 +29,12 @@ export default function StatsCard({
       <div>
         <h4 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">{value}</h4>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-0 sm:mb-2">{label}</p>
-        <span className={`inline-flex items-center gap-1 text-xs font-medium ${trend.color}`}>
-          <i className={`ri-arrow-${trend.isPositive ? 'up' : 'down'}-line`}></i>
-          {trend.value}
-        </span>
+        {trend && (
+          <span className={`inline-flex items-center gap-1 text-xs font-medium ${trend.color}`}>
+            <i className={`ri-arrow-${trend.isPositive ? 'up' : 'down'}-line`}></i>
+            {trend.value}
+          </span>
+        )}
       </div>
     </div>
   );

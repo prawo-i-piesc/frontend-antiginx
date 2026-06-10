@@ -11,6 +11,23 @@ import DashboardSidebar from "../components/layout/DashboardSidebar";
 import StatsCard from "../components/interface/StatsCard";
 import RecentScansWidget from "../components/widgets/RecentScansWidget";
 import TopThreatsWidget from "../components/widgets/TopThreatsWidget";
+import { API_CONFIG } from "@/app/config/constants";
+
+// TWORZYMY TYPY ODPOWIADAJĄCE JSON Z API
+export interface ApiScanData {
+  id: string;
+  target_url: string;
+  status: string;
+  created_at: string;
+  type: string;
+}
+
+export interface UserWidgetsData {
+  detected_threats: number;
+  recent_scans: ApiScanData[];
+  safe_sites: number;
+  total_scans: number;
+}
 
 type WidgetType = 'totalScans' | 'safeSites' | 'threats' | 'scheduled' | 'recentScans' | 'topThreats';
 
@@ -78,13 +95,16 @@ function normalizeWidgets(widgets: unknown): DashboardWidget[] | null {
 export default function DashboardPage() {
   const router = useRouter();
 
-  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizeMode, setCustomizeMode] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [widgetsLoaded, setWidgetsLoaded] = useState(false);
   
   const [activeWidgets, setActiveWidgets] = useState<DashboardWidget[]>(() => getDefaultWidgets());
+
+  // STAN DO PRZECHOWYWANIA DANYCH WIDŻETÓW Z API
+  const [widgetData, setWidgetData] = useState<UserWidgetsData | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   const [draggedWidget, setDraggedWidget] = useState<DashboardWidget | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -97,10 +117,46 @@ export default function DashboardPage() {
   const draggedIndexRef = useRef<number | null>(null);
   const hoverIndexRef = useRef<number | null>(null);
   const nextWidgetId = useRef(0);
-  // auth initialization and redirect logic moved to hooks
+  
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName, setProfileName } = useProfile(token);
+  const { profileName } = useProfile(token);
+
+  // FETCHOWANIE DANYCH WIDŻETÓW Z ENDPOINTU UŻYTKOWNIKA
+  useEffect(() => {
+    if (!token) return;
+
+    let active = true;
+
+    const fetchWidgetData = async () => {
+      setIsDataLoading(true);
+      try {
+        const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/users/widgets`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch widget data");
+        }
+
+        const data: UserWidgetsData = await response.json();
+        
+        if (active) {
+          setWidgetData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching widgets data:", error);
+      } finally {
+        if (active) setIsDataLoading(false);
+      }
+    };
+
+    fetchWidgetData();
+
+    return () => { active = false; };
+  }, [token]);
 
   const displayWidgets = useMemo(() => {
     if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
@@ -111,6 +167,7 @@ export default function DashboardPage() {
     }
     return activeWidgets;
   }, [activeWidgets, draggedIndex, hoverIndex]);
+  
   const availableWidgets = WIDGET_LIBRARY.filter(
     widget => !activeWidgets.find(aw => aw.type === widget.type)
   );
@@ -166,7 +223,6 @@ export default function DashboardPage() {
     }
   }, [activeWidgets, widgetsLoaded]);
 
-  // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
   if (!token) return null;
 
@@ -215,8 +271,6 @@ export default function DashboardPage() {
     document.addEventListener('mouseup', handleMouseUpLocal);
   }
 
-  
-
   function handleTouchStart(e: React.TouchEvent, widget: DashboardWidget, index: number) {
     if (!customizeMode) return;
     e.preventDefault();
@@ -236,7 +290,6 @@ export default function DashboardPage() {
     draggedIndexRef.current = index;
     setMousePos({ x: touch.clientX, y: touch.clientY });
     
-    // Prevent body scrolling during drag via effect
     setBlockBodyScroll(true);
     
     const handleTouchMoveLocal = (e: TouchEvent) => {
@@ -244,7 +297,6 @@ export default function DashboardPage() {
       const touch = e.touches[0];
       setMousePos({ x: touch.clientX, y: touch.clientY });
       
-      // Find element under touch point (excluding the floating preview)
       const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
       const widgetElement = elements.find(el => el.hasAttribute('data-widget-index'));
       if (widgetElement) {
@@ -270,7 +322,6 @@ export default function DashboardPage() {
       draggedIndexRef.current = null;
       hoverIndexRef.current = null;
       
-      // Restore body scrolling via effect
       setBlockBodyScroll(false);
       
       document.removeEventListener('touchmove', handleTouchMoveLocal);
@@ -283,7 +334,6 @@ export default function DashboardPage() {
     document.addEventListener('touchcancel', handleTouchEndLocal);
   }
 
-
   function handleWidgetMouseEnter(index: number) {
     if (draggedWidget) {
       setHoverIndex(index);
@@ -294,7 +344,6 @@ export default function DashboardPage() {
   function handleKeyDown(e: React.KeyboardEvent, index: number) {
     if (!customizeMode) return;
 
-    // Select widget with Enter or Space
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       if (selectedWidgetIndex === index) {
@@ -305,14 +354,12 @@ export default function DashboardPage() {
       return;
     }
 
-    // Cancel selection with Escape
     if (e.key === 'Escape') {
       e.preventDefault();
       setSelectedWidgetIndex(null);
       return;
     }
 
-    // Move widget with arrow keys
     if (selectedWidgetIndex === index) {
       let newIndex = index;
       
@@ -350,7 +397,10 @@ export default function DashboardPage() {
     setActiveWidgets([...activeWidgets, newWidget]);
   }
 
+  // W TYM MIEJSCU WPIĘTY JEST ZWRACANY STAN Z API W MIEJSCE HARDCODED WARTOSCI
   function renderWidgetContent(widget: DashboardWidget) {
+    const loadingStr = isDataLoading ? "..." : "0";
+
     switch (widget.type) {
       case 'totalScans':
         return (
@@ -358,9 +408,9 @@ export default function DashboardPage() {
             icon="ri-search-line"
             iconColor="text-cyan-400"
             iconBgColor="bg-cyan-500/10"
-            value="2,847"
+            value={widgetData?.total_scans?.toString() || loadingStr}
             label="Total Scans"
-            trend={{ value: "12.5%", isPositive: true, color: "text-green-400" }}
+            trend={undefined}
           />
         );
       case 'safeSites':
@@ -369,9 +419,9 @@ export default function DashboardPage() {
             icon="ri-shield-check-line"
             iconColor="text-green-400"
             iconBgColor="bg-green-500/10"
-            value="2,654"
+            value={widgetData?.safe_sites?.toString() || loadingStr}
             label="Safe Sites"
-            trend={{ value: "8.2%", isPositive: true, color: "text-green-400" }}
+            trend={undefined}
           />
         );
       case 'threats':
@@ -380,25 +430,32 @@ export default function DashboardPage() {
             icon="ri-alert-line"
             iconColor="text-red-400"
             iconBgColor="bg-red-500/10"
-            value="193"
+            value={widgetData?.detected_threats?.toString() || loadingStr}
             label="Detected Threats"
-            trend={{ value: "3.1%", isPositive: false, color: "text-red-400" }}
+            trend={undefined}
           />
         );
       case 'scheduled':
+        // Dla zaplanowanych testów nie ma nic w obiekcie JSON, więc zostaje statyczna atrapa, lub możesz zintegrować w innej chwili.
         return (
           <StatsCard
             icon="ri-calendar-line"
             iconColor="text-purple-400"
             iconBgColor="bg-purple-500/10"
-            value="24"
+            value="-"
             label="Scheduled Tests"
-            trend={{ value: "2 new", isPositive: true, color: "text-green-400" }}
+            trend={undefined}
           />
         );
       case 'recentScans':
-        return <RecentScansWidget />;
+        return (
+          <RecentScansWidget 
+             scans={widgetData?.recent_scans || []} 
+             isLoading={isDataLoading} 
+          />
+        );
       case 'topThreats':
+        // Top Threats też nie ma wsparcia z obecnego API JSON, ale to już inna para kaloszy
         return <TopThreatsWidget />;
       default:
         return null;
@@ -414,7 +471,6 @@ export default function DashboardPage() {
         activePage="overview"
       />
 
-      {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col min-h-screen xl:ml-0">
         <DashboardTopBar
           sidebarOpen={sidebarOpen}
@@ -426,10 +482,8 @@ export default function DashboardPage() {
           showMessages
         />
 
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
           <div className="p-6">
-            {/* Dashboard Header with Customize */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">Dashboard Overview</h2>
@@ -452,10 +506,12 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Active Widgets Grid */}
             <div id="widget-instructions" className="sr-only">
               Press Enter or Space to select a widget. Use arrow keys to move the selected widget. Press Escape to deselect.
             </div>
+            
+            {/* Wyświetlanie błędu krytycznego - jeśli chcesz */}
+            
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-4 relative" style={{ transition: 'all 0.3s ease-out' }}>
               {displayWidgets.map((widget, index) => {
                 const isDragging = draggedIndex === activeWidgets.indexOf(widget);
@@ -466,7 +522,6 @@ export default function DashboardPage() {
                   "2x2": "col-span-2 row-span-2",
                 };
                 
-
                 return (
                   <React.Fragment key={widget.id}>
                     
@@ -514,7 +569,6 @@ export default function DashboardPage() {
                 );
               })}
               
-              {/* Floating drag preview */}
               {draggedWidget && (
                 <div
                   className="fixed pointer-events-none z-50 opacity-80"
@@ -533,7 +587,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Widget Library - Only visible in customize mode */}
             {customizeMode && availableWidgets.length > 0 && (
               <>
                 <div className="relative my-8">
@@ -574,7 +627,6 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 xl:hidden"
