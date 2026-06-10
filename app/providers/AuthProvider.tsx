@@ -56,7 +56,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const stored = localStorage.getItem('auth.token') || sessionStorage.getItem('auth.token') || readCookie('auth.token');
+      const localToken = localStorage.getItem('auth.token');
+      const sessionToken = sessionStorage.getItem('auth.token');
+      const cookieToken = readCookie('auth.token');
+      const stored = localToken || sessionToken || cookieToken;
+
+      if (localToken) {
+        writeAuthCookie(localToken, true);
+      } else if (sessionToken) {
+        writeAuthCookie(sessionToken, false);
+      }
+
       setToken(stored ? stored : null);
     } catch {
       setToken(null);
