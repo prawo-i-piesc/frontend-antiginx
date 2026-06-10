@@ -51,7 +51,8 @@ export default function DashboardTopBar({
                 <input
                   type="text"
                   placeholder={searchPlaceholder}
-                  className="relative h-10 w-full rounded-2xl border border-zinc-300/80 bg-zinc-100/80 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-500 transition-all focus:border-cyan-500/50 focus:bg-zinc-50 focus:outline-none dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900/80"
+                  className="opacity-50 relative h-10 w-full rounded-2xl border border-zinc-300/80 bg-zinc-100/80 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-500 transition-all focus:border-cyan-500/50 focus:bg-zinc-50 focus:outline-none dark:border-zinc-700/60 dark:bg-zinc-900/55 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900/80"
+                  disabled
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-cyan-500 dark:text-zinc-500 dark:group-focus-within:text-cyan-400">
                   <i className="ri-search-line text-[17px]"></i>
