@@ -18,7 +18,7 @@ export default function RegisterForm() {
   const router = useRouter();
 
   const validate = () => {
-    if (!name.trim()) return 'Please enter your full name.';
+    if (!name.trim()) return 'Please enter your username.';
     if (!email.includes('@')) return 'Please enter a valid email address.';
     if (password.length < 8) return 'Password must be at least 8 characters.';
     if (password !== confirmPassword) return 'Passwords do not match.';
@@ -60,11 +60,11 @@ export default function RegisterForm() {
           {error && <div className="text-sm text-red-400 bg-red-900/20 p-2 rounded">{error}</div>}
 
           <div>
-            <label className="block text-zinc-400 text-sm mb-2">Full name</label>
+            <label className="block text-zinc-400 text-sm mb-2">Username</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your full name"
+              placeholder="Your username"
               className="w-full bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:ring-2 focus:ring-cyan-500"
               required
             />
