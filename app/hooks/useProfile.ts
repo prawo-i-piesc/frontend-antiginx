@@ -6,6 +6,7 @@ import { getMe } from "@/app/lib/api";
 export function useProfile(token?: string | null | undefined) {
   const [profileName, setProfileName] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [profileEmail, setProfileEmail] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -15,6 +16,7 @@ export function useProfile(token?: string | null | undefined) {
         if (mounted) {
           setProfileName(null);
           setProfileId(null);
+          setProfileEmail(null);
         }
       });
       return () => {
@@ -28,11 +30,13 @@ export function useProfile(token?: string | null | undefined) {
         if (mounted) {
           setProfileName(me.full_name);
           setProfileId(me.id);
+          setProfileEmail(me.email);
         }
       } catch (err) {
         if (mounted) {
           setProfileName(null);
           setProfileId(null);
+          setProfileEmail(null);
         }
       }
     })();
@@ -42,7 +46,7 @@ export function useProfile(token?: string | null | undefined) {
     };
   }, [token]);
 
-  return { profileName, profileId, setProfileName };
+  return { profileName, profileId, profileEmail, setProfileName };
 }
 
 export default useProfile;
