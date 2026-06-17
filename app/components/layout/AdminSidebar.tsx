@@ -7,7 +7,7 @@ type AdminSidebarProps = {
   sidebarOpen: boolean;
   profileName?: string | null;
   onLogout: () => void;
-  activePage: "overview" | "database" | "settings" | "logs" | "analytics";
+  activePage: "overview" | "database" | "settings" | "logs" | "analytics" | "profile";
 };
 
 function formatAdminName(profileName?: string | null) {
@@ -57,7 +57,7 @@ export default function AdminSidebar({ sidebarOpen, profileName, onLogout, activ
         <div>
           <h3 className="mb-3 px-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">OTHERS</h3>
           <ul className="space-y-1">
-            <li className="opacity-50"><NavLink href="/admin/settings" icon="ri-settings-4-line" label="Settings" isActive={activePage === "settings"} /></li>
+            <li><NavLink href="/dashboard/profile" icon="ri-user-line" label="Profile" isActive={activePage === "profile"} /></li>
           </ul>
         </div>
       </nav>

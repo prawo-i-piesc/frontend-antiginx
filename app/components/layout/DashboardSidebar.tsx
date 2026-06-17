@@ -7,7 +7,7 @@ type DashboardSidebarProps = {
   sidebarOpen: boolean;
   profileName?: string | null;
   onLogout: () => void;
-  activePage: "overview" | "scanner" | "charts";
+  activePage: "overview" | "scanner" | "charts" | "profile";
 };
 
 function formatDisplayName(profileName?: string | null) {
@@ -45,9 +45,8 @@ export default function DashboardSidebar({ sidebarOpen, profileName, onLogout, a
         <div className="mb-3 mt-8 px-1">
           <h3 className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.18em]">Other</h3>
         </div>
-        <ul className="space-y-1.5 opacity-50">
-          <li><NavLink href="/dashboard" icon="ri-user-line" label="Profile" /></li>
-          <li><NavLink href="/dashboard" icon="ri-settings-line" label="Settings" /></li>
+        <ul className="space-y-1.5">
+          <li><NavLink href="/dashboard/profile" icon="ri-user-line" label="Profile" isActive={activePage === "profile"} /></li>
         </ul>
       </nav>
 

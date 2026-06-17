@@ -6,18 +6,25 @@ import useRequireAuth from "@/app/hooks/useRequireAuth";
 import useProfile from "@/app/hooks/useProfile";
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import DashboardSidebar from "@/app/components/layout/DashboardSidebar";
-import ScanResultModal from "@/app/components/ScanResultModal";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
+import ScanResultItemComponent from "@/app/components/ScanResultItem"; // Zmieniona nazwa, by nie kolidowała z typem z API
 import { useScanModal } from "@/app/hooks/useScanModal";
 import {
   ApiRequestError,
   calculateThreatLevel,
   getPremiumScanConfig,
   getUserScans,
+  getCompletedScanResults,
   ScanTestOption,
   UserScanResponse,
 } from "@/app/lib/api";
 import { downloadScanReport } from "@/app/lib/report";
+
+// --- TYPY ---
+type TestCategory = {
+  category: string;
+  tests: ScanTestOption[];
+};
 
 type ScanRow = {
   id: string;
@@ -28,6 +35,7 @@ type ScanRow = {
   duration: string;
 };
 
+// --- FUNKCJE POMOCNICZE ---
 function formatDate(dateIso: string): string {
   if (!dateIso) return "-";
   return dateIso.slice(0, 10);
@@ -72,16 +80,24 @@ function mapScanToRow(scan: UserScanResponse): ScanRow {
 export default function DashboardScannerPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNewScan, setShowNewScan] = useState(false);
+  
+  const [activeView, setActiveView] = useState<"list" | "detail">("list");
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "safe" | "warning" | "danger">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [url, setUrl] = useState("");
-  const [testOptions, setTestOptions] = useState<ScanTestOption[]>([]);
+  
+  // --- STANY DLA KATEGORII I TESTÓW ---
+  const [testCategories, setTestCategories] = useState<TestCategory[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
+  
   const [authorizedTester, setAuthorizedTester] = useState(false);
   const [authorizationCopy, setAuthorizationCopy] = useState(
     "I confirm that I am authorized to test this domain with antiginx antibot scanner, and that I have obtained all necessary permissions to perform security testing on the target website.",
   );
+  
   const [testsLoading, setTestsLoading] = useState(false);
   const [userScans, setUserScans] = useState<UserScanResponse[]>([]);
   const [scanRows, setScanRows] = useState<ScanRow[]>([]);
@@ -106,6 +122,7 @@ export default function DashboardScannerPage() {
     setIsModalOpen,
   } = useScanModal({ mode: "premium", token });
 
+  // Ładowanie listy skanów
   useEffect(() => {
     if (!token) return;
 
@@ -147,6 +164,7 @@ export default function DashboardScannerPage() {
     };
   }, [token, scanResult?.id]);
 
+  // Ładowanie konfiguracji testów
   useEffect(() => {
     if (!token) return;
 
@@ -159,9 +177,16 @@ export default function DashboardScannerPage() {
         const config = await getPremiumScanConfig(token);
         if (!active) return;
 
-        const options = Array.isArray(config.tests) ? config.tests : [];
-        setTestOptions(options);
-        setSelectedTests(options.map((test) => test.id));
+        setTestCategories(config);
+
+        // Zaznaczanie domyślnie wszystkich testów
+        const allTests = config.flatMap((c) => c.tests.map(t => t.id));
+        setSelectedTests(allTests);
+
+        // Otwarcie pierwszej kategorii domyślnie
+        if (config.length > 0) {
+          setExpandedCategories([config[0].category]);
+        }
       } catch (error) {
         if (!active) return;
 
@@ -184,6 +209,7 @@ export default function DashboardScannerPage() {
     };
   }, [token]);
 
+  // Filtrowanie i paginacja
   const filteredScans = useMemo(() => {
     return scanRows.filter((row) => {
       const matchesText = row.url.toLowerCase().includes(searchQuery.toLowerCase());
@@ -204,6 +230,15 @@ export default function DashboardScannerPage() {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  // Przełączanie po udanym skanowaniu
+  useEffect(() => {
+    if (isModalOpen && scanResult && !scanError) {
+      setActiveView("detail"); 
+      setIsModalOpen(false);   
+      setShowNewScan(false);   
+    }
+  }, [isModalOpen, scanResult, scanError, setIsModalOpen]);
 
   const paginatedScans = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -232,9 +267,7 @@ export default function DashboardScannerPage() {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
   }
 
-  if (!initialized) return null;
-  if (!token) return null;
-
+  // --- HANDLERY KATEGORII I TESTÓW ---
   function toggleTest(testId: string) {
     setSelectedTests((prev) => {
       if (prev.includes(testId)) {
@@ -244,15 +277,38 @@ export default function DashboardScannerPage() {
     });
   }
 
+  function toggleCategorySelection(categoryName: string, categoryTests: ScanTestOption[]) {
+    const testIds = categoryTests.map(t => t.id);
+    const allSelected = testIds.every((testId) => selectedTests.includes(testId));
+
+    if (allSelected) {
+      // Odznacz całą kategorię
+      setSelectedTests((prev) => prev.filter((t) => !testIds.includes(t)));
+    } else {
+      // Zaznacz całą kategorię
+      setSelectedTests((prev) => {
+        const newSet = new Set([...prev, ...testIds]);
+        return Array.from(newSet);
+      });
+    }
+  }
+
+  function toggleCategoryExpand(categoryName: string) {
+    setExpandedCategories((prev) =>
+      prev.includes(categoryName)
+        ? prev.filter((c) => c !== categoryName)
+        : [...prev, categoryName]
+    );
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (selectedTests.length === 0) return;
 
-    await handleScan(url.trim(), selectedTests, {
-      authorizedTester,
-    });
+    await handleScan(url.trim(), selectedTests, authorizedTester);
   }
 
+  // Meta helpers
   function threatBarColor(level: number) {
     if (level >= 80) return "bg-red-500";
     if (level >= 40) return "bg-orange-500";
@@ -298,7 +354,7 @@ export default function DashboardScannerPage() {
 
     setScanError(null);
     setScanResult(selectedScan);
-    setIsModalOpen(true);
+    setActiveView("detail");
   }
 
   function downloadScan(scanId: string) {
@@ -312,6 +368,18 @@ export default function DashboardScannerPage() {
 
     downloadScanReport(selectedScan);
   }
+
+  // Sortowanie dla widoku detali
+  const completedResults = scanResult ? getCompletedScanResults(scanResult.results || []) : [];
+  const sortedResults = [...completedResults].sort((a, b) => {
+    const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'INFO': 4 };
+    const aOrder = severityOrder[a.severity.toUpperCase() as keyof typeof severityOrder] ?? 5;
+    const bOrder = severityOrder[b.severity.toUpperCase() as keyof typeof severityOrder] ?? 5;
+    return aOrder - bOrder;
+  }).map((result, index) => ({ ...result, animIndex: index }));
+
+  if (!initialized) return null;
+  if (!token) return null;
 
   return (
     <div className="h-screen xl:flex bg-zinc-200 dark:bg-zinc-950 transition-colors select-none">
@@ -334,324 +402,390 @@ export default function DashboardScannerPage() {
         />
 
         <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
-          <div className="p-6">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Scanner</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Browse all completed website scans</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNewScan((v) => !v)}
-                className={`px-5 py-2.5 rounded-xl border transition-all whitespace-nowrap cursor-pointer font-medium flex items-center gap-2 ${
-                  showNewScan
-                    ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-500 dark:text-cyan-400"
-                    : "border-zinc-300 bg-white/85 dark:bg-zinc-900/20 dark:border-zinc-500/30 text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                }`}
-              >
-                <i className={`text-lg ${showNewScan ? "ri-close-line" : "ri-add-line"}`}></i>
-                New scan
-              </button>
-            </div>
-
-            {showNewScan && (
-              <form onSubmit={onSubmit} className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 p-6 mb-6 animate-in fade-in duration-300 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 mb-5 border-b border-zinc-200 dark:border-zinc-700/50">
+          <div className="p-3 sm:p-6">
+            
+            {/* WIDOK LISTY SKANÓW */}
+            {activeView === "list" ? (
+              <div className="animate-in fade-in duration-300">
+                <div className="flex items-center justify-between gap-4 mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Run new scan</h3>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">Set target URL and choose security tests.</p>
+                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Scanner</h2>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Browse all completed website scans</p>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700/60 bg-zinc-100/70 dark:bg-zinc-800/40 text-xs font-medium text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                    <i className="ri-shield-check-line text-cyan-500 dark:text-cyan-400" />
-                    {selectedTests.length} tests selected
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewScan((v) => !v)}
+                    className={`px-5 py-2.5 rounded-xl border transition-all whitespace-nowrap cursor-pointer font-medium flex items-center gap-2 ${
+                      showNewScan
+                        ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-500 dark:text-cyan-400"
+                        : "border-zinc-300 bg-white/85 dark:bg-zinc-900/20 dark:border-zinc-500/30 text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    <i className={`text-lg ${showNewScan ? "ri-close-line" : "ri-add-line"}`}></i>
+                    New scan
+                  </button>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-3 mb-5">
-                  <div className="flex-1">
-                    <label className="block text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider mb-2">Target URL</label>
-                    <div className="relative">
-                      <i className="ri-global-line absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"></i>
-                      <input
-                        type="text"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        placeholder="https://example.com"
-                        className="w-full h-12 pl-12 pr-4 bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-700/60 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
-                        disabled={isScanning}
-                      />
+                {showNewScan && (
+                  <form onSubmit={onSubmit} className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 p-6 mb-6 animate-in fade-in duration-300 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 mb-5 border-b border-zinc-200 dark:border-zinc-700/50">
+                      <div>
+                        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Run new scan</h3>
+                      </div>
+
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row gap-3 mb-5">
+                      <div className="flex-1">
+                        <label className="block text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider mb-2">Target URL</label>
+                        <div className="relative">
+                          <i className="ri-global-line absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"></i>
+                          <input
+                            type="text"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            placeholder="https://example.com"
+                            className="w-full h-12 pl-12 pr-4 bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-700/60 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                            disabled={isScanning}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="submit"
+                          disabled={isScanning || testsLoading || selectedTests.length === 0}
+                          className="h-12 px-5 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-500/60 transition-all whitespace-nowrap cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                        >
+                          {isScanning ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-play-circle-line" />}
+                          <span>{isScanning ? "Scanning..." : "Start scan"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider mb-3">Test scope</label>
+                      {testsError && <p className="mb-3 text-sm text-rose-500">{testsError}</p>}
+                      
+                      <div className="flex flex-col gap-3">
+                        {testCategories.map((cat) => {
+                          const isExpanded = expandedCategories.includes(cat.category);
+                          const categorySelectedCount = cat.tests.filter((t) => selectedTests.includes(t.id)).length;
+                          const isAllSelected = categorySelectedCount === cat.tests.length && cat.tests.length > 0;
+                          const isIndeterminate = categorySelectedCount > 0 && categorySelectedCount < cat.tests.length;
+
+                          return (
+                            <div key={cat.category} className="border border-zinc-200 dark:border-zinc-700/60 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-zinc-800/20 shadow-sm">
+                              <div 
+                                className="flex items-center justify-between px-4 py-3 bg-zinc-100/70 dark:bg-zinc-800/40 border-b border-transparent data-[expanded=true]:border-zinc-200 dark:data-[expanded=true]:border-zinc-700/60 transition-colors" 
+                                data-expanded={isExpanded}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isAllSelected}
+                                    ref={(input) => {
+                                      if (input) input.indeterminate = isIndeterminate;
+                                    }}
+                                    onChange={() => toggleCategorySelection(cat.category, cat.tests)}
+                                    className="h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30 cursor-pointer"
+                                    disabled={isScanning || testsLoading}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCategoryExpand(cat.category)}
+                                    className="font-semibold text-zinc-800 dark:text-zinc-200 text-sm hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-2 cursor-pointer"
+                                  >
+                                    {cat.category}
+                                    <i className={`ri-arrow-down-s-line transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}></i>
+                                  </button>
+                                </div>
+                                
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-white/80 dark:bg-zinc-900/50 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700/50">
+                                  {categorySelectedCount} / {cat.tests.length} selected
+                               </span>
+                              </div>
+
+                              {isExpanded && (
+                                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                  {cat.tests.map((test) => (
+                                    <label
+                                      key={test.id}
+                                      className={`rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition-all flex items-center gap-3 ${
+                                        selectedTests.includes(test.id)
+                                          ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 shadow-[inset_0_0_0_1px_rgba(6,182,212,0.15)]"
+                                          : "border-zinc-300 dark:border-zinc-700/60 bg-white/70 dark:bg-zinc-800/35 text-zinc-700 dark:text-zinc-300 hover:border-cyan-500/40 hover:bg-zinc-50 dark:hover:bg-zinc-800/55"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedTests.includes(test.id)}
+                                        onChange={() => toggleTest(test.id)}
+                                        className="hidden h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
+                                        disabled={isScanning || testsLoading}
+                                      />
+                                      <span className="font-medium truncate" title={test.id}>{test.label.at(0)?.toLocaleUpperCase() + test.label.slice(1)}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 px-4 py-3">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={authorizedTester}
+                          onChange={(e) => setAuthorizedTester(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
+                          disabled={isScanning}
+                        />
+                        <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                          {authorizationCopy}
+                        </span>
+                      </label>
+                    </div>
+                  </form>
+                )}
+
+                {!showNewScan && (
+                  <>
+                    <div className="mb-2 pb-4">
+                      <div className="flex flex-col lg:flex-row gap-4">
+                        <div className="flex-1">
+                          <div className="relative border-b border-zinc-300 dark:border-zinc-700 focus-within:border-cyan-500/60 transition-colors">
+                            <i className="ri-search-line absolute left-0 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-lg"></i>
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder="Search by URL..."
+                              className="w-full h-11 pl-8 pr-1 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-5">
+                          {/* Filtry statusów... */}
+                          {(['all', 'safe', 'warning', 'danger'] as const).map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              onClick={() => setStatusFilter(status)}
+                              className={`relative pb-2 text-sm font-medium transition-colors whitespace-nowrap cursor-pointer capitalize ${
+                                statusFilter === status
+                                  ? "text-zinc-900 dark:text-zinc-100"
+                                  : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                              }`}
+                            >
+                              {status === 'warning' ? 'Warnings' : status === 'danger' ? 'Dangerous' : status}
+                              {statusFilter === status && <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-cyan-500 rounded-full"></span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!isLoadingScans && !scanListError && filteredScans.length > 0 && (
+                      <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between px-1 sm:px-2">
+                        <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                          Showing <span className="font-medium text-zinc-900 dark:text-zinc-100">{Math.min((currentPage - 1) * pageSize + 1, filteredScans.length)}-{Math.min(currentPage * pageSize, filteredScans.length)}</span> of <span className="font-medium text-zinc-900 dark:text-zinc-100">{filteredScans.length}</span>
+                        </div>
+
+                        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-zinc-300/80 dark:border-zinc-700/60 bg-white/85 dark:bg-zinc-900/30 backdrop-blur-xl p-1 shadow-sm self-start lg:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="h-8 px-2.5 rounded-full text-xs font-medium border border-transparent bg-zinc-100/90 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Prev
+                          </button>
+
+                          {visiblePages.map((page) => (
+                            <button
+                              key={page}
+                              type="button"
+                              onClick={() => goToPage(page)}
+                              aria-current={page === currentPage ? "page" : undefined}
+                              className={`h-8 min-w-8 px-2.5 rounded-full text-xs font-medium transition-colors ${
+                                page === currentPage
+                                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950"
+                                  : "bg-transparent text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="h-8 px-2.5 rounded-full text-xs font-medium border border-transparent bg-zinc-100/90 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 overflow-hidden shadow-sm">
+                      <div className="grid grid-cols-[2.6fr_1.1fr_1.2fr_0.9fr_0.8fr_1fr] gap-4 px-6 py-3 border-b border-zinc-200 dark:border-zinc-700/50 bg-zinc-50/70 dark:bg-zinc-900/40 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+                        <span>Target</span>
+                        <span>Status</span>
+                        <span>Risk score</span>
+                        <span>Date</span>
+                        <span>Time</span>
+                        <span className="text-right">Actions</span>
+                      </div>
+
+                      <div className="divide-y divide-zinc-200 dark:divide-zinc-800/50">
+                        {isLoadingScans && (
+                          <div className="px-6 py-8 text-sm text-zinc-500 dark:text-zinc-400">Loading scans...</div>
+                        )}
+
+                        {!isLoadingScans && scanListError && (
+                          <div className="px-6 py-8 text-sm text-rose-500">{scanListError}</div>
+                        )}
+
+                        {!isLoadingScans && !scanListError && filteredScans.length === 0 && (
+                          <div className="px-6 py-8 text-sm text-zinc-500 dark:text-zinc-400">No scans found for this account.</div>
+                        )}
+
+                        {!isLoadingScans && !scanListError && paginatedScans.map((row) => {
+                          const meta = statusMeta(row.status);
+                          return (
+                            <div
+                              key={row.id}
+                              className="grid grid-cols-[2.6fr_1.1fr_1.2fr_0.9fr_0.8fr_1fr] gap-4 px-6 py-4 items-center hover:bg-zinc-100/70 dark:hover:bg-zinc-800/25 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                                  <i className="ri-global-line text-cyan-500 dark:text-cyan-400"></i>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-zinc-900 dark:text-zinc-100 font-medium truncate">{row.url}</p>
+                                  <p className="text-xs text-zinc-500 dark:text-zinc-500">Scan ID #{row.id}</p>
+                                </div>
+                              </div>
+
+                              <div>
+                                <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold border ${meta.chip}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`}></span>
+                                  {meta.label}
+                                </span>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-full max-w-25 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700/70 overflow-hidden">
+                                    <div className={`h-full ${threatBarColor(row.threat)}`} style={{ width: `${row.threat}%` }}></div>
+                                  </div>
+                                  <span className={`text-sm font-semibold ${threatTextColor(row.threat)}`}>{row.threat}%</span>
+                                </div>
+                              </div>
+
+                              <div className="text-sm text-zinc-500 dark:text-zinc-400">{row.date}</div>
+                              <div className="text-sm text-zinc-500 dark:text-zinc-400">{row.duration}</div>
+
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                                  title="View details"
+                                  onClick={() => openScanResult(row.id)}
+                                >
+                                  <i className="ri-eye-line text-cyan-500 dark:text-cyan-400"></i>
+                                </button>
+                                <button
+                                  className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                                  title="Download report"
+                                  onClick={() => downloadScan(row.id)}
+                                >
+                                  <i className="ri-download-line text-zinc-500 dark:text-zinc-400"></i>
+                                </button>
+                                <button className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-rose-500/10 hover:border-rose-500/40 transition-colors cursor-pointer" title="Delete">
+                                  <i className="ri-delete-bin-line text-rose-500"></i>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* WIDOK SZCZEGÓŁÓW SKANU */
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:pr-14">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setActiveView("list")}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white/85 dark:bg-zinc-900/20 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+                      title="Back to list"
+                    >
+                      <i className="ri-arrow-left-line text-lg"></i>
+                    </button>
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Security Scan Results</h2>
+
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-cyan-600 dark:text-cyan-400 font-mono font-medium">
+                          {scanResult?.target_url.replace(/^https?:\/\//, '')}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-end">
+                  
+                  <div className="sm:ml-auto flex items-center gap-3">
+                    {sortedResults.length > 0 && (
+                      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mr-2 hidden md:block">
+                        {sortedResults.length} test{sortedResults.length !== 1 ? 's' : ''} completed
+                      </span>
+                    )}
                     <button
-                      type="submit"
-                      disabled={
-                        isScanning ||
-                        testsLoading ||
-                        selectedTests.length === 0
-                      }
-                      className="h-12 px-5 rounded-xl border border-cyan-500/50 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-500/60 transition-all whitespace-nowrap cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                      onClick={() => scanResult && downloadScanReport(scanResult as any)}
+                      disabled={!scanResult || sortedResults.length === 0}
+                      className="px-3 py-2 bg-white/85 dark:bg-zinc-900/20 text-zinc-700 dark:text-zinc-300 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all font-medium text-sm border border-zinc-300 dark:border-zinc-700 shadow-sm cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isScanning ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-play-circle-line" />}
-                      <span>{isScanning ? "Scanning..." : "Start scan"}</span>
+                      <i className="ri-download-line text-sm"></i>
+                      Export report
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider mb-2">Test scope</label>
-                  {testsError ? (
-                    <p className="mb-3 text-sm text-rose-500">{testsError}</p>
-                  ) : null}
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5">
-                    {testOptions.map((test) => (
-                      <label
-                        key={test.id}
-                        className={`rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition-all ${
-                          selectedTests.includes(test.id)
-                            ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 shadow-[inset_0_0_0_1px_rgba(6,182,212,0.15)]"
-                            : "border-zinc-300 dark:border-zinc-700/60 bg-zinc-100/70 dark:bg-zinc-800/35 text-zinc-700 dark:text-zinc-300 hover:border-cyan-500/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/55"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedTests.includes(test.id)}
-                            onChange={() => toggleTest(test.id)}
-                            className="h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
-                            disabled={isScanning || testsLoading}
-                          />
-                          <span className="font-medium">{test.label}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-5 px-4 py-3">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={authorizedTester}
-                      onChange={(e) => setAuthorizedTester(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-zinc-400 dark:border-zinc-600 text-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
-                      disabled={isScanning}
-                    />
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                      {authorizationCopy}
-                    </span>
-                  </label>
-                </div>
-              </form>
-            )}
-
-            {!showNewScan && (
-              <>
-                <div className="mb-2 pb-4">
-                  <div className="flex flex-col lg:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="relative border-b border-zinc-300 dark:border-zinc-700 focus-within:border-cyan-500/60 transition-colors">
-                        <i className="ri-search-line absolute left-0 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-lg"></i>
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Search by URL..."
-                          className="w-full h-11 pl-8 pr-1 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none"
-                        />
+                <div className="p-4 py-0 min-h-[400px]">
+                  {sortedResults.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full py-20">
+                      <div className="inline-flex items-center justify-center w-14 h-14 mb-4">
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500/30 border-t-cyan-500"></div>
                       </div>
+                      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Scanning in Progress</h3>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-sm">Analyzing website security and preparing results...</p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-5">
-                      <button
-                        type="button"
-                        onClick={() => setStatusFilter("all")}
-                        className={`relative pb-2 text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                          statusFilter === "all"
-                            ? "text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                        }`}
-                      >
-                        All
-                        {statusFilter === "all" ? <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-cyan-500 rounded-full"></span> : null}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStatusFilter("safe")}
-                        className={`relative pb-2 text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                          statusFilter === "safe"
-                            ? "text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                        }`}
-                      >
-                        Safe
-                        {statusFilter === "safe" ? <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-cyan-500 rounded-full"></span> : null}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStatusFilter("warning")}
-                        className={`relative pb-2 text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                          statusFilter === "warning"
-                            ? "text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                        }`}
-                      >
-                        Warnings
-                        {statusFilter === "warning" ? <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-cyan-500 rounded-full"></span> : null}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStatusFilter("danger")}
-                        className={`relative pb-2 text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                          statusFilter === "danger"
-                            ? "text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                        }`}
-                      >
-                        Dangerous
-                        {statusFilter === "danger" ? <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-cyan-500 rounded-full"></span> : null}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {!isLoadingScans && !scanListError && filteredScans.length > 0 && (
-                  <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between px-1 sm:px-2">
-                    <div className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-                      Showing <span className="font-medium text-zinc-900 dark:text-zinc-100">{Math.min((currentPage - 1) * pageSize + 1, filteredScans.length)}-{Math.min(currentPage * pageSize, filteredScans.length)}</span> of <span className="font-medium text-zinc-900 dark:text-zinc-100">{filteredScans.length}</span>
-                    </div>
-
-                    <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-zinc-300/80 dark:border-zinc-700/60 bg-white/85 dark:bg-zinc-900/30 backdrop-blur-xl p-1 shadow-sm self-start lg:self-auto">
-                      <button
-                        type="button"
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="h-8 px-2.5 rounded-full text-xs font-medium border border-transparent bg-zinc-100/90 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Prev
-                      </button>
-
-                      {visiblePages.map((page) => (
-                        <button
-                          key={page}
-                          type="button"
-                          onClick={() => goToPage(page)}
-                          aria-current={page === currentPage ? "page" : undefined}
-                          className={`h-8 min-w-8 px-2.5 rounded-full text-xs font-medium transition-colors ${
-                            page === currentPage
-                              ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950"
-                              : "bg-transparent text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80"
-                          }`}
-                        >
-                          {page}
-                        </button>
+                  ) : (
+                    <div className="space-y-3 sm:px-10">
+                      {sortedResults.map((result) => (
+                        <ScanResultItemComponent key={result.id} result={result} index={result.animIndex} />
                       ))}
-
-                      <button
-                        type="button"
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="h-8 px-2.5 rounded-full text-xs font-medium border border-transparent bg-zinc-100/90 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
                     </div>
-                  </div>
-                )}
-
-                <div className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 overflow-hidden shadow-sm">
-                  <div className="grid grid-cols-[2.6fr_1.1fr_1.2fr_0.9fr_0.8fr_1fr] gap-4 px-6 py-3 border-b border-zinc-200 dark:border-zinc-700/50 bg-zinc-50/70 dark:bg-zinc-900/40 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-                    <span>Target</span>
-                    <span>Status</span>
-                    <span>Risk score</span>
-                    <span>Date</span>
-                    <span>Time</span>
-                    <span className="text-right">Actions</span>
-                  </div>
-
-                  <div className="divide-y divide-zinc-200 dark:divide-zinc-800/50">
-                    {isLoadingScans && (
-                      <div className="px-6 py-8 text-sm text-zinc-500 dark:text-zinc-400">Loading scans...</div>
-                    )}
-
-                    {!isLoadingScans && scanListError && (
-                      <div className="px-6 py-8 text-sm text-rose-500">{scanListError}</div>
-                    )}
-
-                    {!isLoadingScans && !scanListError && filteredScans.length === 0 && (
-                      <div className="px-6 py-8 text-sm text-zinc-500 dark:text-zinc-400">No scans found for this account.</div>
-                    )}
-
-                    {!isLoadingScans && !scanListError && paginatedScans.map((row) => {
-                      const meta = statusMeta(row.status);
-                      return (
-                        <div
-                          key={row.id}
-                          className="grid grid-cols-[2.6fr_1.1fr_1.2fr_0.9fr_0.8fr_1fr] gap-4 px-6 py-4 items-center hover:bg-zinc-100/70 dark:hover:bg-zinc-800/25 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-                              <i className="ri-global-line text-cyan-500 dark:text-cyan-400"></i>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-zinc-900 dark:text-zinc-100 font-medium truncate">{row.url}</p>
-                              <p className="text-xs text-zinc-500 dark:text-zinc-500">Scan ID #{row.id}</p>
-                            </div>
-                          </div>
-
-                          <div>
-                            <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold border ${meta.chip}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`}></span>
-                              {meta.label}
-                            </span>
-                          </div>
-
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-full max-w-25 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700/70 overflow-hidden">
-                                <div className={`h-full ${threatBarColor(row.threat)}`} style={{ width: `${row.threat}%` }}></div>
-                              </div>
-                              <span className={`text-sm font-semibold ${threatTextColor(row.threat)}`}>{row.threat}%</span>
-                            </div>
-                          </div>
-
-                          <div className="text-sm text-zinc-500 dark:text-zinc-400">{row.date}</div>
-                          <div className="text-sm text-zinc-500 dark:text-zinc-400">{row.duration}</div>
-
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
-                              title="View details"
-                              onClick={() => openScanResult(row.id)}
-                            >
-                              <i className="ri-eye-line text-cyan-500 dark:text-cyan-400"></i>
-                            </button>
-                            <button
-                              className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
-                              title="Download report"
-                              onClick={() => downloadScan(row.id)}
-                            >
-                              <i className="ri-download-line text-zinc-500 dark:text-zinc-400"></i>
-                            </button>
-                            <button className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-rose-500/10 hover:border-rose-500/40 transition-colors cursor-pointer" title="Delete">
-                              <i className="ri-delete-bin-line text-rose-500"></i>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  )}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </main>
       </div>
 
+      {/* Zostawiłem Error Modal, bo wciąż może być przydatny np. przy błędach sieci z custom hooka */}
       {isModalOpen && scanError && (
         <ScanErrorModal isOpen={isModalOpen} onClose={closeModal} error={scanError} />
-      )}
-      {isModalOpen && scanResult && !scanError && (
-        <ScanResultModal isOpen={isModalOpen} onClose={closeModal} scanResult={scanResult} />
       )}
 
       {sidebarOpen && (
