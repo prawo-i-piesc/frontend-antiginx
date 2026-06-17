@@ -221,7 +221,7 @@ export default function DashboardChartsPage() {
                           formatter={(value: any) => [`${value}%`, "Threat Level"]}
                         />
                         <Line 
-                          type="monotone" 
+                          type="linear" 
                           dataKey="threat" 
                           stroke={COLORS.danger} 
                           strokeWidth={2}

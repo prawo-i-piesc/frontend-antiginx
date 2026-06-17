@@ -83,17 +83,24 @@ export interface UserScanResponse extends ScanResponse {
 export interface CreateScanRequest {
   target_url: string;
   tests?: string[];
-  authorized_tester?: boolean;
+  authorizedTester?: boolean;
+  anti_bot_detection?: boolean;
 }
 
+// Zmodyfikowana struktura opcji testu
 export interface ScanTestOption {
   id: string;
   label: string;
 }
 
-export interface PremiumScanConfigResponse {
+// Nowy interfejs reprezentujący pojedynczą kategorię
+export interface TestCategory {
+  category: string;
   tests: ScanTestOption[];
 }
+
+// Odpowiedź z konfiguracją to teraz tablica kategorii
+export type PremiumScanConfigResponse = TestCategory[];
 
 export interface CreateScanResponse {
   scanId: string;
@@ -104,6 +111,7 @@ export type ScanAccessMode = "free" | "premium";
 
 export interface ScanRequestOptions {
   mode?: ScanAccessMode;
+  authorizedTester?: boolean;
   token?: string | null;
 }
 
@@ -160,8 +168,13 @@ export async function createScan(
   if (tests && tests.length > 0) {
     payload.tests = tests;
   }
-  if (mode === "premium" && compliance) {
-    payload.authorized_tester = compliance.authorizedTester;
+
+  if (compliance?.authorizedTester) {
+    payload.authorizedTester = compliance.authorizedTester;
+  }
+
+  if (options?.authorizedTester) {
+    payload.anti_bot_detection = options.authorizedTester;
   }
 
   let response: Response;
@@ -226,22 +239,24 @@ export async function getPremiumScanConfig(
     );
   }
 
-  const payload = (await response.json()) as {
-    available_tests?: unknown;
-    tests?: unknown;
-  };
+  // Oczekujemy tablicy obiektów z backendu
+  const payload = (await response.json()) as unknown;
+  const rawCategories = Array.isArray(payload) ? payload : [];
 
-  const source = Array.isArray(payload.available_tests)
-    ? payload.available_tests
-    : Array.isArray(payload.tests)
-      ? payload.tests
-      : [];
+  // Mapujemy surowe stringi z "tests" na pełne obiekty { id, label }
+  return rawCategories.map((item: any) => {
+    const rawTests = Array.isArray(item?.tests) ? item.tests : [];
 
-  const tests = source
-    .filter((item): item is string => typeof item === "string")
-    .map((id) => ({ id, label: humanizeTestId(id) }));
-
-  return { tests };
+    return {
+      category: typeof item?.category === "string" ? item.category : "Inne",
+      tests: rawTests
+        .filter((t: any): t is string => typeof t === "string")
+        .map((id: any) => ({
+          id,
+          label: humanizeTestId(id), // Automatyczne nadawanie ładnych nazw z Twojego słownika
+        })),
+    };
+  });
 }
 
 function humanizeTestId(id: string): string {

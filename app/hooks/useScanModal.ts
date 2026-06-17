@@ -105,6 +105,7 @@ export function useScanModal(options?: UseScanModalOptions) {
   const handleScan = async (
     url: string,
     tests?: string[],
+    authorizedTester?: boolean,
     compliance?: PremiumScanCompliance,
   ) => {
     setIsScanning(true);
@@ -115,6 +116,7 @@ export function useScanModal(options?: UseScanModalOptions) {
       const { scanId } = await createScan(url.trim(), tests, compliance, {
         mode,
         token,
+        authorizedTester,
       });
 
       // start polling, update state on progress — await to preserve spinner lifecycle
