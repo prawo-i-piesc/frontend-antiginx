@@ -1,11 +1,11 @@
-name: Npm Verification
+name: Node Verification
 run-name: >-
   ${{
       github.event_name == 'pull_request'
-      && format('Npm Verification for CI: PR #{0} -> {1}', github.event.number, github.event.pull_request.title)
+      && format('Node Verification for CI: PR #{0} -> {1}', github.event.number, github.event.pull_request.title)
       ||
       github.event_name == 'push'
-      && format('Npm Verification for CI: Merge -> {0}', github.event.head_commit.message)
+      && format('Node Verification for CI: Merge -> {0}', github.event.head_commit.message)
   }}
 
 on:
@@ -22,24 +22,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  npm-ci-test:
+  node-ci-test:
     name: Testing
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Git -- Checkout repository
         uses: actions/checkout@v6
 
-      - name: 📘 Npm -- Set up
+      - name: 📘 Node -- Set up
         uses: actions/setup-node@v6
         with:
-          node-version-file: "Dockerfile"
-          cache: true
+          node-version: "25"
+          cache: npm
 
-      - name: 🧪 Npm -- Test Module Integrity
+      - name: 🧪 Node -- Test Module Integrity
         run: |
-          echo "⚙️ Verifying Npm module integrity..."
+          echo "⚙️ Verifying Node module integrity..."
           npm ci
 
           echo "|"
@@ -56,7 +56,7 @@ jobs:
               echo "✅ package.json and package-lock.json are up to date."
           fi
 
-      - name: 🧪 Npm -- Test Compilation
+      - name: 🧪 Node -- Test Compilation
         run: |
           echo "⚙️ Verifying project compilation..."
           if npm run build; then
