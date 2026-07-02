@@ -1,0 +1,69 @@
+name: Npm Verification
+run-name: >-
+  ${{
+      github.event_name == 'pull_request'
+      && format('Npm Verification for CI: PR #{0} -> {1}', github.event.number, github.event.pull_request.title)
+      ||
+      github.event_name == 'push'
+      && format('Npm Verification for CI: Merge -> {0}', github.event.head_commit.message)
+  }}
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number) || format('{0}-ref-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: true
+
+jobs:
+  npm-ci-test:
+    name: Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Git -- Checkout repository
+        uses: actions/checkout@v6
+
+      - name: 📘 Npm -- Set up
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: "Dockerfile"
+          cache: true
+
+      - name: 🧪 Npm -- Test Module Integrity
+        run: |
+          echo "⚙️ Verifying Npm module integrity..."
+          npm ci
+
+          echo "|"
+          echo "|"
+
+          echo "⚙️ Checking for uncommitted changes in package.json and package-lock.json:"
+          if ! git diff --exit-code package.json package-lock.json > /dev/null 2>&1 ; then
+              git diff --color=always package.json package-lock.json
+              echo ""
+              echo "❌ package.json or package-lock.json have uncommitted changes. Please run 'npm install' and commit the changes."
+              exit 1
+          else
+              echo ""
+              echo "✅ package.json and package-lock.json are up to date."
+          fi
+
+      - name: 🧪 Npm -- Test Compilation
+        run: |
+          echo "⚙️ Verifying project compilation..."
+          if npm run build; then
+              echo ""
+              echo "✅ Compilation successful."
+          else
+              echo ""
+              echo "❌ Compilation failed. Please fix the errors above."
+              exit 1
+          fi
