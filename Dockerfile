@@ -1,5 +1,5 @@
 # Variables
-ARG NPM_VERSION=11.17.0
+ARG NPM_VERSION=11.18.0
 ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
 
 ARG USERNAME=antiginx_user
@@ -10,7 +10,7 @@ ARG USER_GID=1001
 
 
 # Base image for stages
-FROM node:25-alpine AS base
+FROM node:26-alpine AS base
 # ---
 
 
