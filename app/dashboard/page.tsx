@@ -11,7 +11,6 @@ import DashboardSidebar from "../components/layout/DashboardSidebar";
 import StatsCard from "../components/interface/StatsCard";
 import RecentScansWidget from "../components/widgets/RecentScansWidget";
 import TopThreatsWidget from "../components/widgets/TopThreatsWidget";
-import { API_CONFIG } from "@/app/config/constants";
 
 // TWORZYMY TYPY ODPOWIADAJĄCE JSON Z API
 export interface ApiScanData {
@@ -131,7 +130,7 @@ export default function DashboardPage() {
     const fetchWidgetData = async () => {
       setIsDataLoading(true);
       try {
-        const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/users/widgets`, {
+        const response = await fetch("/api/users/widgets", {
           headers: {
             "Authorization": `Bearer ${token}`
           }

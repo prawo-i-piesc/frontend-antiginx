@@ -1,9 +1,5 @@
 // API configuration and types based on backend specification
 
-import { API_CONFIG } from "@/app/config/constants";
-
-const BACKEND_URL = API_CONFIG.BACKEND_URL;
-
 // Types based on backend response structure
 export type ScanStatus = "PENDING" | "COMPLETED" | "FAILED" | "RUNNING";
 export type SeverityLevel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
@@ -179,7 +175,7 @@ export async function createScan(
 
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}${scanPath(mode)}`, {
+    response = await fetch(scanPath(mode), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -212,7 +208,7 @@ export async function getPremiumScanConfig(
 ): Promise<PremiumScanConfigResponse> {
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}/api/utils/tests`, {
+    response = await fetch("/api/utils/tests", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -284,7 +280,7 @@ export async function getScan(
   const mode = options?.mode ?? "free";
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}${scanPath(mode)}/${scanId}`, {
+    response = await fetch(`${scanPath(mode)}/${scanId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -314,7 +310,7 @@ export async function getScan(
 export async function getUserScans(token: string): Promise<UserScanResponse[]> {
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}/api/users/scans`, {
+    response = await fetch("/api/users/scans", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -478,7 +474,7 @@ export interface LoginResponse {
 }
 
 export async function register(payload: RegisterPayload): Promise<void> {
-  const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
+  const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -495,7 +491,7 @@ export async function register(payload: RegisterPayload): Promise<void> {
 }
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+  const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -521,8 +517,7 @@ export interface MeResponse {
 }
 
 export async function getMe(token: string): Promise<MeResponse> {
-  if (!BACKEND_URL) throw new Error("BACKEND_URL not configured");
-  const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
+  const res = await fetch("/api/auth/me", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
