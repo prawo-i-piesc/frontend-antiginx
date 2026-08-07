@@ -9,7 +9,6 @@ import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import AdminSidebar from "@/app/components/layout/AdminSidebar";
-import { API_CONFIG } from "@/app/config/constants";
 
 
 type TableType = 'users' | 'scans' | 'premium_scans';
@@ -53,8 +52,7 @@ export default function AdminDatabasePage() {
       setSortConfig(null); // Reset sortowania przy zmianie tabeli
       
       try {
-        const backendUrl = API_CONFIG.BACKEND_URL;
-        const response = await fetch(`${backendUrl}/api/admin/database?table=${activeTable}`, {
+        const response = await fetch(`/api/admin/database?table=${encodeURIComponent(activeTable)}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

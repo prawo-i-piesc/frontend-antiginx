@@ -1,6 +1,5 @@
 # Variables
 ARG NPM_VERSION=11.17.0
-ARG NEXT_PUBLIC_BACKEND_URL=http://10.10.0.1:4000
 
 ARG USERNAME=antiginx_user
 ARG GROUPNAME=antiginx_group
@@ -34,16 +33,17 @@ RUN \
 
 
 # STAGE: Build the application
+#
+# The build takes no environment-specific configuration: the client calls the
+# API over same-origin /api paths and the ingress routes them to the backend.
+# The resulting image is promoted unchanged across environments.
 FROM base AS build
-
-ARG NEXT_PUBLIC_BACKEND_URL
 
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
@@ -52,6 +52,11 @@ RUN npm prune --production
 
 
 # STAGE: Final image to run the application
+#
+# Requires BACKEND_URL at runtime: the address used to proxy /api to the
+# backend. It is read per request and never reaches the browser, so it may be
+# an address only resolvable from inside the network. Without it /api answers
+# 502 while the rest of the UI still serves.
 FROM base AS runner
 
 ARG NPM_VERSION

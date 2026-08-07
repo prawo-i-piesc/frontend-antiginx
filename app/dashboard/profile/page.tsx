@@ -6,15 +6,12 @@ import useRequireAuth from "@/app/hooks/useRequireAuth";
 import useProfile from "@/app/hooks/useProfile";
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import DashboardSidebar from "@/app/components/layout/DashboardSidebar";
-import { API_CONFIG } from "@/app/config/constants";
 
 export default function DashboardProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { token, initialized, auth } = useRequireAuth();
   const { profileName, profileEmail } = useProfile(token);
-
-  const BACKEND_URL = API_CONFIG.BACKEND_URL;
 
   // Stany dla komunikacji z użytkownikiem (Feedback)
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -68,7 +65,7 @@ const [placeholderEmail, setPlaceholderEmail] = useState("");
     }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/utils/profile/name`, {
+      const res = await fetch("/api/utils/profile/name", {
         method: "PATCH", // lub POST, zależnie od tego jak masz skonfigurowany router w Go
         headers: {
           "Content-Type": "application/json",
@@ -107,7 +104,7 @@ const [placeholderEmail, setPlaceholderEmail] = useState("");
     }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/utils/profile/email`, {
+      const res = await fetch("/api/utils/profile/email", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -147,7 +144,7 @@ const [placeholderEmail, setPlaceholderEmail] = useState("");
     setFeedback(null);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/utils/profile/password`, {
+      const res = await fetch("/api/utils/profile/password", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

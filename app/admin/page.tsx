@@ -13,7 +13,6 @@ import StatsCard from "../components/interface/StatsCard";
 import RecentScansWidget from "../components/widgets/RecentScansWidget";
 import UserLocationMapWidget from "../components/widgets/UserLocationMapWidget";
 import AdminSidebar from "../components/layout/AdminSidebar";
-import { API_CONFIG } from "@/app/config/constants";
 
 type WidgetType = 'totalUsers' | 'activeScans' | 'threats' | 'newRegistrations' | 'recentScans' | 'topCountries';
 
@@ -177,7 +176,7 @@ export default function AdminPage() {
 
     const fetchWidgetsData = async () => {
       try {
-        const response = await fetch(`${API_CONFIG.BACKEND_URL}/api/admin/widgets`, {
+        const response = await fetch('/api/admin/widgets', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

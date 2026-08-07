@@ -41,7 +41,7 @@ export function useScanModal(options?: UseScanModalOptions) {
       }
 
       if (error.code === "NETWORK_ERROR") {
-        return "Cannot connect to the scanner backend. Check your network or NEXT_PUBLIC_BACKEND_URL configuration.";
+        return "Cannot connect to the scanner backend. Please check your network connection and try again.";
       }
 
       if (error.status === 400) {
