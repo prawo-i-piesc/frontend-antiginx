@@ -52,6 +52,15 @@ let current: Session | null = null;
 let refreshInFlight: Promise<Session | null> | null = null;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * Whether the backend actually serves POST /api/auth/refresh. null until the
+ * first attempt tells us. Everything below that mentions the fallback exists
+ * only while this can be false, and goes once stage E1 ships.
+ */
+let refreshEndpointAvailable: boolean | null = null;
+
+const FALLBACK_KEY = "ag.session.fallback";
+
 const listeners = new Set<(session: Session | null) => void>();
 
 export function getSession(): Session | null {
@@ -88,13 +97,22 @@ function scheduleRefresh(): void {
 
 export function setSession(session: Session): void {
   current = session;
+  persistFallbackSession(session);
   scheduleRefresh();
+  emit();
+}
+
+/** Replaces the profile on the live session, after it changes server-side. */
+export function setSessionUser(user: SessionUser): void {
+  if (!current) return;
+  current = { ...current, user };
   emit();
 }
 
 export function clearSession(): void {
   current = null;
   cancelScheduledRefresh();
+  forgetFallbackSession();
   emit();
 }
 
@@ -111,7 +129,11 @@ export async function sessionFromResponse(payload: SessionResponse): Promise<Ses
   }
 
   const expiresIn = payload.expires_in ?? DEFAULT_TTL_SECONDS;
-  const user = payload.user ?? (await fetchProfile(accessToken));
+
+  // /auth/login returns a trimmed profile without the `auth` block that the
+  // security screens read, so it is topped up from /auth/me. Drops out on its
+  // own once login returns the same shape.
+  const user = payload.user?.auth ? payload.user : await fetchProfile(accessToken);
 
   return { accessToken, expiresAt: Date.now() + expiresIn * 1000, user };
 }
@@ -158,6 +180,16 @@ async function performRefresh(): Promise<Session | null> {
   // backend restart is transient and must not sign the user out.
   if (response.status >= 500) return current;
 
+  // The endpoint is not deployed yet. That says nothing about the session in
+  // hand, so keep it — treating this as a rejection is what was signing people
+  // out mid-visit and on every reload.
+  if (response.status === 404 || response.status === 405 || response.status === 501) {
+    refreshEndpointAvailable = false;
+    return current;
+  }
+
+  refreshEndpointAvailable = true;
+
   if (!response.ok) {
     clearSession();
     return null;
@@ -169,6 +201,85 @@ async function performRefresh(): Promise<Session | null> {
     return session;
   } catch {
     clearSession();
+    return null;
+  }
+}
+
+/**
+ * Restores the session on page load.
+ *
+ * The cookie is the real mechanism; the stored copy is only reached when the
+ * backend has no refresh endpoint to exchange that cookie at.
+ */
+export async function bootstrapSession(): Promise<Session | null> {
+  const refreshed = await refreshSession();
+  if (refreshed) return refreshed;
+  if (refreshEndpointAvailable === false) return await restoreFallbackSession();
+  return null;
+}
+
+/**
+ * Temporary bridge until the backend ships POST /api/auth/refresh (stage E1).
+ *
+ * Without a refresh endpoint there is nothing to rebuild a session from after
+ * a reload, and the app signs the user out on every F5. Until then the access
+ * token is kept in sessionStorage — it dies with the tab, unlike the
+ * localStorage copy this replaced — and only while the endpoint is missing.
+ * The moment refresh answers, this path stops being reached and the whole
+ * block can be deleted.
+ */
+function persistFallbackSession(session: Session): void {
+  if (refreshEndpointAvailable !== false || typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(FALLBACK_KEY, JSON.stringify(session));
+  } catch {
+    // Private mode; the user simply signs in again after a reload.
+  }
+}
+
+function forgetFallbackSession(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(FALLBACK_KEY);
+  } catch {
+    // As above.
+  }
+}
+
+async function restoreFallbackSession(): Promise<Session | null> {
+  if (typeof window === "undefined") return null;
+
+  let stored: string | null = null;
+  try {
+    stored = window.sessionStorage.getItem(FALLBACK_KEY);
+  } catch {
+    return null;
+  }
+  if (!stored) return null;
+
+  let session: Session;
+  try {
+    session = JSON.parse(stored) as Session;
+  } catch {
+    forgetFallbackSession();
+    return null;
+  }
+
+  if (!session.accessToken || session.expiresAt - Date.now() <= 0) {
+    forgetFallbackSession();
+    return null;
+  }
+
+  // The stored profile can be stale — /auth/login returns a trimmed one, and
+  // the account may have changed since. Reading it back settles that and
+  // proves the token is still accepted, which the stored copy cannot.
+  try {
+    const user = await fetchProfile(session.accessToken);
+    const restored = { ...session, user };
+    setSession(restored);
+    return restored;
+  } catch {
+    forgetFallbackSession();
     return null;
   }
 }

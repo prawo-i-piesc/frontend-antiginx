@@ -11,11 +11,12 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { logout as apiLogout } from "@/app/lib/authApi";
+import { getMe, logout as apiLogout } from "@/app/lib/authApi";
 import {
+  bootstrapSession,
   getSession,
   purgeLegacyTokenStorage,
-  refreshSession,
+  setSessionUser,
   subscribeToSession,
   type SessionUser,
 } from "@/app/lib/session";
@@ -26,6 +27,8 @@ interface AuthContextType {
   initialized: boolean;
   user: SessionUser | null;
   logout: () => Promise<void>;
+  /** Re-reads the profile, for screens that change it server-side. */
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,8 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     purgeLegacyTokenStorage();
 
-    // A failed refresh is the normal signed-out case, not an error to surface.
-    refreshSession().finally(() => {
+    // A failed bootstrap is the normal signed-out case, not an error to surface.
+    bootstrapSession().finally(() => {
       if (active) setInitialized(true);
     });
 
@@ -55,14 +58,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace("/login");
   }, [router]);
 
+  const reloadUser = useCallback(async () => {
+    setSessionUser(await getMe());
+  }, []);
+
   const value = useMemo<AuthContextType>(
     () => ({
       token: initialized ? (session?.accessToken ?? null) : undefined,
       initialized,
       user: session?.user ?? null,
       logout,
+      reloadUser,
     }),
-    [initialized, session, logout],
+    [initialized, session, logout, reloadUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
