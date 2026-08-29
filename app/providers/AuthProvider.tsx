@@ -1,157 +1,77 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { getMe } from '@/app/lib/api';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  role: "admin" | "user";
-}
+import { logout as apiLogout } from "@/app/lib/authApi";
+import {
+  getSession,
+  purgeLegacyTokenStorage,
+  refreshSession,
+  subscribeToSession,
+  type SessionUser,
+} from "@/app/lib/session";
 
 interface AuthContextType {
-  token: string | null | undefined; // undefined = not initialized yet
+  /** undefined until the initial refresh settles, then the token or null. */
+  token: string | null | undefined;
   initialized: boolean;
-  user: UserProfile | null;
-  login: (token: string, remember?: boolean) => Promise<void>;
-  logout: () => void;
+  user: SessionUser | null;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const encoded = encodeURIComponent(name) + "=";
-  const cookies = document.cookie ? document.cookie.split(";") : [];
-  for (const item of cookies) {
-    const trimmed = item.trim();
-    if (trimmed.startsWith(encoded)) {
-      return decodeURIComponent(trimmed.slice(encoded.length));
-    }
-  }
-  return null;
-}
-
-function writeAuthCookie(token: string | null, remember: boolean = true): void {
-  if (typeof document === "undefined") return;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  if (!token) {
-    document.cookie = `auth.token=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
-    return;
-  }
-
-  const persistence = remember ? `; Max-Age=${60 * 60 * 24 * 30}` : "";
-  document.cookie = `auth.token=${encodeURIComponent(token)}; Path=/${persistence}; SameSite=Lax${secure}`;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Keep initial server/client render identical; hydrate token from storage after mount.
-  const [token, setToken] = useState<string | null | undefined>(undefined);
-
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const session = useSyncExternalStore(subscribeToSession, getSession, () => null);
+  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const localToken = localStorage.getItem('auth.token');
-      const sessionToken = sessionStorage.getItem('auth.token');
-      const cookieToken = readCookie('auth.token');
-      const stored = localToken || sessionToken || cookieToken;
+    let active = true;
 
-      if (localToken) {
-        writeAuthCookie(localToken, true);
-      } else if (sessionToken) {
-        writeAuthCookie(sessionToken, false);
-      }
+    purgeLegacyTokenStorage();
 
-      setToken(stored ? stored : null);
-    } catch {
-      setToken(null);
-    }
+    // A failed refresh is the normal signed-out case, not an error to surface.
+    refreshSession().finally(() => {
+      if (active) setInitialized(true);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    if (!token) {
-      // ensure user is cleared when there's no token
-      // schedule asynchronously to avoid synchronous setState inside effect
-      Promise.resolve().then(() => {
-        if (mounted) setUser(null);
-      });
-      return () => { mounted = false; };
-    }
+  const logout = useCallback(async () => {
+    await apiLogout();
+    router.replace("/login");
+  }, [router]);
 
-    // validate and fetch user asynchronously
-    getMe(token)
-      .then((u) => {
-        if (!mounted) return;
-        setUser(u);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setUser(null);
-        setToken(null);
-        try { localStorage.removeItem('auth.token'); } catch {}
-        try { sessionStorage.removeItem('auth.token'); } catch {}
-        writeAuthCookie(null);
-      });
-
-    return () => { mounted = false; };
-  }, [token]);
-
-  const login = async (t: string, remember: boolean = true) => {
-    setToken(t);
-    try {
-      if (remember) {
-        try { localStorage.setItem('auth.token', t); } catch {}
-        try { sessionStorage.removeItem('auth.token'); } catch {}
-      } else {
-        try { sessionStorage.setItem('auth.token', t); } catch {}
-        try { localStorage.removeItem('auth.token'); } catch {}
-      }
-      writeAuthCookie(t, remember);
-    } catch (e) {
-      // ignore storage errors
-    }
-
-    try {
-      const u = await getMe(t);
-      setUser(u);
-    } catch (e) {
-      // invalid token -> clear
-      setToken(null);
-      setUser(null);
-      try { localStorage.removeItem('auth.token'); } catch {}
-      try { sessionStorage.removeItem('auth.token'); } catch {}
-      writeAuthCookie(null);
-      throw e;
-    }
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    try { localStorage.removeItem('auth.token'); } catch {}
-    try { sessionStorage.removeItem('auth.token'); } catch {}
-    writeAuthCookie(null);
-    // redirect to login
-    try { router.replace('/login'); } catch {}
-  };
-
-  return (
-    <AuthContext.Provider value={{ token, initialized: token !== undefined, user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({
+      token: initialized ? (session?.accessToken ?? null) : undefined,
+      initialized,
+      user: session?.user ?? null,
+      logout,
+    }),
+    [initialized, session, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 }
 
 export default AuthProvider;

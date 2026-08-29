@@ -1,52 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getMe } from "@/app/lib/api";
+import { useState } from "react";
 
-export function useProfile(token?: string | null | undefined) {
-  const [profileName, setProfileName] = useState<string | null>(null);
-  const [profileId, setProfileId] = useState<string | null>(null);
-  const [profileEmail, setProfileEmail] = useState<string | null>(null);
+import { useAuth } from "@/app/providers/AuthProvider";
 
-  useEffect(() => {
-    let mounted = true;
-    if (!token) {
-      // clear profile asynchronously to avoid sync setState inside effect
-      Promise.resolve().then(() => {
-        if (mounted) {
-          setProfileName(null);
-          setProfileId(null);
-          setProfileEmail(null);
-        }
-      });
-      return () => {
-        mounted = false;
-      };
-    }
+/** Profile details for the dashboard chrome, read from the active session. */
+export function useProfile() {
+  const { user } = useAuth();
+  const [override, setProfileName] = useState<string | null>(null);
 
-    (async () => {
-      try {
-        const me = await getMe(token as string);
-        if (mounted) {
-          setProfileName(me.full_name);
-          setProfileId(me.id);
-          setProfileEmail(me.email);
-        }
-      } catch (err) {
-        if (mounted) {
-          setProfileName(null);
-          setProfileId(null);
-          setProfileEmail(null);
-        }
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [token]);
-
-  return { profileName, profileId, profileEmail, setProfileName };
+  return {
+    profileName: override ?? user?.full_name ?? null,
+    profileId: user?.id ?? null,
+    profileEmail: user?.email ?? null,
+    setProfileName,
+  };
 }
 
 export default useProfile;

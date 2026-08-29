@@ -72,7 +72,7 @@ export default function DashboardChartsPage() {
   const { theme, toggleTheme } = useTheme();
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
   useEffect(() => {
     if (!token) return;
@@ -83,7 +83,7 @@ export default function DashboardChartsPage() {
       setScanListError(null);
 
       try {
-        const scans = await getUserScans(token);
+        const scans = await getUserScans();
         if (!active) return;
 
         const completedScans = scans.filter((scan) => scan.status === "COMPLETED");

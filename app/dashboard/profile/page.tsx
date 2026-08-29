@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import useProfile from "@/app/hooks/useProfile";
+import { authorizedFetch } from "@/app/lib/session";
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import DashboardSidebar from "@/app/components/layout/DashboardSidebar";
 
@@ -11,7 +12,7 @@ export default function DashboardProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { token, initialized, auth } = useRequireAuth();
-  const { profileName, profileEmail } = useProfile(token);
+  const { profileName, profileEmail } = useProfile();
 
   // Stany dla komunikacji z użytkownikiem (Feedback)
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -65,12 +66,9 @@ const [placeholderEmail, setPlaceholderEmail] = useState("");
     }
 
     try {
-      const res = await fetch("/api/utils/profile/name", {
-        method: "PATCH", // lub POST, zależnie od tego jak masz skonfigurowany router w Go
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // Zakładam standardową autoryzację Bearer
-        },
+      const res = await authorizedFetch("/api/utils/profile/name", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           full_name: username,
         }),
@@ -104,12 +102,9 @@ const [placeholderEmail, setPlaceholderEmail] = useState("");
     }
 
     try {
-      const res = await fetch("/api/utils/profile/email", {
+      const res = await authorizedFetch("/api/utils/profile/email", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email,
         }),
@@ -144,12 +139,9 @@ const [placeholderEmail, setPlaceholderEmail] = useState("");
     setFeedback(null);
 
     try {
-      const res = await fetch("/api/utils/profile/password", {
+      const res = await authorizedFetch("/api/utils/profile/password", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           old_password: oldPassword,
           new_password: newPassword,

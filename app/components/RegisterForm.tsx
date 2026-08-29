@@ -1,132 +1,169 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { register as apiRegister } from '@/app/lib/api';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useAuth } from '@/app/providers/AuthProvider';
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { register } from "@/app/lib/authApi";
+import { ApiError } from "@/app/lib/authErrors";
+import { useToast } from "@/app/providers/ToastProvider";
+import AuthShell from "@/app/components/auth/AuthShell";
+import OAuthButtons from "@/app/components/auth/OAuthButtons";
+import {
+  Checkbox,
+  Divider,
+  PasswordField,
+  SubmitButton,
+  TextField,
+} from "@/app/components/auth/Fields";
+
+/** Mirrors the server-side policy so the user is told before the round trip. */
+const MIN_PASSWORD_LENGTH = 12;
 
 export default function RegisterForm() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [accept, setAccept] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const toast = useToast();
 
-  const validate = () => {
-    if (!name.trim()) return 'Please enter your username.';
-    if (!email.includes('@')) return 'Please enter a valid email address.';
-    if (password.length < 8) return 'Password must be at least 8 characters.';
-    if (password !== confirmPassword) return 'Passwords do not match.';
-    if (!accept) return 'You must accept the terms.';
-    return null;
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [accepted, setAccepted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!fullName.trim()) errors.full_name = "Enter your name.";
+    if (!email.trim()) errors.email = "Enter your email address.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      errors.email = "That does not look like an email address.";
+
+    if (password.length < MIN_PASSWORD_LENGTH)
+      errors.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+    if (confirmPassword !== password) errors.confirm_password = "Both passwords have to match.";
+    if (!accepted) errors.terms = "Accept the terms to create an account.";
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const v = validate();
-    if (v) {
-      setError(v);
-      return;
-    }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (loading || !validate()) return;
+
     setLoading(true);
     try {
-      await apiRegister({ full_name: name, email, password });
+      const result = await register({
+        full_name: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
+
+      if (result.kind === "session") {
+        toast.success("Account created", { description: "You are signed in and ready to scan." });
+        router.replace("/dashboard");
+        return;
+      }
+
+      // Pre-E1 backend: the account exists but no session was issued.
+      toast.success("Account created", { description: "Sign in to continue." });
+      router.replace("/login");
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setFieldErrors(error.fields);
+        toast.error(error.message);
+      } else {
+        toast.error("We could not reach the server. Check your connection and try again.");
+      }
       setLoading(false);
-      // redirect to login
-      router.push('/login');
-    } catch (err: any) {
-      setLoading(false);
-      setError(err.message || 'Registration failed');
     }
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <Link href="/" className="mx-auto w-48 h-16 relative inline-block mb-0">
-            <Image src="/logotype.png" alt="Antiginx" fill className="object-contain" />
+    <AuthShell
+      title="Create your account"
+      subtitle="Start scanning your sites in a couple of minutes."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" className="text-cyan-400 hover:text-cyan-300">
+            Sign in
           </Link>
-          <p className="text-zinc-400 text-sm mt-2">Create your account to get started.</p>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <TextField
+          label="Full name"
+          name="name"
+          autoComplete="name"
+          placeholder="Jan Kowalski"
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+          error={fieldErrors.full_name}
+          disabled={loading}
+        />
+
+        <TextField
+          label="Email address"
+          type="email"
+          name="email"
+          autoComplete="email"
+          placeholder="you@email.com"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={fieldErrors.email}
+          disabled={loading}
+        />
+
+        <PasswordField
+          label="Password"
+          name="new-password"
+          autoComplete="new-password"
+          placeholder="At least 12 characters"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={fieldErrors.password}
+          hint={`Use at least ${MIN_PASSWORD_LENGTH} characters. Avoid anything you use elsewhere.`}
+          disabled={loading}
+        />
+
+        <PasswordField
+          label="Confirm password"
+          name="confirm-password"
+          autoComplete="new-password"
+          placeholder="Repeat your password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          error={fieldErrors.confirm_password}
+          disabled={loading}
+        />
+
+        <div>
+          <Checkbox
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            disabled={loading}
+            label="I accept the terms of service and the privacy policy."
+          />
+          {fieldErrors.terms ? (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-red-400">
+              <i className="ri-error-warning-line" aria-hidden="true" />
+              {fieldErrors.terms}
+            </p>
+          ) : null}
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-zinc-900/40 border border-zinc-800/40 rounded-xl p-6 space-y-4">
-          {error && <div className="text-sm text-red-400 bg-red-900/20 p-2 rounded">{error}</div>}
+        <SubmitButton loading={loading} loadingLabel="Creating account…">
+          Create account
+        </SubmitButton>
 
-          <div>
-            <label className="block text-zinc-400 text-sm mb-2">Username</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your username"
-              className="w-full bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:ring-2 focus:ring-cyan-500"
-              required
-            />
-          </div>
+        <Divider label="or" />
 
-          <div>
-            <label className="block text-zinc-400 text-sm mb-2">Email address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@email.com"
-              className="w-full bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:ring-2 focus:ring-cyan-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-400 text-sm mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              className="w-full bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:ring-2 focus:ring-cyan-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-400 text-sm mb-2">Confirm password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat your password"
-              className="w-full bg-zinc-800/60 border border-zinc-700 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:ring-2 focus:ring-cyan-500"
-              required
-            />
-          </div>
-
-          <div className="flex items-center mt-2">
-            <label className="flex items-center text-sm text-zinc-400">
-              <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="peer sr-only" />
-              <span className="mr-3 w-4 h-4 rounded-sm bg-zinc-800/60 border border-zinc-700 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 peer-checked:[&>svg]:block flex items-center justify-center">
-                <svg className="hidden w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-              </span>
-              I agree to the terms and privacy policy
-            </label>
-          </div>
-
-          <div>
-            <button type="submit" className="w-full px-3 lg:px-5 py-1 lg:py-3 bg-linear-to-r from-cyan-600 to-cyan-700 text-white rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold shadow-lg hover:shadow-xl border border-cyan-500/30 text-sm" disabled={loading}>
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
-          </div>
-
-          <p className="text-center text-zinc-400 text-sm mt-2">Already have an account? <a href="/login" className="text-cyan-400">Sign in</a></p>
-        </form>
-      </div>
-    </div>
+        <OAuthButtons disabled={loading} />
+      </form>
+    </AuthShell>
   );
 }

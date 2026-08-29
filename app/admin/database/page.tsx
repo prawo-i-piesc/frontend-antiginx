@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
+import { authorizedFetch } from "@/app/lib/session";
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import AdminSidebar from "@/app/components/layout/AdminSidebar";
 
@@ -24,7 +25,7 @@ export default function AdminDatabasePage() {
   
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
   const [activeTable, setActiveTable] = useState<TableType>('users');
   const [dbData, setDbData] = useState<any[]>([]);
@@ -52,12 +53,9 @@ export default function AdminDatabasePage() {
       setSortConfig(null); // Reset sortowania przy zmianie tabeli
       
       try {
-        const response = await fetch(`/api/admin/database?table=${encodeURIComponent(activeTable)}`, {
+        const response = await authorizedFetch(`/api/admin/database?table=${encodeURIComponent(activeTable)}`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-          }
+          headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) {

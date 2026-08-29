@@ -108,7 +108,7 @@ export default function DashboardScannerPage() {
   const { theme, toggleTheme } = useTheme();
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
   const {
     scanResult,
@@ -120,7 +120,7 @@ export default function DashboardScannerPage() {
     setScanResult,
     setScanError,
     setIsModalOpen,
-  } = useScanModal({ mode: "premium", token });
+  } = useScanModal({ mode: "premium" });
 
   // Ładowanie listy skanów
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function DashboardScannerPage() {
       setScanListError(null);
 
       try {
-        const scans = await getUserScans(token);
+        const scans = await getUserScans();
         if (!active) return;
 
         const completedScans = scans.filter((scan) => scan.status === "COMPLETED");
@@ -174,7 +174,7 @@ export default function DashboardScannerPage() {
       setTestsError(null);
 
       try {
-        const config = await getPremiumScanConfig(token);
+        const config = await getPremiumScanConfig();
         if (!active) return;
 
         setTestCategories(config);

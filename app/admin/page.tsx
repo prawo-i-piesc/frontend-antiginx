@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
+import { authorizedFetch } from "@/app/lib/session";
 import DashboardTopBar from "../components/layout/DashboardTopBar";
 import NavLink from "../components/interface/NavLink";
 import StatsCard from "../components/interface/StatsCard";
@@ -168,7 +169,7 @@ export default function AdminPage() {
 
   const { token, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
   // Hook pobierający dane z endpointu po zaimportowaniu tokenu autoryzacji
   useEffect(() => {
@@ -176,11 +177,8 @@ export default function AdminPage() {
 
     const fetchWidgetsData = async () => {
       try {
-        const response = await fetch('/api/admin/widgets', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const response = await authorizedFetch('/api/admin/widgets', {
+          headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

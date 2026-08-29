@@ -33,11 +33,16 @@ const STRIPPED_REQUEST_HEADERS = new Set([
 
 // undici transparently decompresses the response body, so the encoding and
 // length advertised by the backend no longer describe what we forward.
+//
+// set-cookie is handled separately: Headers.forEach folds repeated set-cookie
+// headers into a single comma-joined value, which produces one malformed
+// cookie instead of several valid ones. getSetCookie() keeps them apart.
 const STRIPPED_RESPONSE_HEADERS = new Set([
   "connection",
   "content-encoding",
   "content-length",
   "keep-alive",
+  "set-cookie",
   "transfer-encoding",
 ]);
 
@@ -103,6 +108,12 @@ async function proxy(
       responseHeaders.set(key, value);
     }
   });
+
+  // The session cookie the backend sets on login/refresh reaches the browser
+  // through here, so each Set-Cookie has to survive as its own header.
+  for (const cookie of response.headers.getSetCookie()) {
+    responseHeaders.append("set-cookie", cookie);
+  }
 
   return new Response(response.body, {
     status: response.status,
