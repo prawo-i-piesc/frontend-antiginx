@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { login, safeNextPath } from "@/app/lib/authApi";
-import { ApiError, messageForCode } from "@/app/lib/authErrors";
+import { ApiError, fieldMessages, messageForCode } from "@/app/lib/authErrors";
 import { setPendingMfa } from "@/app/lib/pendingMfa";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell from "@/app/components/auth/AuthShell";
@@ -76,7 +76,7 @@ export default function LoginForm() {
         return;
       }
 
-      setFieldErrors(error.fields);
+      setFieldErrors(fieldMessages(error.fields));
       toast.error(error.message, {
         description:
           error.is("ACCOUNT_LOCKED") && error.retryAfter

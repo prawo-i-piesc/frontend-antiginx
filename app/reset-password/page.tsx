@@ -5,12 +5,12 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { resetPassword } from "@/app/lib/authApi";
-import { ApiError } from "@/app/lib/authErrors";
+import { ApiError, fieldMessages } from "@/app/lib/authErrors";
+import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
+import PasswordRequirements from "@/app/components/auth/PasswordRequirements";
 import { PasswordField, SubmitButton } from "@/app/components/auth/Fields";
-
-const MIN_PASSWORD_LENGTH = 12;
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -22,6 +22,7 @@ function ResetPasswordForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   if (!token) {
@@ -45,11 +46,12 @@ function ResetPasswordForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setAttempted(true);
     if (loading) return;
 
     const errors: Record<string, string> = {};
-    if (password.length < MIN_PASSWORD_LENGTH)
-      errors.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+    if (!evaluatePassword(password).satisfied)
+      errors.password = "Your password does not meet the requirements below.";
     if (confirmPassword !== password) errors.confirm = "Both passwords have to match.";
 
     setFieldErrors(errors);
@@ -64,7 +66,7 @@ function ResetPasswordForm() {
       router.replace("/login");
     } catch (caught) {
       if (caught instanceof ApiError) {
-        setFieldErrors(caught.fields);
+        setFieldErrors(fieldMessages(caught.fields, { new_password: "password" }));
         toast.error(caught.message);
         if (caught.is("TOKEN_EXPIRED") || caught.is("TOKEN_INVALID")) {
           router.replace("/forgot-password");
@@ -88,18 +90,20 @@ function ResetPasswordForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <PasswordField
-          label="New password"
-          name="new-password"
-          autoComplete="new-password"
-          autoFocus
-          placeholder="At least 12 characters"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          error={fieldErrors.password}
-          hint={`Use at least ${MIN_PASSWORD_LENGTH} characters. Avoid anything you use elsewhere.`}
-          disabled={loading}
-        />
+        <div>
+          <PasswordField
+            label="New password"
+            name="new-password"
+            autoComplete="new-password"
+            autoFocus
+            placeholder="Choose a strong password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            error={fieldErrors.password}
+            disabled={loading}
+          />
+          <PasswordRequirements password={password} showFailures={attempted} />
+        </div>
 
         <PasswordField
           label="Confirm new password"

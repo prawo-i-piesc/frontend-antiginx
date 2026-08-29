@@ -5,10 +5,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { register } from "@/app/lib/authApi";
-import { ApiError } from "@/app/lib/authErrors";
+import { ApiError, fieldMessages } from "@/app/lib/authErrors";
+import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell from "@/app/components/auth/AuthShell";
 import OAuthButtons from "@/app/components/auth/OAuthButtons";
+import PasswordRequirements from "@/app/components/auth/PasswordRequirements";
 import {
   Checkbox,
   Divider,
@@ -17,8 +19,8 @@ import {
   TextField,
 } from "@/app/components/auth/Fields";
 
-/** Mirrors the server-side policy so the user is told before the round trip. */
-const MIN_PASSWORD_LENGTH = 12;
+/** Mirrors the backend binding on full_name, so it fails before the round trip. */
+const MIN_NAME_LENGTH = 6;
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -30,18 +32,21 @@ export default function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
     if (!fullName.trim()) errors.full_name = "Enter your name.";
+    else if (fullName.trim().length < MIN_NAME_LENGTH)
+      errors.full_name = `Use at least ${MIN_NAME_LENGTH} characters.`;
     if (!email.trim()) errors.email = "Enter your email address.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
       errors.email = "That does not look like an email address.";
 
-    if (password.length < MIN_PASSWORD_LENGTH)
-      errors.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+    if (!evaluatePassword(password, { name: fullName, email }).satisfied)
+      errors.password = "Your password does not meet the requirements below.";
     if (confirmPassword !== password) errors.confirm_password = "Both passwords have to match.";
     if (!accepted) errors.terms = "Accept the terms to create an account.";
 
@@ -51,6 +56,7 @@ export default function RegisterForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setAttempted(true);
     if (loading || !validate()) return;
 
     setLoading(true);
@@ -72,7 +78,7 @@ export default function RegisterForm() {
       router.replace("/login");
     } catch (error) {
       if (error instanceof ApiError) {
-        setFieldErrors(error.fields);
+        setFieldErrors(fieldMessages(error.fields));
         toast.error(error.message);
       } else {
         toast.error("We could not reach the server. Check your connection and try again.");
@@ -118,17 +124,23 @@ export default function RegisterForm() {
           disabled={loading}
         />
 
-        <PasswordField
-          label="Password"
-          name="new-password"
-          autoComplete="new-password"
-          placeholder="At least 12 characters"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          error={fieldErrors.password}
-          hint={`Use at least ${MIN_PASSWORD_LENGTH} characters. Avoid anything you use elsewhere.`}
-          disabled={loading}
-        />
+        <div>
+          <PasswordField
+            label="Password"
+            name="new-password"
+            autoComplete="new-password"
+            placeholder="Choose a strong password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            error={fieldErrors.password}
+            disabled={loading}
+          />
+          <PasswordRequirements
+            password={password}
+            context={{ name: fullName, email }}
+            showFailures={attempted}
+          />
+        </div>
 
         <PasswordField
           label="Confirm password"

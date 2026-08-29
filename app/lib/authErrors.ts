@@ -25,6 +25,7 @@ export type AuthErrorCode =
   | "OAUTH_EMAIL_UNVERIFIED"
   | "OAUTH_ACCOUNT_CONFLICT"
   | "OAUTH_PROVIDER_ERROR"
+  | "OAUTH_NOT_AVAILABLE"
   | "PROVIDER_ALREADY_LINKED"
   | "LAST_LOGIN_METHOD"
   | "WEBAUTHN_CHALLENGE_INVALID"
@@ -55,6 +56,8 @@ const MESSAGES: Record<AuthErrorCode, string> = {
   OAUTH_EMAIL_UNVERIFIED: "Your provider has not verified this email address. Verify it there first.",
   OAUTH_ACCOUNT_CONFLICT: "This email already belongs to an account. Sign in with your password, then link the provider from your profile.",
   OAUTH_PROVIDER_ERROR: "The sign-in provider did not respond. Try again in a moment.",
+  // Raised by the proxy, not the backend: the OAuth routes are not deployed yet.
+  OAUTH_NOT_AVAILABLE: "Signing in with Google or GitHub is not available yet. Use your email and password.",
   PROVIDER_ALREADY_LINKED: "This provider account is already linked to another AntiGinx account.",
   LAST_LOGIN_METHOD: "This is your only way to sign in. Add another method before removing it.",
   WEBAUTHN_CHALLENGE_INVALID: "This passkey request expired. Try again.",
@@ -66,6 +69,55 @@ const MESSAGES: Record<AuthErrorCode, string> = {
 };
 
 const FALLBACK = "Something went wrong. Try again in a moment.";
+
+/** What the backend calls a field, in the words the form uses. */
+const FIELD_LABELS: Record<string, string> = {
+  email: "email address",
+  password: "password",
+  new_password: "password",
+  current_password: "current password",
+  full_name: "name",
+  code: "code",
+};
+
+/**
+ * Turns a validator reason from the `fields` map — "required", "invalid",
+ * "min:12" — into something worth showing under an input.
+ */
+export function messageForFieldReason(field: string, reason: string): string {
+  const [tag, param] = reason.split(":");
+  const label = FIELD_LABELS[field];
+
+  switch (tag) {
+    case "required":
+      return label ? `Enter your ${label}.` : "This field is required.";
+    case "invalid":
+      return field === "email"
+        ? "That does not look like an email address."
+        : "Check this value.";
+    case "min":
+      return param ? `Use at least ${param} characters.` : "This value is too short.";
+    case "max":
+      return param ? `Use at most ${param} characters.` : "This value is too long.";
+    default:
+      return "Check this value.";
+  }
+}
+
+/**
+ * Maps a whole `fields` map to display messages, renaming keys the form knows
+ * under a different name.
+ */
+export function fieldMessages(
+  fields: Record<string, string>,
+  aliases: Record<string, string> = {},
+): Record<string, string> {
+  const messages: Record<string, string> = {};
+  for (const [field, reason] of Object.entries(fields)) {
+    messages[aliases[field] ?? field] = messageForFieldReason(field, reason);
+  }
+  return messages;
+}
 
 export function messageForCode(code: string | null | undefined, fallback = FALLBACK): string {
   if (!code) return fallback;

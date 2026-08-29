@@ -6,7 +6,7 @@
  * forwards both directions.
  */
 
-import { ApiError, apiErrorFromResponse } from "@/app/lib/authErrors";
+import { ApiError, apiErrorFromResponse, type AuthErrorCode } from "@/app/lib/authErrors";
 import {
   authorizedFetch,
   clearSession,
@@ -56,8 +56,34 @@ async function postJson(path: string, body?: unknown): Promise<Response> {
   });
 }
 
-async function readAuthResult(response: Response): Promise<AuthResult> {
-  if (!response.ok) throw await apiErrorFromResponse(response);
+/**
+ * Until the backend sends `code`, the status has to carry the meaning. Safe
+ * only here: on these three endpoints a 401 is a rejected credential, not the
+ * expired session the generic fallback assumes.
+ */
+async function readAuthError(
+  response: Response,
+  unauthorizedCode: AuthErrorCode,
+): Promise<ApiError> {
+  const error = await apiErrorFromResponse(response);
+  if (error.code) return error;
+
+  const inferred: AuthErrorCode | undefined = {
+    400: "VALIDATION_FAILED" as const,
+    401: unauthorizedCode,
+    409: "EMAIL_TAKEN" as const,
+  }[response.status];
+
+  return inferred
+    ? new ApiError({ status: response.status, code: inferred, fields: error.fields })
+    : error;
+}
+
+async function readAuthResult(
+  response: Response,
+  unauthorizedCode: AuthErrorCode = "INVALID_CREDENTIALS",
+): Promise<AuthResult> {
+  if (!response.ok) throw await readAuthError(response, unauthorizedCode);
 
   const payload = (await response.json()) as SessionResponse & MfaChallengeResponse;
 
@@ -110,6 +136,7 @@ export async function verifyMfa(payload: {
       method: payload.method,
       code: payload.code,
     }),
+    "MFA_INVALID_CODE",
   );
   if (result.kind === "created") throw new ApiError({ status: 500, code: "INTERNAL" });
   return result;
