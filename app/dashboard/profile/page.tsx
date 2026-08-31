@@ -8,16 +8,17 @@ import useProfile from "@/app/hooks/useProfile";
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import DashboardSidebar from "@/app/components/layout/DashboardSidebar";
 import ProfileDetails from "@/app/components/profile/ProfileDetails";
+import ConnectedAccounts from "@/app/components/profile/ConnectedAccounts";
 import PasswordSection from "@/app/components/profile/PasswordSection";
 import AccountSecurity from "@/app/components/profile/AccountSecurity";
 
 export default function DashboardProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { token, initialized, auth } = useRequireAuth();
+  const { authenticated, initialized, auth } = useRequireAuth();
   const { profileName } = useProfile();
 
-  if (!initialized || !token) return null;
+  if (!initialized || !authenticated) return null;
 
   return (
     <div className="h-screen select-none bg-zinc-200 transition-colors xl:flex dark:bg-zinc-950">
@@ -53,6 +54,7 @@ export default function DashboardProfilePage() {
 
               <div className="flex flex-col gap-6">
                 <ProfileDetails />
+                <ConnectedAccounts />
                 <PasswordSection />
                 <AccountSecurity />
               </div>

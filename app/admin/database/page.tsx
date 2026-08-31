@@ -23,7 +23,7 @@ export default function AdminDatabasePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile();
 
@@ -45,7 +45,7 @@ export default function AdminDatabasePage() {
 
   // Pobieranie danych z API
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -73,7 +73,7 @@ export default function AdminDatabasePage() {
     };
 
     fetchData();
-  }, [activeTable, token]);
+  }, [activeTable, authenticated]);
 
   // 1. Krok: Filtrowanie po wyszukiwarce
   const filteredData = useMemo(() => {
@@ -137,7 +137,7 @@ export default function AdminDatabasePage() {
   };
 
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
   if (!auth.user) return null;
   if (auth.user.role !== 'admin') notFound();
 

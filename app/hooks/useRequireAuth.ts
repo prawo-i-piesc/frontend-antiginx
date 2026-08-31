@@ -10,12 +10,12 @@ export function useRequireAuth() {
 
   useEffect(() => {
     if (!auth.initialized) return;
-    if (!auth.token) {
+    if (!auth.authenticated) {
       router.replace('/login');
     }
-  }, [auth.initialized, auth.token, router]);
+  }, [auth.initialized, auth.authenticated, router]);
 
-  return { token: auth.token, initialized: auth.initialized, auth };
+  return { authenticated: auth.authenticated, initialized: auth.initialized, auth };
 }
 
 export default useRequireAuth;

@@ -1,7 +1,11 @@
 /**
- * Password rules shared by the sign-up and reset screens, and mirrored by the
- * backend (ISSUE-01-BACKEND-SPEC.md, section 3). The backend stays the
- * authority; checking here only means the user finds out while typing.
+ * Password rules for the sign-up, reset and change screens.
+ *
+ * Only the rules the backend actually enforces (auth.ValidatePassword: at
+ * least 12 characters and not on the common-password list) can block a
+ * submission — rejecting a password the API would accept is a bug. The rest
+ * are shown as advice, which follows current guidance: length and a blocklist
+ * do the work, and composition rules mostly push people toward "Password1!".
  */
 
 export const MIN_PASSWORD_LENGTH = 12;
@@ -48,12 +52,23 @@ function containsPersonalDetail(password: string, context: PasswordContext): boo
   });
 }
 
+/** Enforced by the backend; failing one of these blocks the form. */
 export const PASSWORD_RULES: PasswordRule[] = [
   {
     id: "length",
     label: `At least ${MIN_PASSWORD_LENGTH} characters`,
     test: (password) => password.length >= MIN_PASSWORD_LENGTH,
   },
+  {
+    id: "obvious",
+    label: "Not a common password, your name or your email",
+    test: (password, context) =>
+      password.length > 0 && !isCommon(password) && !containsPersonalDetail(password, context),
+  },
+];
+
+/** Advice only — these never stop a submission. */
+export const PASSWORD_SUGGESTIONS: PasswordRule[] = [
   {
     id: "case",
     label: "An uppercase and a lowercase letter",
@@ -69,12 +84,6 @@ export const PASSWORD_RULES: PasswordRule[] = [
     label: "A symbol, such as ! ? # or -",
     test: (password) => /[^A-Za-z0-9]/.test(password),
   },
-  {
-    id: "obvious",
-    label: "Not a common password, your name or your email",
-    test: (password, context) =>
-      password.length > 0 && !isCommon(password) && !containsPersonalDetail(password, context),
-  },
 ];
 
 export interface PasswordRuleResult {
@@ -84,9 +93,11 @@ export interface PasswordRuleResult {
 }
 
 export interface PasswordEvaluation {
-  results: PasswordRuleResult[];
+  required: PasswordRuleResult[];
+  suggested: PasswordRuleResult[];
+  /** True once every required rule passes; suggestions are ignored here. */
   satisfied: boolean;
-  /** How many rules still fail, for a one-line summary. */
+  /** How many required rules still fail, for a one-line summary. */
   remaining: number;
 }
 
@@ -94,12 +105,20 @@ export function evaluatePassword(
   password: string,
   context: PasswordContext = {},
 ): PasswordEvaluation {
-  const results = PASSWORD_RULES.map((rule) => ({
-    id: rule.id,
-    label: rule.label,
-    met: rule.test(password, context),
-  }));
+  const evaluate = (rules: PasswordRule[]) =>
+    rules.map((rule) => ({
+      id: rule.id,
+      label: rule.label,
+      met: rule.test(password, context),
+    }));
 
-  const remaining = results.filter((result) => !result.met).length;
-  return { results, satisfied: remaining === 0, remaining };
+  const required = evaluate(PASSWORD_RULES);
+  const remaining = required.filter((result) => !result.met).length;
+
+  return {
+    required,
+    suggested: evaluate(PASSWORD_SUGGESTIONS),
+    satisfied: remaining === 0,
+    remaining,
+  };
 }

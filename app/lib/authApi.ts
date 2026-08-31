@@ -7,6 +7,7 @@
  */
 
 import { ApiError, apiErrorFromResponse, type AuthErrorCode } from "@/app/lib/authErrors";
+import type { OAuthProvider } from "@/app/lib/oauthProviders";
 import {
   authorizedFetch,
   clearSession,
@@ -18,8 +19,6 @@ import {
 } from "@/app/lib/session";
 
 export type MfaMethod = "totp" | "webauthn" | "recovery_code";
-
-export type OAuthProvider = "google" | "github";
 
 /**
  * `created` covers the pre-E1 backend, whose register endpoint answers with a
@@ -97,7 +96,10 @@ async function readAuthResult(
     };
   }
 
-  if (!payload.access_token && !payload.token) return { kind: "created" };
+  // The proxy has already taken the token out of the body, so a session is
+  // recognised by the profile that comes with it. Register on an older backend
+  // answers with a message and nothing else.
+  if (!payload.user) return { kind: "created" };
 
   const session = await sessionFromResponse(payload);
   setSession(session);
@@ -196,13 +198,41 @@ export async function changePassword(payload: {
 
   if (!response.ok) throw await apiErrorFromResponse(response);
 
-  // The backend rotates the session, since a password change kills every other one.
+  // The backend rotates the session, since a password change kills every other
+  // one; the proxy has already stored the new token.
   const rotated = (await response.json().catch(() => null)) as SessionResponse | null;
-  if (rotated?.access_token || rotated?.token) {
+  if (rotated?.expires_in) {
     setSession(await sessionFromResponse(rotated));
   }
 }
 
 export function oauthStartUrl(provider: OAuthProvider, next = "/dashboard"): string {
   return `/api/auth/oauth/${provider}/start?next=${encodeURIComponent(safeNextPath(next))}`;
+}
+
+/**
+ * Starts linking a provider to the signed-in account.
+ *
+ * Returns where to send the browser: the provider needs a top-level redirect,
+ * and the backend has just set its state cookie for the trip.
+ */
+export async function linkProviderUrl(
+  provider: OAuthProvider,
+  next = "/dashboard/profile",
+): Promise<string> {
+  const response = await authorizedFetch(
+    `/api/auth/oauth/${provider}/link?next=${encodeURIComponent(safeNextPath(next))}`,
+    { method: "POST" },
+  );
+
+  if (!response.ok) throw await apiErrorFromResponse(response);
+
+  const { redirect_url } = (await response.json()) as { redirect_url?: string };
+  if (!redirect_url) throw new ApiError({ status: 500, code: "INTERNAL" });
+  return redirect_url;
+}
+
+export async function unlinkProvider(provider: OAuthProvider): Promise<void> {
+  const response = await authorizedFetch(`/api/auth/oauth/${provider}`, { method: "DELETE" });
+  if (!response.ok) throw await apiErrorFromResponse(response);
 }

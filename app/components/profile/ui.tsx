@@ -136,3 +136,39 @@ export function SubmitRow({
     </div>
   );
 }
+
+const TONE_STYLES = {
+  on: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  off: "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400",
+} as const;
+
+export function SecurityRow({
+  icon,
+  tone,
+  title,
+  detail,
+  action,
+}: {
+  icon: string;
+  tone: keyof typeof TONE_STYLES;
+  title: string;
+  detail: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-4 py-4 first:pt-0 last:pb-0">
+      <span
+        className={`flex h-10 w-10 flex-none items-center justify-center rounded-xl ${TONE_STYLES[tone]}`}
+      >
+        <i className={`${icon} text-lg`} aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-zinc-900 dark:text-zinc-100">{title}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{detail}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+

@@ -56,7 +56,14 @@ export function AuthShell({
           <div className="w-full max-w-md">
             <div className="mb-6 text-center">
               <Link href="/" className="relative mx-auto mb-0 inline-block h-16 w-48">
-                <Image src="/logotype.png" alt="Antiginx" fill className="object-contain" priority />
+                <Image
+                  src="/logotype.png"
+                  alt="Antiginx"
+                  fill
+                  sizes="12rem"
+                  className="object-contain"
+                  priority
+                />
               </Link>
               <h1 className="mt-2 text-lg font-semibold text-white">{title}</h1>
               <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>

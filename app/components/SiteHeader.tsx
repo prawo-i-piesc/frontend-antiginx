@@ -35,10 +35,10 @@ export default function SiteHeader() {
               <a href="/pricing" rel="noopener noreferrer" className="text-shadow-white hover:text-cyan-300 transition-colors duration-300 font-normal text-sm">Pricing</a>
             </nav>
             <Link
-              href={auth?.initialized && auth?.token ? '/dashboard' : '/login'}
+              href={auth?.initialized && auth?.authenticated ? '/dashboard' : '/login'}
               className="px-4 sm:px-5 py-1.5 sm:py-2 inline-block bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 whitespace-nowrap cursor-pointer font-medium text-md sm:text-sm border border-white/20 hover:border-white/40 backdrop-blur-sm"
             >
-              {auth?.initialized && auth?.token ? 'Dashboard' : 'Sign in'}
+              {auth?.initialized && auth?.authenticated ? 'Dashboard' : 'Sign in'}
             </Link>
           </div>
         </div>

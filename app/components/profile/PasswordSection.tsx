@@ -14,6 +14,11 @@ export default function PasswordSection() {
   const { user } = useAuth();
   const toast = useToast();
 
+  // An account created through Google has no password to compare against, and
+  // the endpoint requires the current one, so there is nothing this form could
+  // do yet. Saying so beats a form that always fails.
+  const hasPassword = user?.auth?.password_set ?? true;
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,6 +63,10 @@ export default function PasswordSection() {
       setBusy(false);
     }
   };
+
+  // Nothing to change on an account that signs in through a provider; the
+  // connected-accounts card is where those are managed instead.
+  if (!hasPassword) return null;
 
   return (
     <ProfileCard title="Password" description="Change the password you sign in with.">

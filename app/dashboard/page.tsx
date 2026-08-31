@@ -118,13 +118,13 @@ export default function DashboardPage() {
   const hoverIndexRef = useRef<number | null>(null);
   const nextWidgetId = useRef(0);
   
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile();
 
   // FETCHOWANIE DANYCH WIDŻETÓW Z ENDPOINTU UŻYTKOWNIKA
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     let active = true;
 
@@ -152,7 +152,7 @@ export default function DashboardPage() {
     fetchWidgetData();
 
     return () => { active = false; };
-  }, [token]);
+  }, [authenticated]);
 
   const displayWidgets = useMemo(() => {
     if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
@@ -220,7 +220,7 @@ export default function DashboardPage() {
   }, [activeWidgets, widgetsLoaded]);
 
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
 
 
   function handleMouseDown(e: React.MouseEvent, widget: DashboardWidget, index: number) {

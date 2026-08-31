@@ -37,7 +37,9 @@ export default function Modal({
       onClose={onClose}
       onCancel={onClose}
       aria-label={title}
-      className="w-[min(42rem,calc(100vw-2rem))] rounded-2xl border border-zinc-300 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-zinc-950/70 dark:border-zinc-700/60 dark:bg-zinc-900 dark:text-zinc-100"
+      // m-auto restores the centring the browser gives dialog:modal — Tailwind's
+      // reset zeroes every margin, which otherwise pins it to the top-left.
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(42rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-zinc-300 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-zinc-950/70 dark:border-zinc-700/60 dark:bg-zinc-900 dark:text-zinc-100"
     >
       {open ? (
         <div className="p-6">

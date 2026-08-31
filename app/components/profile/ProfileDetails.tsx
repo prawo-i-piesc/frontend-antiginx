@@ -26,6 +26,10 @@ export default function ProfileDetails() {
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  // The address on an account created through a provider belongs to that
+  // provider, so changing it here would only put the two out of step.
+  const canChangeEmail = user?.auth?.password_set ?? true;
+
   const fail = (error: unknown, fallbackField: string) => {
     if (!(error instanceof ApiError)) {
       toast.error("We could not reach the server. Try again in a moment.");
@@ -83,7 +87,7 @@ export default function ProfileDetails() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className={`grid grid-cols-1 gap-6 ${canChangeEmail ? "lg:grid-cols-2" : ""}`}>
       <form onSubmit={submitName} className={CARD} noValidate>
         <div className="pb-4 mb-5 border-b border-zinc-200 dark:border-zinc-700/50">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Change Username</h3>
@@ -124,6 +128,7 @@ export default function ProfileDetails() {
         </div>
       </form>
 
+      {canChangeEmail ? (
       <form onSubmit={submitEmail} className={CARD} noValidate>
         <div className="pb-4 mb-5 border-b border-zinc-200 dark:border-zinc-700/50">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Email Address</h3>
@@ -163,6 +168,7 @@ export default function ProfileDetails() {
           </button>
         </div>
       </form>
+      ) : null}
     </div>
   );
 }

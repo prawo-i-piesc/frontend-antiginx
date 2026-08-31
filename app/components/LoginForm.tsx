@@ -12,6 +12,16 @@ import AuthShell from "@/app/components/auth/AuthShell";
 import OAuthButtons from "@/app/components/auth/OAuthButtons";
 import { Divider, PasswordField, SubmitButton, TextField } from "@/app/components/auth/Fields";
 
+/**
+ * Which OAuth failure has already been announced.
+ *
+ * Kept outside the component so a remount does not repeat the toast —
+ * StrictMode remounts on every mount in development, and the Suspense boundary
+ * around this form can do the same. A new attempt is a full page load, which
+ * clears this along with the rest of the module state.
+ */
+let reportedOAuthError: string | null = null;
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,7 +38,9 @@ export default function LoginForm() {
   // there is no fetch response to read it from.
   const oauthError = searchParams.get("error");
   useEffect(() => {
-    if (!oauthError) return;
+    if (!oauthError || reportedOAuthError === oauthError) return;
+    reportedOAuthError = oauthError;
+
     toast.error(messageForCode(oauthError));
     router.replace(next === "/dashboard" ? "/login" : `/login?next=${encodeURIComponent(next)}`);
   }, [oauthError, toast, router, next]);

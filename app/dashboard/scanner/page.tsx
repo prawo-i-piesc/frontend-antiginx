@@ -106,7 +106,7 @@ export default function DashboardScannerPage() {
   const [testsError, setTestsError] = useState<string | null>(null);
 
   const { theme, toggleTheme } = useTheme();
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile();
 
@@ -124,7 +124,7 @@ export default function DashboardScannerPage() {
 
   // Ładowanie listy skanów
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     let active = true;
     const loadScans = async () => {
@@ -162,11 +162,11 @@ export default function DashboardScannerPage() {
     return () => {
       active = false;
     };
-  }, [token, scanResult?.id]);
+  }, [authenticated, scanResult?.id]);
 
   // Ładowanie konfiguracji testów
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     let active = true;
     const loadTestConfig = async () => {
@@ -207,7 +207,7 @@ export default function DashboardScannerPage() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [authenticated]);
 
   // Filtrowanie i paginacja
   const filteredScans = useMemo(() => {
@@ -379,7 +379,7 @@ export default function DashboardScannerPage() {
   }).map((result, index) => ({ ...result, animIndex: index }));
 
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
 
   return (
     <div className="h-screen xl:flex bg-zinc-200 dark:bg-zinc-950 transition-colors select-none">

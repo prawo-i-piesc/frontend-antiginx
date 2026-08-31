@@ -22,8 +22,8 @@ import {
 } from "@/app/lib/session";
 
 interface AuthContextType {
-  /** undefined until the initial refresh settles, then the token or null. */
-  token: string | null | undefined;
+  /** undefined until the initial refresh settles, then whether a session exists. */
+  authenticated: boolean | undefined;
   initialized: boolean;
   user: SessionUser | null;
   logout: () => Promise<void>;
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthContextType>(
     () => ({
-      token: initialized ? (session?.accessToken ?? null) : undefined,
+      authenticated: initialized ? session !== null : undefined,
       initialized,
       user: session?.user ?? null,
       logout,

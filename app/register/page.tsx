@@ -12,10 +12,10 @@ export default function RegisterPage() {
   const auth = useAuth();
 
   useEffect(() => {
-    if (auth.initialized && auth.token) router.replace("/dashboard");
-  }, [auth.initialized, auth.token, router]);
+    if (auth.initialized && auth.authenticated) router.replace("/dashboard");
+  }, [auth.initialized, auth.authenticated, router]);
 
-  if (!auth.initialized || auth.token) return <AuthShellFallback />;
+  if (!auth.initialized || auth.authenticated) return <AuthShellFallback />;
 
   return <RegisterForm />;
 }

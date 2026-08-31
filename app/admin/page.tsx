@@ -167,13 +167,13 @@ export default function AdminPage() {
     }
   }, [activeWidgets, widgetsLoaded]);
 
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile();
 
-  // Hook pobierający dane z endpointu po zaimportowaniu tokenu autoryzacji
+  // Hook pobierający dane z endpointu po ustaleniu sesji
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     const fetchWidgetsData = async () => {
       try {
@@ -193,7 +193,7 @@ export default function AdminPage() {
     };
 
     fetchWidgetsData();
-  }, [token]);
+  }, [authenticated]);
 
   // keep hook order stable: call memo before any early returns
   const displayWidgets = useMemo(() => {
@@ -208,7 +208,7 @@ export default function AdminPage() {
 
   // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
   if (!auth.user) return null;
   if (auth.user.role !== 'admin') notFound();
 

@@ -70,12 +70,12 @@ export default function DashboardChartsPage() {
   const [selectedUrl, setSelectedUrl] = useState<string>("");
 
   const { theme, toggleTheme } = useTheme();
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
   const { profileName } = useProfile();
 
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     let active = true;
     const loadScans = async () => {
@@ -111,7 +111,7 @@ export default function DashboardChartsPage() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [authenticated]);
 
   // Lista unikalnych domen do dropdownu
   const uniqueUrls = useMemo(() => {
@@ -131,7 +131,7 @@ export default function DashboardChartsPage() {
   }, [scanRows, selectedUrl]);
 
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
 
   const axisColor = theme === "dark" ? "#52525b" : "#a1a1aa"; 
   const gridColor = theme === "dark" ? "#27272a" : "#e4e4e7"; 

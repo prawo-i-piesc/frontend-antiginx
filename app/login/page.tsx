@@ -12,12 +12,12 @@ export default function LoginPage() {
   const auth = useAuth();
 
   useEffect(() => {
-    if (auth.initialized && auth.token) router.replace("/dashboard");
-  }, [auth.initialized, auth.token, router]);
+    if (auth.initialized && auth.authenticated) router.replace("/dashboard");
+  }, [auth.initialized, auth.authenticated, router]);
 
   // Hold the blank backdrop until the session is resolved, so an already
   // signed-in visitor never sees the form flash before the redirect.
-  if (!auth.initialized || auth.token) return <AuthShellFallback />;
+  if (!auth.initialized || auth.authenticated) return <AuthShellFallback />;
 
   return (
     <Suspense fallback={<AuthShellFallback />}>
