@@ -232,6 +232,54 @@ export async function linkProviderUrl(
   return redirect_url;
 }
 
+/**
+ * Signing in with a provider whose address already has an account stops at a
+ * confirmation step: the backend parks the link server-side and sends the
+ * browser to /login/link. Without proving the password first, anyone who
+ * registered under someone else's address would inherit their account.
+ */
+export interface PendingOAuthLink {
+  provider: OAuthProvider;
+  email: string;
+  password_set: boolean;
+  totp_required: boolean;
+  expires_in: number;
+}
+
+export async function pendingOAuthLink(): Promise<PendingOAuthLink> {
+  const response = await fetch("/api/auth/oauth-link/pending", {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+
+  if (!response.ok) throw await apiErrorFromResponse(response);
+  return (await response.json()) as PendingOAuthLink;
+}
+
+/** Confirming can stop once more for a second factor, this time without a token. */
+export type LinkConfirmResult =
+  | { kind: "session"; session: Session }
+  | { kind: "mfa"; methods: MfaMethod[] };
+
+export async function confirmOAuthLink(payload: {
+  password: string;
+  method?: Exclude<MfaMethod, "webauthn">;
+  code?: string;
+}): Promise<LinkConfirmResult> {
+  const response = await postJson("/api/auth/oauth-link/confirm", payload);
+  if (!response.ok) throw await readAuthError(response, "INVALID_CREDENTIALS");
+
+  const body = (await response.json()) as SessionResponse & MfaChallengeResponse;
+
+  if (body.mfa_required) {
+    return { kind: "mfa", methods: body.methods ?? ["totp"] };
+  }
+
+  const session = await sessionFromResponse(body);
+  setSession(session);
+  return { kind: "session", session };
+}
+
 export async function unlinkProvider(provider: OAuthProvider): Promise<void> {
   const response = await authorizedFetch(`/api/auth/oauth/${provider}`, { method: "DELETE" });
   if (!response.ok) throw await apiErrorFromResponse(response);

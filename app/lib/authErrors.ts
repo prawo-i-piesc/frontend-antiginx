@@ -54,7 +54,7 @@ const MESSAGES: Record<AuthErrorCode, string> = {
   PASSWORD_SAME_AS_OLD: "Your new password has to be different from the current one.",
   OAUTH_STATE_INVALID: "That sign-in attempt could not be verified. Start again.",
   OAUTH_EMAIL_UNVERIFIED: "Your provider has not verified this email address. Verify it there first.",
-  OAUTH_ACCOUNT_CONFLICT: "This email already belongs to an account. Sign in with your password, then link the provider from your profile.",
+  OAUTH_ACCOUNT_CONFLICT: "That account has no password to confirm with. Sign in with the provider it already uses.",
   OAUTH_PROVIDER_ERROR: "The sign-in provider did not respond. Try again in a moment.",
   // Raised by the proxy, not the backend: the OAuth routes are not deployed yet.
   OAUTH_NOT_AVAILABLE: "Signing in with Google or GitHub is not available yet. Use your email and password.",
