@@ -9,8 +9,8 @@ import { OAUTH_PROVIDERS, type OAuthProvider } from "@/app/lib/oauthProviders";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
-  BUTTON_DANGER,
-  BUTTON_PRIMARY,
+  ROW_BUTTON_DANGER,
+  ROW_BUTTON_PRIMARY,
   ProfileCard,
   SecurityRow,
 } from "@/app/components/profile/ui";
@@ -123,11 +123,14 @@ export default function ConnectedAccounts() {
                     onClick={() => disconnect(provider.id, provider.label)}
                     disabled={busy !== null || onlyWayIn}
                     title={onlyWayIn ? "Add another way to sign in first." : undefined}
-                    className={BUTTON_DANGER}
+                    className={ROW_BUTTON_DANGER}
                   >
-                    {busy === provider.id ? (
-                      <i className="ri-loader-4-line animate-spin" aria-hidden="true" />
-                    ) : null}
+                    <i
+                      className={
+                        busy === provider.id ? "ri-loader-4-line animate-spin" : "ri-link-unlink"
+                      }
+                      aria-hidden="true"
+                    />
                     <span>Disconnect</span>
                   </button>
                 ) : (
@@ -135,11 +138,12 @@ export default function ConnectedAccounts() {
                     type="button"
                     onClick={() => connect(provider.id)}
                     disabled={busy !== null}
-                    className={BUTTON_PRIMARY}
+                    className={ROW_BUTTON_PRIMARY}
                   >
-                    {busy === provider.id ? (
-                      <i className="ri-loader-4-line animate-spin" aria-hidden="true" />
-                    ) : null}
+                    <i
+                      className={busy === provider.id ? "ri-loader-4-line animate-spin" : "ri-link"}
+                      aria-hidden="true"
+                    />
                     <span>Connect</span>
                   </button>
                 )

@@ -20,12 +20,14 @@ export function ProfileCard({
 }) {
   return (
     <section className="rounded-2xl border border-zinc-300 bg-white/85 p-6 shadow-sm backdrop-blur-xl dark:border-zinc-500/30 dark:bg-zinc-900/20">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-700/50">
-        <div>
+      {/* No wrapping: the status belongs in the corner, so the heading column
+          shrinks instead of pushing it onto its own line. */}
+      <div className="mb-5 flex items-start justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-700/50">
+        <div className="min-w-0">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">{description}</p>
         </div>
-        {aside}
+        {aside ? <div className="flex-none">{aside}</div> : null}
       </div>
       {children}
     </section>
@@ -106,12 +108,33 @@ export function ProfileField({
   );
 }
 
-const BUTTON_BASE =
-  "h-12 px-6 rounded-xl transition-all whitespace-nowrap cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400";
+const BUTTON_SHAPE =
+  "rounded-xl text-sm transition-all whitespace-nowrap cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400";
 
-export const BUTTON_PRIMARY = `${BUTTON_BASE} border border-cyan-500/50 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-500/60`;
-export const BUTTON_QUIET = `${BUTTON_BASE} border border-zinc-300 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800/50`;
-export const BUTTON_DANGER = `${BUTTON_BASE} border border-rose-500/50 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/15`;
+const BUTTON_SIZE = "h-10 px-4";
+
+/**
+ * Row actions shrink to the icon on a phone, where a column of full-width
+ * labelled buttons crowds out what the rows actually say. The label goes to
+ * sr-only rather than hidden, so the button keeps its name for a screen reader.
+ */
+const ROW_SIZE =
+  "h-11 w-11 px-0 sm:h-10 sm:w-auto sm:px-4 [&>span]:sr-only sm:[&>span]:not-sr-only";
+
+const PRIMARY_SKIN =
+  "border border-cyan-500/50 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-500/60";
+const QUIET_SKIN =
+  "border border-zinc-300 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800/50";
+const DANGER_SKIN =
+  "border border-rose-500/50 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/15";
+
+export const BUTTON_PRIMARY = `${BUTTON_SHAPE} ${BUTTON_SIZE} ${PRIMARY_SKIN}`;
+export const BUTTON_QUIET = `${BUTTON_SHAPE} ${BUTTON_SIZE} ${QUIET_SKIN}`;
+export const BUTTON_DANGER = `${BUTTON_SHAPE} ${BUTTON_SIZE} ${DANGER_SKIN}`;
+
+export const ROW_BUTTON_PRIMARY = `${BUTTON_SHAPE} ${ROW_SIZE} ${PRIMARY_SKIN}`;
+export const ROW_BUTTON_QUIET = `${BUTTON_SHAPE} ${ROW_SIZE} ${QUIET_SKIN}`;
+export const ROW_BUTTON_DANGER = `${BUTTON_SHAPE} ${ROW_SIZE} ${DANGER_SKIN}`;
 
 export function SubmitRow({
   busy,
@@ -172,3 +195,53 @@ export function SecurityRow({
   );
 }
 
+
+/**
+ * A setting shown as what it currently is, with the form folded away behind it.
+ *
+ * Most of these are changed once and then never again, so leaving every field
+ * open turns the page into a wall of inputs. Collapsed, it reads as a list of
+ * facts about the account; the form appears only when you go to change one.
+ */
+export function ExpandableRow({
+  icon,
+  title,
+  value,
+  actionLabel,
+  open,
+  onToggle,
+  children,
+}: {
+  icon: string;
+  title: string;
+  value: string;
+  actionLabel: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="py-4 first:pt-0 last:pb-0">
+      <div className="flex flex-wrap items-center gap-4">
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-zinc-500/10 text-zinc-500 dark:text-zinc-400">
+          <i className={`${icon} text-lg`} aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-wider text-zinc-500">{title}</p>
+          <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">{value}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className={open ? ROW_BUTTON_QUIET : ROW_BUTTON_PRIMARY}
+        >
+          <i className={open ? "ri-close-line" : "ri-ball-pen-line"} aria-hidden="true" />
+          <span>{open ? "Cancel" : actionLabel}</span>
+        </button>
+      </div>
+
+      {open ? <div className="mt-5">{children}</div> : null}
+    </div>
+  );
+}

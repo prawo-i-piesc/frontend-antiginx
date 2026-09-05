@@ -20,6 +20,9 @@ import {
   BUTTON_QUIET,
   ProfileCard,
   ProfileField,
+  ROW_BUTTON_DANGER,
+  ROW_BUTTON_PRIMARY,
+  ROW_BUTTON_QUIET,
   SecurityRow,
   StatusPill,
 } from "@/app/components/profile/ui";
@@ -149,7 +152,7 @@ export default function AccountSecurity() {
                 <button
                   type="button"
                   onClick={() => setFlow({ name: "disable" })}
-                  className={BUTTON_DANGER}
+                  className={ROW_BUTTON_DANGER}
                 >
                   <i className="ri-shield-cross-line" aria-hidden="true" />
                   <span>Turn off</span>
@@ -169,7 +172,7 @@ export default function AccountSecurity() {
                 <button
                   type="button"
                   onClick={() => setFlow({ name: "regenerate" })}
-                  className={BUTTON_QUIET}
+                  className={ROW_BUTTON_QUIET}
                 >
                   <i className="ri-refresh-line" aria-hidden="true" />
                   <span>New codes</span>
@@ -187,7 +190,7 @@ export default function AccountSecurity() {
               <button
                 type="button"
                 onClick={() => setFlow({ name: "enroll", step: "password" })}
-                className={BUTTON_PRIMARY}
+                className={ROW_BUTTON_PRIMARY}
               >
                 <i className="ri-shield-check-line" aria-hidden="true" />
                 <span>Set up</span>

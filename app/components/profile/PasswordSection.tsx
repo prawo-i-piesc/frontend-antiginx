@@ -8,7 +8,7 @@ import { updatePassword } from "@/app/lib/profileApi";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import PasswordStrength from "@/app/components/auth/PasswordStrength";
-import { ProfileCard, ProfileField, SubmitRow } from "@/app/components/profile/ui";
+import { ExpandableRow, ProfileCard, ProfileField, SubmitRow } from "@/app/components/profile/ui";
 
 export default function PasswordSection() {
   const { user } = useAuth();
@@ -23,6 +23,7 @@ export default function PasswordSection() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -50,6 +51,7 @@ export default function PasswordSection() {
       setNewPassword("");
       setConfirmPassword("");
       setAttempted(false);
+      setOpen(false);
     } catch (error) {
       if (error instanceof ApiError) {
         const mapped = fieldMessages(error.fields);
@@ -70,49 +72,66 @@ export default function PasswordSection() {
   if (!hasPassword) return null;
 
   return (
-    <ProfileCard title="Password" description="Change the password you sign in with.">
-      <form onSubmit={submit} noValidate>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <ProfileField
-            label="Current password"
-            icon="ri-lock-line"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••••"
-            value={currentPassword}
-            onChange={(event) => setCurrentPassword(event.target.value)}
-            error={errors.old_password}
-            disabled={busy}
-          />
-          <div>
+    <ProfileCard title="Password" description="How you prove it is you.">
+      <ExpandableRow
+        icon="ri-lock-line"
+        title="Password"
+        value="••••••••••"
+        actionLabel="Change"
+        open={open}
+        onToggle={() => {
+          setOpen((current) => !current);
+          setErrors({});
+          setAttempted(false);
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        }}
+      >
+        <form onSubmit={submit} className="max-w-md" noValidate>
+          <div className="space-y-5">
             <ProfileField
-              label="New password"
+              label="Current password"
+              icon="ri-lock-line"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••••"
+              autoFocus
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              error={errors.old_password}
+              disabled={busy}
+            />
+            <div>
+              <ProfileField
+                label="New password"
+                icon="ri-lock-password-line"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••••"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                error={errors.new_password}
+                disabled={busy}
+              />
+              <PasswordStrength password={newPassword} context={context} showFailures={attempted} />
+            </div>
+            <ProfileField
+              label="Confirm new password"
               icon="ri-lock-password-line"
               type="password"
               autoComplete="new-password"
               placeholder="••••••••••"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              error={errors.new_password}
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              error={errors.confirm}
               disabled={busy}
             />
-            <PasswordStrength password={newPassword} context={context} showFailures={attempted} />
           </div>
-          <ProfileField
-            label="Confirm new password"
-            icon="ri-lock-password-line"
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••••"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            error={errors.confirm}
-            disabled={busy}
-          />
-        </div>
 
-        <SubmitRow busy={busy} label="Update password" icon="ri-shield-keyhole-line" />
-      </form>
+          <SubmitRow busy={busy} label="Update password" icon="ri-shield-keyhole-line" />
+        </form>
+      </ExpandableRow>
     </ProfileCard>
   );
 }

@@ -19,6 +19,8 @@ import {
   BUTTON_PRIMARY,
   BUTTON_QUIET,
   ProfileField,
+  ROW_BUTTON_PRIMARY,
+  ROW_BUTTON_QUIET,
   SecurityRow,
 } from "@/app/components/profile/ui";
 
@@ -155,7 +157,11 @@ export default function Passkeys() {
         }
         action={
           supported ? (
-            <button type="button" onClick={openManager} className={count > 0 ? BUTTON_QUIET : BUTTON_PRIMARY}>
+            <button
+              type="button"
+              onClick={openManager}
+              className={count > 0 ? ROW_BUTTON_QUIET : ROW_BUTTON_PRIMARY}
+            >
               <i className="ri-fingerprint-line" aria-hidden="true" />
               <span>{count > 0 ? "Manage" : "Add passkey"}</span>
             </button>

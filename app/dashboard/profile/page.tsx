@@ -66,6 +66,14 @@ export default function DashboardProfilePage() {
           </div>
         </main>
       </div>
+
+      {/* Tapping away closes the drawer, the same as on the other pages. */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 xl:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
     </div>
   );
 }

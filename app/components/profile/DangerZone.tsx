@@ -11,6 +11,7 @@ import Modal from "@/app/components/profile/Modal";
 import {
   BUTTON_DANGER,
   BUTTON_QUIET,
+  ROW_BUTTON_DANGER,
   ProfileCard,
   ProfileField,
   SecurityRow,
@@ -121,7 +122,7 @@ export default function DangerZone() {
           title="This cannot be undone"
           detail="Your scans, their results and every sign-in method go with the account."
           action={
-            <button type="button" onClick={() => setOpen(true)} className={BUTTON_DANGER}>
+            <button type="button" onClick={() => setOpen(true)} className={ROW_BUTTON_DANGER}>
               <i className="ri-delete-bin-line" aria-hidden="true" />
               <span>Delete account</span>
             </button>
