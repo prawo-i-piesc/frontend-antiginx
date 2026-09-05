@@ -39,7 +39,7 @@ export default function DangerZone() {
 
   const hasPassword = user?.auth?.password_set ?? true;
   const isTotp = method === "totp";
-  const phraseMatches = phrase.trim() === CONFIRM_PHRASE;
+  const phraseMatches = phrase.trim().toLowerCase() === CONFIRM_PHRASE.toLowerCase();
 
   const close = () => {
     setOpen(false);
@@ -153,8 +153,18 @@ export default function DangerZone() {
                 </p>
               </div>
 
+              {/* The phrase sits here rather than in the label, which is
+                  styled uppercase and would show it in a case the check does
+                  not accept. */}
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                To confirm, type{" "}
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {CONFIRM_PHRASE}
+                </span>
+              </p>
+
               <ProfileField
-                label={`Type “${CONFIRM_PHRASE}” to continue`}
+                label="Confirmation"
                 icon="ri-keyboard-line"
                 autoComplete="off"
                 autoCorrect="off"
