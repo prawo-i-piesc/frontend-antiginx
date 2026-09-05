@@ -11,6 +11,7 @@ import ProfileDetails from "@/app/components/profile/ProfileDetails";
 import ConnectedAccounts from "@/app/components/profile/ConnectedAccounts";
 import PasswordSection from "@/app/components/profile/PasswordSection";
 import AccountSecurity from "@/app/components/profile/AccountSecurity";
+import DangerZone from "@/app/components/profile/DangerZone";
 
 export default function DashboardProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -57,6 +58,7 @@ export default function DashboardProfilePage() {
                 <ConnectedAccounts />
                 <PasswordSection />
                 <AccountSecurity />
+                <DangerZone />
               </div>
             </div>
           </div>

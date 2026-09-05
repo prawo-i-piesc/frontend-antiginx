@@ -309,7 +309,12 @@ async function proxy(
 
   const secure = cookieIsSecure(request);
 
-  if (path[0] === "auth" && path[1] === "logout") {
+  // Both of these end the session: logout always, account deletion once the
+  // backend confirms it. Leaving the token behind would keep the client
+  // sending a bearer for an account that no longer exists.
+  const endsSession =
+    path[0] === "auth" && (path[1] === "logout" || (path[1] === "account" && response.ok));
+  if (endsSession) {
     responseHeaders.append("set-cookie", accessCookie("", 0, secure));
   }
 

@@ -159,6 +159,37 @@ export async function logout(options: { allDevices?: boolean } = {}): Promise<vo
   }
 }
 
+/** Deleting stops for a second factor the same way signing in does. */
+export type DeleteAccountResult =
+  | { kind: "deleted" }
+  | { kind: "mfa"; methods: MfaMethod[] };
+
+export async function deleteAccount(payload: {
+  password?: string;
+  method?: Exclude<MfaMethod, "webauthn">;
+  code?: string;
+}): Promise<DeleteAccountResult> {
+  const response = await authorizedFetch("/api/auth/account", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) throw await readAuthError(response, "INVALID_CREDENTIALS");
+
+  // 204 means it is gone; a 200 body means one more factor is wanted first.
+  if (response.status === 204) {
+    clearSession();
+    return { kind: "deleted" };
+  }
+
+  const body = (await response.json().catch(() => ({}))) as MfaChallengeResponse;
+  if (body.mfa_required) return { kind: "mfa", methods: body.methods ?? ["totp"] };
+
+  clearSession();
+  return { kind: "deleted" };
+}
+
 export async function getMe(): Promise<SessionUser> {
   const response = await authorizedFetch("/api/auth/me");
   if (!response.ok) throw await apiErrorFromResponse(response);
