@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { useTheme } from "@/app/providers/ThemeProvider";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
@@ -55,7 +55,9 @@ export default function DashboardProfilePage() {
 
               <div className="flex flex-col gap-6">
                 <ProfileDetails />
-                <ConnectedAccounts />
+                <Suspense fallback={null}>
+                  <ConnectedAccounts />
+                </Suspense>
                 <PasswordSection />
                 <AccountSecurity />
                 <DangerZone />

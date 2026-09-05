@@ -31,38 +31,57 @@ export type AuthErrorCode =
   | "WEBAUTHN_CHALLENGE_INVALID"
   | "WEBAUTHN_VERIFICATION_FAILED"
   | "CREDENTIAL_NOT_FOUND"
+  | "PASSKEY_PASSWORD_REQUIRED"
   | "RATE_LIMITED"
   | "FORBIDDEN"
   | "INTERNAL";
 
 const MESSAGES: Record<AuthErrorCode, string> = {
-  VALIDATION_FAILED: "Some fields need fixing. Check the highlighted ones and try again.",
+  VALIDATION_FAILED:
+    "Some fields need fixing. Check the highlighted ones and try again.",
   EMAIL_TAKEN: "An account with this email already exists. Sign in instead?",
   INVALID_CREDENTIALS: "Incorrect email or password.",
-  ACCOUNT_LOCKED: "Too many failed attempts. Your account is locked for a few minutes.",
-  MFA_INVALID_CODE: "That code is not valid. Check your authenticator app and try again.",
-  MFA_TOKEN_EXPIRED: "This verification step expired. Sign in again to get a new code prompt.",
-  MFA_ALREADY_ENABLED: "Two-factor authentication is already set up on this account.",
+  ACCOUNT_LOCKED:
+    "Too many failed attempts. Your account is locked for a few minutes.",
+  MFA_INVALID_CODE:
+    "That code is not valid. Check your authenticator app and try again.",
+  MFA_TOKEN_EXPIRED:
+    "This verification step expired. Sign in again to get a new code prompt.",
+  MFA_ALREADY_ENABLED:
+    "Two-factor authentication is already set up on this account.",
   MFA_NOT_ENABLED: "Two-factor authentication is not set up on this account.",
-  RECOVERY_CODE_INVALID: "That recovery code is not valid or has already been used.",
+  RECOVERY_CODE_INVALID:
+    "That recovery code is not valid or has already been used.",
   STEP_UP_REQUIRED: "Confirm your password to continue.",
   SESSION_EXPIRED: "Your session expired. Sign in again to continue.",
-  SESSION_REUSE_DETECTED: "You were signed out for security reasons. Sign in again.",
+  SESSION_REUSE_DETECTED:
+    "You were signed out for security reasons. Sign in again.",
   TOKEN_INVALID: "This reset link is not valid. Request a new one.",
   TOKEN_EXPIRED: "This reset link has expired. Request a new one.",
-  PASSWORD_TOO_WEAK: "Choose a stronger password — at least 12 characters, and not a common one.",
-  PASSWORD_SAME_AS_OLD: "Your new password has to be different from the current one.",
-  OAUTH_STATE_INVALID: "That sign-in attempt could not be verified. Start again.",
-  OAUTH_EMAIL_UNVERIFIED: "Your provider has not verified this email address. Verify it there first.",
-  OAUTH_ACCOUNT_CONFLICT: "That account has no password to confirm with. Sign in with the provider it already uses.",
-  OAUTH_PROVIDER_ERROR: "The sign-in provider did not respond. Try again in a moment.",
+  PASSWORD_TOO_WEAK:
+    "Choose a stronger password — at least 12 characters, and not a common one.",
+  PASSWORD_SAME_AS_OLD:
+    "Your new password has to be different from the current one.",
+  OAUTH_STATE_INVALID:
+    "That sign-in attempt could not be verified. Start again.",
+  OAUTH_EMAIL_UNVERIFIED:
+    "Your provider has not verified this email address. Verify it there first.",
+  OAUTH_ACCOUNT_CONFLICT:
+    "That account has no password to confirm with. Sign in with the provider it already uses.",
+  OAUTH_PROVIDER_ERROR:
+    "The sign-in provider did not respond. Try again in a moment.",
   // Raised by the proxy, not the backend: the OAuth routes are not deployed yet.
-  OAUTH_NOT_AVAILABLE: "Signing in with Google or GitHub is not available yet. Use your email and password.",
-  PROVIDER_ALREADY_LINKED: "This provider account is already linked to another AntiGinx account.",
-  LAST_LOGIN_METHOD: "This is your only way to sign in. Add another method before removing it.",
+  OAUTH_NOT_AVAILABLE:
+    "Signing in with Google or GitHub is not available yet. Use your email and password.",
+  PROVIDER_ALREADY_LINKED:
+    "This provider account is already linked to another Antiginx account.",
+  LAST_LOGIN_METHOD:
+    "This is your only way to sign in. Add another method before removing it.",
   WEBAUTHN_CHALLENGE_INVALID: "This passkey request expired. Try again.",
   WEBAUTHN_VERIFICATION_FAILED: "That passkey could not be verified.",
   CREDENTIAL_NOT_FOUND: "We could not find that credential.",
+  PASSKEY_PASSWORD_REQUIRED:
+    "This account signs in with a password first, then confirms with the passkey.",
   RATE_LIMITED: "Too many attempts. Wait a moment before trying again.",
   FORBIDDEN: "You do not have access to that.",
   INTERNAL: "Something went wrong on our side. Try again in a moment.",
@@ -96,9 +115,13 @@ export function messageForFieldReason(field: string, reason: string): string {
         ? "That does not look like an email address."
         : "Check this value.";
     case "min":
-      return param ? `Use at least ${param} characters.` : "This value is too short.";
+      return param
+        ? `Use at least ${param} characters.`
+        : "This value is too short.";
     case "max":
-      return param ? `Use at most ${param} characters.` : "This value is too long.";
+      return param
+        ? `Use at most ${param} characters.`
+        : "This value is too long.";
     default:
       return "Check this value.";
   }
@@ -119,7 +142,10 @@ export function fieldMessages(
   return messages;
 }
 
-export function messageForCode(code: string | null | undefined, fallback = FALLBACK): string {
+export function messageForCode(
+  code: string | null | undefined,
+  fallback = FALLBACK,
+): string {
   if (!code) return fallback;
   return MESSAGES[code as AuthErrorCode] ?? fallback;
 }
@@ -155,7 +181,9 @@ export class ApiError extends Error {
 }
 
 /** Builds an ApiError from a failed response, tolerating non-JSON bodies. */
-export async function apiErrorFromResponse(response: Response): Promise<ApiError> {
+export async function apiErrorFromResponse(
+  response: Response,
+): Promise<ApiError> {
   let body: Record<string, unknown> = {};
   try {
     body = await response.json();
@@ -170,7 +198,9 @@ export async function apiErrorFromResponse(response: Response): Promise<ApiError
       : null;
 
   const retryAfterHeader = response.headers.get("Retry-After");
-  const retryAfter = retryAfterHeader ? Number.parseInt(retryAfterHeader, 10) : null;
+  const retryAfter = retryAfterHeader
+    ? Number.parseInt(retryAfterHeader, 10)
+    : null;
 
   return new ApiError({
     status: response.status,
@@ -185,7 +215,9 @@ function statusFallback(status: number): string {
   if (status === 401) return "Your session expired. Sign in again to continue.";
   if (status === 403) return "You do not have access to that.";
   if (status === 404) return "That is not available yet.";
-  if (status === 429) return "Too many attempts. Wait a moment before trying again.";
-  if (status >= 500) return "Something went wrong on our side. Try again in a moment.";
+  if (status === 429)
+    return "Too many attempts. Wait a moment before trying again.";
+  if (status >= 500)
+    return "Something went wrong on our side. Try again in a moment.";
   return FALLBACK;
 }

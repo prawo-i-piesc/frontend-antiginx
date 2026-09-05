@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { login, safeNextPath } from "@/app/lib/authApi";
 import { ApiError, fieldMessages, messageForCode } from "@/app/lib/authErrors";
 import { setPendingMfa } from "@/app/lib/pendingMfa";
+import { passkeysSupported, signInWithPasskey } from "@/app/lib/webauthnApi";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell from "@/app/components/auth/AuthShell";
 import OAuthButtons from "@/app/components/auth/OAuthButtons";
@@ -145,6 +146,35 @@ export default function LoginForm() {
         </SubmitButton>
 
         <Divider label="or" />
+
+        {passkeysSupported() ? (
+          <button
+            type="button"
+            disabled={loading}
+            // The email is passed when there is one, so the browser can narrow
+            // the list; empty falls back to whatever passkey the device offers.
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const session = await signInWithPasskey(email.trim() || undefined);
+                toast.success("Signed in", {
+                  description: `Welcome back, ${session.user.full_name}.`,
+                });
+                router.replace(next);
+                return;
+              } catch (error) {
+                setLoading(false);
+                if (error instanceof Error && error.message === "cancelled") return;
+                if (error instanceof ApiError) toast.error(error.message);
+                else toast.error("Your device could not offer a passkey here.");
+              }
+            }}
+            className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 py-3 text-sm text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <i className="ri-fingerprint-line text-lg" aria-hidden="true" />
+            Sign in with a passkey
+          </button>
+        ) : null}
 
         <OAuthButtons next={next} disabled={loading} />
       </form>

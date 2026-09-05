@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { linkProviderUrl, unlinkProvider } from "@/app/lib/authApi";
-import { ApiError } from "@/app/lib/authErrors";
+import { ApiError, messageForCode } from "@/app/lib/authErrors";
 import { OAUTH_PROVIDERS, type OAuthProvider } from "@/app/lib/oauthProviders";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
@@ -14,10 +15,32 @@ import {
   SecurityRow,
 } from "@/app/components/profile/ui";
 
+/**
+ * Which failure has already been announced.
+ *
+ * Kept outside the component so a remount does not repeat the toast, the same
+ * way the sign-in screen handles its own redirect errors.
+ */
+let reportedLinkError: string | null = null;
+
 export default function ConnectedAccounts() {
   const { user, reloadUser } = useAuth();
   const toast = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [busy, setBusy] = useState<OAuthProvider | null>(null);
+
+  // Linking finishes with a redirect back here, so a failure arrives as a
+  // query parameter rather than as a response this component could catch.
+  const linkError = searchParams.get("error");
+  useEffect(() => {
+    if (!linkError || reportedLinkError === linkError) return;
+    reportedLinkError = linkError;
+
+    toast.error(messageForCode(linkError));
+    router.replace(pathname);
+  }, [linkError, toast, router, pathname]);
 
   const linked = new Set(user?.auth?.providers ?? []);
   const hasPassword = user?.auth?.password_set ?? true;

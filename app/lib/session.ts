@@ -22,6 +22,7 @@ export interface SessionUser {
     password_set: boolean;
     email_verified: boolean;
     providers: string[];
+    passkey_mode?: "second_factor" | "passwordless";
     mfa: {
       totp_enabled: boolean;
       webauthn_enabled: boolean;

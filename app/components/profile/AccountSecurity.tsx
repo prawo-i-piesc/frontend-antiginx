@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import Modal from "@/app/components/profile/Modal";
+import Passkeys from "@/app/components/profile/Passkeys";
 import {
   BUTTON_DANGER,
   BUTTON_PRIMARY,
@@ -52,6 +53,7 @@ export default function AccountSecurity() {
   const codesLeft = mfa?.recovery_codes_remaining ?? 0;
   const hasPassword = user?.auth?.password_set ?? true;
   const codesRunningOut = enabled && codesLeft <= 2;
+  const hasPasskeys = mfa?.webauthn_enabled ?? false;
 
   const close = () => {
     setFlow({ name: "closed" });
@@ -128,19 +130,16 @@ export default function AccountSecurity() {
     }
   };
 
-  // Enrolling has to be confirmed with a password, which an account that signs
-  // in through a provider does not have.
-  if (!hasPassword) return null;
-
   return (
     <>
       <ProfileCard
         title="Two-factor authentication"
-        description="A second step at sign-in, so a stolen password is not enough."
-        aside={<StatusPill on={enabled} onLabel="On" offLabel="Off" />}
+        description="A second step at sign-in, or a passkey instead of a password."
+        aside={<StatusPill on={enabled || hasPasskeys} onLabel="On" offLabel="Off" />}
       >
-        {enabled ? (
-          <div className="divide-y divide-zinc-200 dark:divide-zinc-700/50">
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-700/50">
+        {!hasPassword ? null : enabled ? (
+          <>
             <SecurityRow
               icon="ri-smartphone-line"
               tone="on"
@@ -177,7 +176,7 @@ export default function AccountSecurity() {
                 </button>
               }
             />
-          </div>
+          </>
         ) : (
           <SecurityRow
             icon="ri-shield-line"
@@ -196,6 +195,9 @@ export default function AccountSecurity() {
             }
           />
         )}
+
+          <Passkeys />
+        </div>
       </ProfileCard>
 
       <Modal
