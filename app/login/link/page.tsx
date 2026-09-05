@@ -66,6 +66,36 @@ export default function LinkAccountPage() {
   const isTotp = method === "totp";
   const label = providerLabel(pending.provider);
 
+  // The backend only asks for confirmation when the existing account has an
+  // unverified address, which today means it has a password. Reaching this
+  // without one would be a dead end — an explanation beats a field that
+  // cannot be filled in.
+  if (!pending.password_set) {
+    return (
+      <AuthShell
+        title={`Connect ${label} to your account`}
+        subtitle={`An account already uses ${pending.email}.`}
+        footer={
+          <button
+            type="button"
+            onClick={() => router.replace("/login")}
+            className="cursor-pointer text-cyan-400 hover:text-cyan-300"
+          >
+            Back to sign in
+          </button>
+        }
+      >
+        <div className="flex items-start gap-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-zinc-300">
+          <i className="ri-information-line mt-0.5 text-lg text-cyan-400" aria-hidden="true" />
+          <p>
+            That account has no password to confirm with. Sign in the way you normally do, then
+            connect {label} from your profile.
+          </p>
+        </div>
+      </AuthShell>
+    );
+  }
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy) return;
