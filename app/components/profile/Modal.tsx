@@ -23,7 +23,17 @@ export default function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
+  // The <dialog> close event fires for every close, including the ones this
+  // component performs when `open` goes false. Reporting those back as a
+  // dismissal would undo the state change that closed it — which is what
+  // silently killed a flow moving from one dialog straight into the next.
+  const openRef = useRef(open);
+
   useEffect(() => {
+    // Recorded before the close is performed, so the event that follows can
+    // tell our own close apart from the user dismissing the dialog.
+    openRef.current = open;
+
     const dialog = ref.current;
     if (!dialog) return;
 
@@ -31,11 +41,15 @@ export default function Modal({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  const handleDismiss = () => {
+    if (!openRef.current) return;
+    onClose();
+  };
+
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
-      onCancel={onClose}
+      onClose={handleDismiss}
       aria-label={title}
       // m-auto restores the centring the browser gives dialog:modal — Tailwind's
       // reset zeroes every margin, which otherwise pins it to the top-left.

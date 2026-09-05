@@ -87,10 +87,17 @@ export default function AccountSecurity() {
   const confirmEnrollment = () =>
     run(async () => {
       const { recovery_codes } = await activateTotp(code);
+
+      // Two-factor is on at this point and the codes are shown once, so they go
+      // on screen before anything else can fail. Re-reading the profile only
+      // updates the card, and losing that is worth far less than the codes.
       setCode("");
-      await reloadUser();
-      toast.success("Two-factor authentication is on");
       setFlow({ name: "codes", codes: recovery_codes });
+      toast.success("Two-factor authentication is on");
+
+      reloadUser().catch(() => {
+        toast.info("Saved. Refresh the page if the card still shows it as off.");
+      });
     });
 
   const turnOff = () =>
@@ -104,10 +111,12 @@ export default function AccountSecurity() {
   const regenerate = () =>
     run(async () => {
       const { recovery_codes } = await regenerateRecoveryCodes(password);
+
       setPassword("");
-      await reloadUser();
-      toast.success("New recovery codes generated");
       setFlow({ name: "codes", codes: recovery_codes });
+      toast.success("New recovery codes generated");
+
+      reloadUser().catch(() => undefined);
     });
 
   const copyCodes = async (codes: string[]) => {
