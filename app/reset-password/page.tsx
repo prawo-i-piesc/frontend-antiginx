@@ -9,7 +9,7 @@ import { ApiError, fieldMessages } from "@/app/lib/authErrors";
 import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
-import PasswordRequirements from "@/app/components/auth/PasswordRequirements";
+import PasswordStrength from "@/app/components/auth/PasswordStrength";
 import { PasswordField, SubmitButton } from "@/app/components/auth/Fields";
 
 function ResetPasswordForm() {
@@ -50,12 +50,13 @@ function ResetPasswordForm() {
     if (loading) return;
 
     const errors: Record<string, string> = {};
-    if (!evaluatePassword(password).satisfied)
-      errors.password = "Your password does not meet the requirements below.";
     if (confirmPassword !== password) errors.confirm = "Both passwords have to match.";
 
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+
+    // The strength meter states what is missing; no second message above it.
+    const passwordOk = evaluatePassword(password).satisfied;
+    if (!passwordOk || Object.keys(errors).length > 0) return;
 
     setLoading(true);
     try {
@@ -102,7 +103,7 @@ function ResetPasswordForm() {
             error={fieldErrors.password}
             disabled={loading}
           />
-          <PasswordRequirements password={password} showFailures={attempted} />
+          <PasswordStrength password={password} showFailures={attempted} />
         </div>
 
         <PasswordField

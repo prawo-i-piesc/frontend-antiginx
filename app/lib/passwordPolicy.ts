@@ -29,6 +29,8 @@ export interface PasswordContext {
 export interface PasswordRule {
   id: string;
   label: string;
+  /** Two or three words, for listing several rules on one line. */
+  short: string;
   test: (password: string, context: PasswordContext) => boolean;
 }
 
@@ -57,11 +59,13 @@ export const PASSWORD_RULES: PasswordRule[] = [
   {
     id: "length",
     label: `At least ${MIN_PASSWORD_LENGTH} characters`,
+    short: "more characters",
     test: (password) => password.length >= MIN_PASSWORD_LENGTH,
   },
   {
     id: "obvious",
-    label: "Not a common password, your name or your email",
+    label: "Too common, or contains your name or email",
+    short: "something less obvious",
     test: (password, context) =>
       password.length > 0 && !isCommon(password) && !containsPersonalDetail(password, context),
   },
@@ -72,16 +76,19 @@ export const PASSWORD_SUGGESTIONS: PasswordRule[] = [
   {
     id: "case",
     label: "An uppercase and a lowercase letter",
+    short: "mixed case",
     test: (password) => /[a-z]/.test(password) && /[A-Z]/.test(password),
   },
   {
     id: "digit",
     label: "A number",
+    short: "a number",
     test: (password) => /\d/.test(password),
   },
   {
     id: "symbol",
     label: "A symbol, such as ! ? # or -",
+    short: "a symbol",
     test: (password) => /[^A-Za-z0-9]/.test(password),
   },
 ];
@@ -89,6 +96,7 @@ export const PASSWORD_SUGGESTIONS: PasswordRule[] = [
 export interface PasswordRuleResult {
   id: string;
   label: string;
+  short: string;
   met: boolean;
 }
 
@@ -109,6 +117,7 @@ export function evaluatePassword(
     rules.map((rule) => ({
       id: rule.id,
       label: rule.label,
+      short: rule.short,
       met: rule.test(password, context),
     }));
 

@@ -26,11 +26,14 @@ export function AuthShell({
   subtitle,
   children,
   footer,
+  /** Sign-up needs the extra room for two fields per row. */
+  wide,
 }: {
   title: string;
   subtitle: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  wide?: boolean;
 }) {
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: "#09090b" }}>
@@ -52,10 +55,10 @@ export function AuthShell({
           ))}
         </div>
 
-        <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-10">
-          <div className="w-full max-w-md">
-            <div className="mb-6 text-center">
-              <Link href="/" className="relative mx-auto mb-0 inline-block h-16 w-48">
+        <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+          <div className={`w-full ${wide ? "max-w-lg" : "max-w-md"}`}>
+            <div className="mb-5 text-center">
+              <Link href="/" className="relative mx-auto mb-0 inline-block h-12 w-36">
                 <Image
                   src="/logotype.png"
                   alt="Antiginx"
@@ -65,13 +68,13 @@ export function AuthShell({
                   priority
                 />
               </Link>
-              <h1 className="mt-2 text-lg font-semibold text-white">{title}</h1>
-              <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+              <h1 className="mt-1 text-base font-semibold text-white">{title}</h1>
+              <p className="mt-0.5 text-sm text-zinc-400">{subtitle}</p>
             </div>
 
-            <div className="rounded-xl border border-zinc-800/40 bg-zinc-900/40 p-6">{children}</div>
+            <div className="rounded-xl border border-zinc-800/40 bg-zinc-900/40 p-5">{children}</div>
 
-            {footer ? <div className="mt-4 text-center text-sm text-zinc-400">{footer}</div> : null}
+            {footer ? <div className="mt-3 text-center text-sm text-zinc-400">{footer}</div> : null}
           </div>
         </div>
       </section>

@@ -11,7 +11,7 @@ import React, { useId, useState } from "react";
  */
 
 const BASE_INPUT =
-  "w-full rounded-lg border bg-zinc-800/60 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:ring-2 focus:ring-cyan-500";
+  "w-full rounded-lg border bg-zinc-800/60 px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:ring-2 focus:ring-cyan-500";
 
 export function TextField({
   label,
@@ -30,7 +30,7 @@ export function TextField({
 
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-2 block text-sm text-zinc-400">
+      <label htmlFor={id} className="mb-1.5 block text-sm text-zinc-400">
         {label}
       </label>
       <input
@@ -41,12 +41,12 @@ export function TextField({
         className={`${BASE_INPUT} ${error ? "border-red-500/60" : "border-zinc-700"}`}
       />
       {error ? (
-        <p id={errorId} className="mt-2 flex items-center gap-1.5 text-sm text-red-400">
+        <p id={errorId} className="mt-1.5 flex items-center gap-1.5 text-xs text-red-400">
           <i className="ri-error-warning-line" aria-hidden="true" />
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="mt-2 text-xs text-zinc-500">
+        <p id={hintId} className="mt-1.5 text-xs text-zinc-500">
           {hint}
         </p>
       ) : null}
@@ -59,11 +59,14 @@ export function PasswordField({
   error,
   hint,
   className = "",
+  /** Rendered opposite the label, so a link does not cost its own row. */
+  labelAction,
   ...props
 }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   label: string;
   error?: string | null;
   hint?: string;
+  labelAction?: React.ReactNode;
 }) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -72,9 +75,12 @@ export function PasswordField({
 
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-2 block text-sm text-zinc-400">
-        {label}
-      </label>
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="block text-sm text-zinc-400">
+          {label}
+        </label>
+        {labelAction}
+      </div>
       <div className="relative">
         <input
           {...props}
@@ -94,12 +100,12 @@ export function PasswordField({
         </button>
       </div>
       {error ? (
-        <p id={errorId} className="mt-2 flex items-center gap-1.5 text-sm text-red-400">
+        <p id={errorId} className="mt-1.5 flex items-center gap-1.5 text-xs text-red-400">
           <i className="ri-error-warning-line" aria-hidden="true" />
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="mt-2 text-xs text-zinc-500">
+        <p id={hintId} className="mt-1.5 text-xs text-zinc-500">
           {hint}
         </p>
       ) : null}

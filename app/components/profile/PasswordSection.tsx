@@ -7,7 +7,7 @@ import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { updatePassword } from "@/app/lib/profileApi";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
-import PasswordRequirements from "@/app/components/auth/PasswordRequirements";
+import PasswordStrength from "@/app/components/auth/PasswordStrength";
 import { ProfileCard, ProfileField, SubmitRow } from "@/app/components/profile/ui";
 
 export default function PasswordSection() {
@@ -34,12 +34,13 @@ export default function PasswordSection() {
 
     const found: Record<string, string> = {};
     if (!currentPassword) found.old_password = "Enter your current password.";
-    if (!evaluatePassword(newPassword, context).satisfied)
-      found.new_password = "Your new password does not meet the requirements below.";
     if (confirmPassword !== newPassword) found.confirm = "Both passwords have to match.";
 
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+
+    // The strength meter states what is missing; no second message above it.
+    const passwordOk = evaluatePassword(newPassword, context).satisfied;
+    if (!passwordOk || Object.keys(found).length > 0) return;
 
     setBusy(true);
     try {
@@ -71,18 +72,18 @@ export default function PasswordSection() {
   return (
     <ProfileCard title="Password" description="Change the password you sign in with.">
       <form onSubmit={submit} noValidate>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-6">
-            <ProfileField
-              label="Current password"
-              icon="ri-lock-line"
-              type="password"
-              autoComplete="current-password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              error={errors.old_password}
-              disabled={busy}
-            />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <ProfileField
+            label="Current password"
+            icon="ri-lock-line"
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            error={errors.old_password}
+            disabled={busy}
+          />
+          <div>
             <ProfileField
               label="New password"
               icon="ri-lock-password-line"
@@ -93,28 +94,18 @@ export default function PasswordSection() {
               error={errors.new_password}
               disabled={busy}
             />
-            <ProfileField
-              label="Confirm new password"
-              icon="ri-lock-password-line"
-              type="password"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              error={errors.confirm}
-              disabled={busy}
-            />
+            <PasswordStrength password={newPassword} context={context} showFailures={attempted} />
           </div>
-
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700/50 dark:bg-zinc-900/30">
-            <p className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Your new password needs
-            </p>
-            <PasswordRequirements
-              password={newPassword}
-              context={context}
-              showFailures={attempted}
-            />
-          </div>
+          <ProfileField
+            label="Confirm new password"
+            icon="ri-lock-password-line"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            error={errors.confirm}
+            disabled={busy}
+          />
         </div>
 
         <SubmitRow busy={busy} label="Update password" icon="ri-shield-keyhole-line" />

@@ -100,7 +100,7 @@ export default function LoginForm() {
 
   return (
     <AuthShell
-      title="Sign in to AntiGinx"
+      title="Sign in to Antiginx"
       subtitle="Welcome back. Enter your details to continue."
       footer={
         <>
@@ -111,7 +111,7 @@ export default function LoginForm() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
         <TextField
           label="Email address"
           type="email"
@@ -133,13 +133,12 @@ export default function LoginForm() {
           onChange={(event) => setPassword(event.target.value)}
           error={fieldErrors.password}
           disabled={loading}
+          labelAction={
+            <Link href="/forgot-password" className="text-xs text-cyan-400 hover:text-cyan-300">
+              Forgot password?
+            </Link>
+          }
         />
-
-        <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-sm text-cyan-400 hover:text-cyan-300">
-            Forgot password?
-          </Link>
-        </div>
 
         <SubmitButton loading={loading} loadingLabel="Signing in…">
           Sign in

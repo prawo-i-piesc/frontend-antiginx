@@ -10,7 +10,7 @@ import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell from "@/app/components/auth/AuthShell";
 import OAuthButtons from "@/app/components/auth/OAuthButtons";
-import PasswordRequirements from "@/app/components/auth/PasswordRequirements";
+import PasswordStrength from "@/app/components/auth/PasswordStrength";
 import {
   Checkbox,
   Divider,
@@ -45,13 +45,15 @@ export default function RegisterForm() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
       errors.email = "That does not look like an email address.";
 
-    if (!evaluatePassword(password, { name: fullName, email }).satisfied)
-      errors.password = "Your password does not meet the requirements below.";
     if (confirmPassword !== password) errors.confirm_password = "Both passwords have to match.";
     if (!accepted) errors.terms = "Accept the terms to create an account.";
 
     setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+
+    // The strength meter under the field already names what is missing, so the
+    // password blocks the submit without adding a second message above it.
+    const passwordOk = evaluatePassword(password, { name: fullName, email }).satisfied;
+    return passwordOk && Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -89,6 +91,7 @@ export default function RegisterForm() {
 
   return (
     <AuthShell
+      wide
       title="Create your account"
       subtitle="Start scanning your sites in a couple of minutes."
       footer={
@@ -100,29 +103,31 @@ export default function RegisterForm() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <TextField
-          label="Full name"
-          name="name"
-          autoComplete="name"
-          placeholder="Jan Kowalski"
-          value={fullName}
-          onChange={(event) => setFullName(event.target.value)}
-          error={fieldErrors.full_name}
-          disabled={loading}
-        />
+      <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <TextField
+            label="Full name"
+            name="name"
+            autoComplete="name"
+            placeholder="Jan Kowalski"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            error={fieldErrors.full_name}
+            disabled={loading}
+          />
 
-        <TextField
-          label="Email address"
-          type="email"
-          name="email"
-          autoComplete="email"
-          placeholder="you@email.com"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          error={fieldErrors.email}
-          disabled={loading}
-        />
+          <TextField
+            label="Email address"
+            type="email"
+            name="email"
+            autoComplete="email"
+            placeholder="you@email.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            error={fieldErrors.email}
+            disabled={loading}
+          />
+        </div>
 
         <div>
           <PasswordField
@@ -135,7 +140,7 @@ export default function RegisterForm() {
             error={fieldErrors.password}
             disabled={loading}
           />
-          <PasswordRequirements
+          <PasswordStrength
             password={password}
             context={{ name: fullName, email }}
             showFailures={attempted}
