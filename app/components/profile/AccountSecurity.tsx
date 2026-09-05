@@ -344,6 +344,7 @@ function ConfirmWithPassword({
         icon="ri-lock-line"
         type="password"
         autoComplete="current-password"
+        placeholder="••••••••••"
         autoFocus
         value={value}
         onChange={(event) => onChange(event.target.value)}

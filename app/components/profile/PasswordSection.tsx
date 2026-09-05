@@ -78,6 +78,7 @@ export default function PasswordSection() {
             icon="ri-lock-line"
             type="password"
             autoComplete="current-password"
+            placeholder="••••••••••"
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
             error={errors.old_password}
@@ -89,6 +90,7 @@ export default function PasswordSection() {
               icon="ri-lock-password-line"
               type="password"
               autoComplete="new-password"
+              placeholder="••••••••••"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
               error={errors.new_password}
@@ -101,6 +103,7 @@ export default function PasswordSection() {
             icon="ri-lock-password-line"
             type="password"
             autoComplete="new-password"
+            placeholder="••••••••••"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             error={errors.confirm}
