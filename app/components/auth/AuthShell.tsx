@@ -61,7 +61,7 @@ export function AuthShell({
   const { container, item } = entrance(useReducedMotion());
 
   return (
-    <div className="min-h-screen text-white" style={{ backgroundColor: "#09090b" }}>
+    <div className="auth-surface min-h-screen text-white" style={{ backgroundColor: "#09090b" }}>
       <section className="relative flex min-h-screen flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_150%_90%_at_50%_0%,rgba(6,182,212,0.15),transparent_70%)] opacity-40" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:120px_120px]" />
