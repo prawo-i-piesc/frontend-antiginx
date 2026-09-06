@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { requestEmailVerification } from "@/app/lib/authApi";
 import { ApiError, fieldMessages } from "@/app/lib/authErrors";
 import { MIN_NAME_LENGTH, updateEmail, updateFullName } from "@/app/lib/profileApi";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -10,6 +11,8 @@ import {
   ExpandableRow,
   ProfileCard,
   ProfileField,
+  ROW_BUTTON_PRIMARY,
+  SecurityRow,
   SubmitRow,
 } from "@/app/components/profile/ui";
 
@@ -30,6 +33,32 @@ export default function ProfileDetails() {
   // The address on an account created through a provider belongs to that
   // provider, so changing it here would only put the two out of step.
   const canChangeEmail = user?.auth?.password_set ?? true;
+
+  // Providers vouch for the address they hand over, so only accounts that
+  // registered with a password can still be waiting on this.
+  const emailVerified = user?.auth?.email_verified ?? true;
+
+  const resend = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await requestEmailVerification();
+      toast.success("Confirmation sent", { description: `Check ${user?.email ?? "your inbox"}.` });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast.error(error.message, {
+          description:
+            error.is("RATE_LIMITED") && error.retryAfter
+              ? `Try again in about ${Math.ceil(error.retryAfter / 60)} minute(s).`
+              : undefined,
+        });
+      } else {
+        toast.error("We could not reach the server. Try again in a moment.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const toggle = (section: Exclude<Editing, null>) => {
     setEditing((current) => (current === section ? null : section));
@@ -127,6 +156,24 @@ export default function ProfileDetails() {
             />
           </form>
         </ExpandableRow>
+
+        {!emailVerified ? (
+          <SecurityRow
+            icon="ri-mail-check-line"
+            tone="warn"
+            title="Address not confirmed"
+            detail="Until it is, we cannot reach you about your account — including a password reset."
+            action={
+              <button type="button" onClick={resend} disabled={busy} className={ROW_BUTTON_PRIMARY}>
+                <i
+                  className={busy ? "ri-loader-4-line animate-spin" : "ri-mail-send-line"}
+                  aria-hidden="true"
+                />
+                <span>Send confirmation</span>
+              </button>
+            }
+          />
+        ) : null}
 
         {canChangeEmail ? (
           <ExpandableRow

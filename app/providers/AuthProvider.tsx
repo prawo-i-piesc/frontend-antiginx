@@ -27,8 +27,8 @@ interface AuthContextType {
   initialized: boolean;
   user: SessionUser | null;
   logout: () => Promise<void>;
-  /** Re-reads the profile, for screens that change it server-side. */
-  reloadUser: () => Promise<void>;
+  /** Re-reads the profile and returns it, for screens that act on the result. */
+  reloadUser: () => Promise<SessionUser>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,7 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const reloadUser = useCallback(async () => {
-    setSessionUser(await getMe());
+    const fresh = await getMe();
+    setSessionUser(fresh);
+    return fresh;
   }, []);
 
   const value = useMemo<AuthContextType>(

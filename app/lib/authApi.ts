@@ -202,6 +202,23 @@ export async function requestPasswordReset(email: string): Promise<void> {
   if (!response.ok) throw await apiErrorFromResponse(response);
 }
 
+/**
+ * Confirms an address from the link in the verification email.
+ *
+ * Public on purpose: the link is opened wherever the mailbox is, which is not
+ * necessarily the browser holding the session.
+ */
+export async function verifyEmail(token: string): Promise<void> {
+  const response = await postJson("/api/auth/email/verify", { token });
+  if (!response.ok) throw await apiErrorFromResponse(response);
+}
+
+/** Sends a fresh verification email to the signed-in account's address. */
+export async function requestEmailVerification(): Promise<void> {
+  const response = await authorizedFetch("/api/auth/email/verify/request", { method: "POST" });
+  if (!response.ok) throw await apiErrorFromResponse(response);
+}
+
 export async function resetPassword(payload: {
   token: string;
   newPassword: string;

@@ -70,8 +70,10 @@ export default function RegisterForm() {
       });
 
       if (result.kind === "session") {
-        toast.success("Account created", { description: "You are signed in and ready to scan." });
-        router.replace("/dashboard");
+        // A fresh password account has an unverified address, so it goes to the
+        // confirmation screen rather than the dashboard.
+        toast.success("Account created", { description: "Confirm your email to finish." });
+        router.replace("/confirm-email");
         return;
       }
 
