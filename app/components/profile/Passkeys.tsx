@@ -65,6 +65,9 @@ export default function Passkeys() {
   const supported = passkeysSupported();
   const count = credentials?.length ?? (user?.auth?.mfa.webauthn_enabled ? 1 : 0);
   const mode: PasskeyMode = user?.auth?.passkey_mode ?? "second_factor";
+  // Nothing can go in front of a passkey on an account with no password, so
+  // there is no choice to offer — the backend reports it as passwordless.
+  const canChooseMode = user?.auth?.password_set ?? true;
 
   const report = (caught: unknown) => {
     if (caught instanceof ApiError) toast.error(caught.message);
@@ -176,7 +179,13 @@ export default function Passkeys() {
         description="Each one is tied to a device or a password manager."
       >
         <div className="space-y-6">
-          {count > 0 ? (
+          {count > 0 && !canChooseMode ? (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              This account has no password, so a passkey signs you in on its own.
+            </p>
+          ) : null}
+
+          {count > 0 && canChooseMode ? (
             <div>
               <p className="mb-2 text-xs uppercase tracking-wider text-zinc-500">
                 How signing in works
