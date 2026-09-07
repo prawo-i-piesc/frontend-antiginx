@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
+import { authorizedFetch } from "@/app/lib/session";
 import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
 import AdminSidebar from "@/app/components/layout/AdminSidebar";
 
@@ -22,9 +23,9 @@ export default function AdminDatabasePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
   const [activeTable, setActiveTable] = useState<TableType>('users');
   const [dbData, setDbData] = useState<any[]>([]);
@@ -44,7 +45,7 @@ export default function AdminDatabasePage() {
 
   // Pobieranie danych z API
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -52,12 +53,9 @@ export default function AdminDatabasePage() {
       setSortConfig(null); // Reset sortowania przy zmianie tabeli
       
       try {
-        const response = await fetch(`/api/admin/database?table=${encodeURIComponent(activeTable)}`, {
+        const response = await authorizedFetch(`/api/admin/database?table=${encodeURIComponent(activeTable)}`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-          }
+          headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) {
@@ -75,7 +73,7 @@ export default function AdminDatabasePage() {
     };
 
     fetchData();
-  }, [activeTable, token]);
+  }, [activeTable, authenticated]);
 
   // 1. Krok: Filtrowanie po wyszukiwarce
   const filteredData = useMemo(() => {
@@ -139,7 +137,7 @@ export default function AdminDatabasePage() {
   };
 
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
   if (!auth.user) return null;
   if (auth.user.role !== 'admin') notFound();
 

@@ -68,8 +68,14 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-zinc-800/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-zinc-600 text-xs">
-            © 2025 Antiginx. All rights reserved.
+          {/*
+            The landing page is prerendered, so this date is the build date in
+            the static HTML and the real one after hydration. suppressHydration
+            keeps React quiet about the two differing over New Year, until the
+            next deploy bakes in the new year anyway.
+          */}
+          <p className="text-zinc-600 text-xs" suppressHydrationWarning>
+            © {new Date().getFullYear()} Antiginx. All rights reserved.
           </p>
           <div className="flex items-center gap-3">
             <a href="#" className="text-zinc-600 hover:text-cyan-400 transition-colors cursor-pointer">
