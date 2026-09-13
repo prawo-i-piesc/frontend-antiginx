@@ -1,5 +1,11 @@
 # Variables
-ARG NPM_VERSION=12.0.2
+#
+# NPM_VERSION deliberately tracks the 11.x line rather than the `latest`
+# dist-tag. npm 12.0.2 was published in July and still bundles vulnerable
+# copies of tar, brace-expansion, ip-address and undici; 11.19.1 came out a
+# month later with all of them patched. Check what a release actually bundles
+# before raising this -- a higher number is not automatically a safer one.
+ARG NPM_VERSION=11.19.1
 
 ARG USERNAME=antiginx_user
 ARG GROUPNAME=antiginx_group
