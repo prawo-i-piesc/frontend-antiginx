@@ -28,12 +28,15 @@ body {
 }
 
 :root {
+  /* Text colour the browser must use inside an autofilled field. */
+  --autofill-text: #18181b;
   --scrollbar-track: rgba(255, 255, 255, 0.42);
   --scrollbar-thumb: rgba(148, 163, 184, 0.72);
   --scrollbar-thumb-hover: rgba(100, 116, 139, 0.9);
 }
 
 .dark {
+  --autofill-text: #fafafa;
   --scrollbar-track: rgba(255, 255, 255, 0.04);
   --scrollbar-thumb: rgba(113, 113, 122, 0.58);
   --scrollbar-thumb-hover: rgba(161, 161, 170, 0.82);
@@ -150,4 +153,53 @@ body,
   width: 0;
   height: 0;
   display: none;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast-in {
+    animation: none;
+  }
+}
+
+/*
+ * Browser autofill paints its own background — pale yellow in Chrome, white in
+ * Safari — which looks broken on the dark fields.
+ *
+ * The background is never allowed to arrive: browsers fade it in, so a
+ * transition long enough to outlast the page keeps the field's own background
+ * on screen. `background-clip: text` would also hide it, but it clips the
+ * element's dark background into the glyphs and turns the text black.
+ *
+ * An inset box-shadow is the other common fix and is avoided on purpose:
+ * Tailwind draws focus rings with box-shadow, so it removes them silently.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--autofill-text);
+  caret-color: var(--autofill-text);
+  transition: background-color 600000s 0s ease-in-out;
+}
+
+/* The auth screens are dark whatever the theme is, so they pin their own value. */
+.auth-surface {
+  --autofill-text: #ffffff;
 }

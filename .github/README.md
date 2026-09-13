@@ -26,5 +26,5 @@ npm run dev
 Open http://localhost:3000 in your browser (default Next.js port).
 
 Notes:
-- If the app needs an API URL or other runtime config, add them to `.env.local` (for example `NEXT_PUBLIC_API_URL`).
+- Set `BACKEND_URL` in `.env.local` to the address of the backend (see `.env.example`). The frontend proxies `/api` there at runtime; the browser only ever calls same-origin paths.
 - Common scripts are `dev`, `build` and `start` (see `package.json`).
