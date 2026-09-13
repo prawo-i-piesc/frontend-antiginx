@@ -1,3 +1,5 @@
+import { authorizedFetch } from "@/app/lib/session";
+
 // API configuration and types based on backend specification
 
 // Types based on backend response structure
@@ -108,7 +110,6 @@ export type ScanAccessMode = "free" | "premium";
 export interface ScanRequestOptions {
   mode?: ScanAccessMode;
   authorizedTester?: boolean;
-  token?: string | null;
 }
 
 export interface PremiumScanCompliance {
@@ -152,6 +153,14 @@ async function readErrorMessage(
   return `${fallbackMessage} (HTTP ${response.status})`;
 }
 
+/**
+ * Premium routes carry the session and get a refresh-aware fetch; free scans
+ * must stay anonymous, so they never touch the session store.
+ */
+function scanFetch(mode: ScanAccessMode, path: string, init: RequestInit): Promise<Response> {
+  return mode === "premium" ? authorizedFetch(path, init) : fetch(path, init);
+}
+
 // API functions
 export async function createScan(
   targetUrl: string,
@@ -175,12 +184,9 @@ export async function createScan(
 
   let response: Response;
   try {
-    response = await fetch(scanPath(mode), {
+    response = await scanFetch(mode, scanPath(mode), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader(options?.token),
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   } catch (error) {
@@ -203,17 +209,12 @@ export async function createScan(
   return response.json();
 }
 
-export async function getPremiumScanConfig(
-  token: string,
-): Promise<PremiumScanConfigResponse> {
+export async function getPremiumScanConfig(): Promise<PremiumScanConfigResponse> {
   let response: Response;
   try {
-    response = await fetch("/api/utils/tests", {
+    response = await authorizedFetch("/api/utils/tests", {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader(token),
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     throw new ApiRequestError("Cannot connect to scanner service", {
@@ -280,12 +281,9 @@ export async function getScan(
   const mode = options?.mode ?? "free";
   let response: Response;
   try {
-    response = await fetch(`${scanPath(mode)}/${scanId}`, {
+    response = await scanFetch(mode, `${scanPath(mode)}/${scanId}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader(options?.token),
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     throw new ApiRequestError("Cannot connect to scanner service", {
@@ -307,15 +305,12 @@ export async function getScan(
   return response.json();
 }
 
-export async function getUserScans(token: string): Promise<UserScanResponse[]> {
+export async function getUserScans(): Promise<UserScanResponse[]> {
   let response: Response;
   try {
-    response = await fetch("/api/users/scans", {
+    response = await authorizedFetch("/api/users/scans", {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader(token),
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     throw new ApiRequestError("Cannot connect to scanner service", {
@@ -453,84 +448,3 @@ export function getStatusColor(status: ScanStatus): string {
   }
 }
 
-// ----------------------
-// Authentication API
-// ----------------------
-
-export interface RegisterPayload {
-  full_name: string;
-  email: string;
-  password: string;
-}
-
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  expires_in: number;
-}
-
-export async function register(payload: RegisterPayload): Promise<void> {
-  const res = await fetch("/api/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: "Registration failed" }));
-    throw new Error(err.error || `HTTP error ${res.status}`);
-  }
-
-  return;
-}
-
-export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Login failed" }));
-    throw new Error(err.error || `HTTP error ${res.status}`);
-  }
-
-  return res.json();
-}
-
-export function authHeader(token?: string | null): Record<string, string> {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-export interface MeResponse {
-  id: string;
-  email: string;
-  full_name: string;
-  role: "admin" | "user";
-}
-
-export async function getMe(token: string): Promise<MeResponse> {
-  const res = await fetch("/api/auth/me", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeader(token),
-    },
-  });
-
-  if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: "Failed to fetch user" }));
-    throw new Error(err.error || `HTTP error ${res.status}`);
-  }
-
-  return res.json();
-}

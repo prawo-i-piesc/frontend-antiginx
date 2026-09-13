@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
+import { authorizedFetch } from "@/app/lib/session";
 import DashboardTopBar from "../components/layout/DashboardTopBar";
 import NavLink from "../components/interface/NavLink";
 import StatsCard from "../components/interface/StatsCard";
@@ -166,21 +167,18 @@ export default function AdminPage() {
     }
   }, [activeWidgets, widgetsLoaded]);
 
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
-  // Hook pobierający dane z endpointu po zaimportowaniu tokenu autoryzacji
+  // Hook pobierający dane z endpointu po ustaleniu sesji
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     const fetchWidgetsData = async () => {
       try {
-        const response = await fetch('/api/admin/widgets', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const response = await authorizedFetch('/api/admin/widgets', {
+          headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -195,7 +193,7 @@ export default function AdminPage() {
     };
 
     fetchWidgetsData();
-  }, [token]);
+  }, [authenticated]);
 
   // keep hook order stable: call memo before any early returns
   const displayWidgets = useMemo(() => {
@@ -210,7 +208,7 @@ export default function AdminPage() {
 
   // preserve original render behaviour while keeping hook order stable
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
   if (!auth.user) return null;
   if (auth.user.role !== 'admin') notFound();
 

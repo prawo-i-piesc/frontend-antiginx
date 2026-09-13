@@ -11,12 +11,10 @@ import { SCAN_CONFIG } from "@/app/config/constants";
 
 interface UseScanModalOptions {
   mode?: ScanAccessMode;
-  token?: string | null;
 }
 
 export function useScanModal(options?: UseScanModalOptions) {
   const mode = options?.mode ?? "free";
-  const token = options?.token;
   const pollMaxAttempts =
     mode === "free"
       ? SCAN_CONFIG.FREE_MAX_POLL_ATTEMPTS
@@ -29,7 +27,7 @@ export function useScanModal(options?: UseScanModalOptions) {
   const { startPolling, stopPolling, isPolling, setScan } = usePollScan({
     maxAttempts: pollMaxAttempts,
     intervalMs: SCAN_CONFIG.POLL_INTERVAL,
-    requestOptions: { mode, token },
+    requestOptions: { mode },
   });
 
   function getFriendlyScanError(error: unknown): string {
@@ -115,7 +113,6 @@ export function useScanModal(options?: UseScanModalOptions) {
     try {
       const { scanId } = await createScan(url.trim(), tests, compliance, {
         mode,
-        token,
         authorizedTester,
       });
 

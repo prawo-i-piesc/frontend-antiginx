@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from "../providers/ThemeProvider";
 import useRequireAuth from '@/app/hooks/useRequireAuth';
 import useProfile from '@/app/hooks/useProfile';
+import { authorizedFetch } from "@/app/lib/session";
 import DashboardTopBar from "../components/layout/DashboardTopBar";
 import DashboardSidebar from "../components/layout/DashboardSidebar";
 import StatsCard from "../components/interface/StatsCard";
@@ -117,24 +118,20 @@ export default function DashboardPage() {
   const hoverIndexRef = useRef<number | null>(null);
   const nextWidgetId = useRef(0);
   
-  const { token, initialized, auth: authFromHook } = useRequireAuth();
+  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
   const auth = authFromHook;
-  const { profileName } = useProfile(token);
+  const { profileName } = useProfile();
 
   // FETCHOWANIE DANYCH WIDŻETÓW Z ENDPOINTU UŻYTKOWNIKA
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     let active = true;
 
     const fetchWidgetData = async () => {
       setIsDataLoading(true);
       try {
-        const response = await fetch("/api/users/widgets", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
+        const response = await authorizedFetch("/api/users/widgets");
 
         if (!response.ok) {
           throw new Error("Failed to fetch widget data");
@@ -155,7 +152,7 @@ export default function DashboardPage() {
     fetchWidgetData();
 
     return () => { active = false; };
-  }, [token]);
+  }, [authenticated]);
 
   const displayWidgets = useMemo(() => {
     if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
@@ -223,7 +220,7 @@ export default function DashboardPage() {
   }, [activeWidgets, widgetsLoaded]);
 
   if (!initialized) return null;
-  if (!token) return null;
+  if (!authenticated) return null;
 
 
   function handleMouseDown(e: React.MouseEvent, widget: DashboardWidget, index: number) {
