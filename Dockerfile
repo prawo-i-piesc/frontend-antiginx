@@ -1,6 +1,4 @@
 # Variables
-ARG NPM_VERSION=11.17.0
-
 ARG USERNAME=antiginx_user
 ARG GROUPNAME=antiginx_group
 ARG USER_UID=1001
@@ -59,7 +57,6 @@ RUN npm prune --production
 # 502 while the rest of the UI still serves.
 FROM base AS runner
 
-ARG NPM_VERSION
 ARG USERNAME
 ARG GROUPNAME
 ARG USER_UID
@@ -69,9 +66,21 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-RUN apk --no-cache upgrade &&              \
-    apk --no-cache add ca-certificates &&  \
-    npm install -g npm@${NPM_VERSION}
+# The standalone server starts with `node server.js`, so npm and yarn are never
+# run here. Their bundled dependency trees are, however, the only part of this
+# image the vulnerability scanner ever reports, so the final image drops both
+# along with the install cache npm leaves behind.
+RUN apk --no-cache upgrade &&                     \
+    apk --no-cache add ca-certificates &&         \
+    rm -rf /usr/local/lib/node_modules/npm        \
+           /usr/local/lib/node_modules/corepack   \
+           /usr/local/bin/npm                     \
+           /usr/local/bin/corepack                \
+           /usr/local/bin/npx                     \
+           /usr/local/bin/yarn                    \
+           /usr/local/bin/yarnpkg                 \
+           /opt/yarn-v*                           \
+           /root/.npm
 
 RUN addgroup -g ${USER_GID} -S ${GROUPNAME}
 RUN adduser -u ${USER_UID} -S ${USERNAME} -G ${GROUPNAME}
