@@ -2,8 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
+
+import { useI18n } from "@/app/i18n/I18nProvider";
+import LanguageSwitcher from "@/app/components/ui/LanguageSwitcher";
+import { MAIN_CONTENT_ID } from "@/app/components/ui/SkipLink";
 
 /**
  * Shared frame for every auth screen.
@@ -51,18 +55,39 @@ export function AuthShell({
   footer,
   /** Sign-up needs the extra room for two fields per row. */
   wide,
+  /**
+   * Names what the card is showing, for screens that swap it in place — the
+   * form for a confirmation. When it changes, the control that had focus is
+   * usually gone with the old view, so focus goes to the heading, which a
+   * screen reader reads out. A view that takes focus itself (a field with
+   * autoFocus) keeps it.
+   */
+  view,
 }: {
   title: string;
   subtitle: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   wide?: boolean;
+  view?: string;
 }) {
+  const { t } = useI18n();
   const { container, item } = entrance(useReducedMotion());
+
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const shownView = useRef(view);
+
+  useEffect(() => {
+    if (shownView.current === view) return;
+    shownView.current = view;
+
+    const active = document.activeElement;
+    if (!active || active === document.body) headingRef.current?.focus();
+  }, [view]);
 
   return (
     <div className="auth-surface min-h-screen text-white" style={{ backgroundColor: "#09090b" }}>
-      <section className="relative flex min-h-screen flex-col">
+      <div className="relative flex min-h-screen flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_150%_90%_at_50%_0%,rgba(6,182,212,0.15),transparent_70%)] opacity-40" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:120px_120px]" />
 
@@ -80,7 +105,17 @@ export function AuthShell({
           ))}
         </div>
 
-        <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+        {/* In the flow on a phone, so it can never sit on top of the card;
+            pinned to the corner once there is room beside the logo. */}
+        <header className="relative z-20 flex justify-end px-4 pt-4 sm:absolute sm:right-0 sm:top-0">
+          <LanguageSwitcher tone="dark" />
+        </header>
+
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="relative z-10 flex flex-1 items-center justify-center px-4 py-8 focus:outline-none"
+        >
           <motion.div
             className={`w-full ${wide ? "max-w-lg" : "max-w-md"}`}
             variants={container}
@@ -91,14 +126,20 @@ export function AuthShell({
               <Link href="/" className="relative mx-auto mb-0 inline-block h-12 w-36">
                 <Image
                   src="/logotype.png"
-                  alt="Antiginx"
+                  alt={t.common.homeLink}
                   fill
                   sizes="12rem"
                   className="object-contain"
                   priority
                 />
               </Link>
-              <h1 className="mt-1 text-base font-semibold text-white">{title}</h1>
+              <h1
+                ref={headingRef}
+                tabIndex={-1}
+                className="mt-1 text-base font-semibold text-white focus:outline-none"
+              >
+                {title}
+              </h1>
               <p className="mt-0.5 text-sm text-zinc-400">{subtitle}</p>
             </motion.div>
 
@@ -115,15 +156,31 @@ export function AuthShell({
               </motion.div>
             ) : null}
           </motion.div>
-        </div>
-      </section>
+        </main>
+      </div>
     </div>
   );
 }
 
-/** Full-screen placeholder used while the session is still being resolved. */
+/**
+ * Full-screen placeholder used while the session is still being resolved.
+ * Nothing to see, but a screen reader hears that the page is loading.
+ */
 export function AuthShellFallback() {
-  return <div className="min-h-screen text-white" style={{ backgroundColor: "#09090b" }} />;
+  const { t } = useI18n();
+
+  return (
+    <main
+      id={MAIN_CONTENT_ID}
+      tabIndex={-1}
+      className="min-h-screen text-white focus:outline-none"
+      style={{ backgroundColor: "#09090b" }}
+    >
+      <p role="status" className="sr-only">
+        {t.common.loading}
+      </p>
+    </main>
+  );
 }
 
 export default AuthShell;

@@ -1,15 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { safeNextPath } from "@/app/lib/authApi";
 import { ApiError, fieldMessages } from "@/app/lib/authErrors";
 import { MIN_NAME_LENGTH, updateFullName } from "@/app/lib/profileApi";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
-import { SubmitButton, TextField } from "@/app/components/auth/Fields";
+import { SubmitButton, TextField, useFormFocus } from "@/app/components/auth/Fields";
 
 /**
  * Shown once, straight after an account is created through a provider.
@@ -22,7 +24,10 @@ function WelcomeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { t } = useI18n();
+  const { formRef, trackFocus, focusAfterFailure, restoreFocus } = useFormFocus();
   const { user, initialized, reloadUser } = useAuth();
+  const copy = t.auth.welcome;
 
   const next = safeNextPath(searchParams.get("next"));
 
@@ -40,13 +45,14 @@ function WelcomeForm() {
 
   if (!initialized || !user) return <AuthShellFallback />;
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
 
     const trimmed = value.trim();
     if (trimmed.length < MIN_NAME_LENGTH) {
-      setError(`Use at least ${MIN_NAME_LENGTH} characters.`);
+      setError(t.errors.fields.min(MIN_NAME_LENGTH));
+      focusAfterFailure();
       return;
     }
 
@@ -60,35 +66,39 @@ function WelcomeForm() {
     try {
       await updateFullName(trimmed);
       await reloadUser();
-      toast.success("Welcome aboard");
+      toast.success(copy.saved);
       router.replace(next);
     } catch (caught) {
       setBusy(false);
       if (!(caught instanceof ApiError)) {
-        toast.error("We could not reach the server. Try again in a moment.");
+        toast.error(t.common.networkError);
+        restoreFocus();
         return;
       }
       setError(fieldMessages(caught.fields).full_name ?? caught.message);
+      focusAfterFailure();
     }
   };
 
   return (
     <AuthShell
-      title="Almost there"
-      subtitle="Pick the name you want to be shown as. You can change it later."
+      title={copy.title}
+      subtitle={copy.subtitle}
       footer={
-        <button
-          type="button"
-          onClick={() => router.replace(next)}
-          className="cursor-pointer text-cyan-400 hover:text-cyan-300"
-        >
-          Keep {user.full_name} and continue
-        </button>
+        <Link href={next} replace className="text-cyan-400 hover:text-cyan-300">
+          {copy.keep(user.full_name)}
+        </Link>
       }
     >
-      <form onSubmit={submit} className="space-y-3.5" noValidate>
+      <form
+        ref={formRef}
+        onFocus={trackFocus}
+        onSubmit={submit}
+        className="space-y-3.5"
+        noValidate
+      >
         <TextField
-          label="Display name"
+          label={copy.name}
           name="name"
           autoComplete="name"
           autoFocus
@@ -99,12 +109,12 @@ function WelcomeForm() {
             setError(null);
           }}
           error={error}
-          hint={`At least ${MIN_NAME_LENGTH} characters.`}
+          hint={copy.nameHint(MIN_NAME_LENGTH)}
           disabled={busy}
         />
 
-        <SubmitButton loading={busy} loadingLabel="Saving…">
-          Continue
+        <SubmitButton loading={busy} loadingLabel={copy.submitting}>
+          {t.common.continue}
         </SubmitButton>
       </form>
     </AuthShell>

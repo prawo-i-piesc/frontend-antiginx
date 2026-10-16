@@ -23,6 +23,10 @@ export function usePollScan(options?: UsePollScanOptions) {
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    // Set here, not only in useRef: React may unmount and remount the effect
+    // (Strict Mode does in development), and a ref left false would drop every
+    // progress update — the modal then only appeared once the scan was over.
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       abortRef.current = true;
@@ -57,9 +61,9 @@ export function usePollScan(options?: UsePollScanOptions) {
         setScan(result);
         setIsPolling(false);
         return result;
-      } catch (err: any) {
+      } catch (err) {
         if (!mountedRef.current) return Promise.reject(err);
-        setError(err?.message || "Polling failed");
+        setError(err instanceof Error && err.message ? err.message : "Polling failed");
         setIsPolling(false);
         return Promise.reject(err);
       }

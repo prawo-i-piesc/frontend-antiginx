@@ -241,14 +241,16 @@ export async function getPremiumScanConfig(): Promise<PremiumScanConfigResponse>
   const rawCategories = Array.isArray(payload) ? payload : [];
 
   // Mapujemy surowe stringi z "tests" na pełne obiekty { id, label }
-  return rawCategories.map((item: any) => {
-    const rawTests = Array.isArray(item?.tests) ? item.tests : [];
+  return rawCategories.map((item: unknown) => {
+    const entry = (item ?? {}) as { category?: unknown; tests?: unknown };
+    const rawTests: unknown[] = Array.isArray(entry.tests) ? entry.tests : [];
 
     return {
-      category: typeof item?.category === "string" ? item.category : "Inne",
+      // Translated on screen; an empty name shows there as "Other".
+      category: typeof entry.category === "string" ? entry.category : "",
       tests: rawTests
-        .filter((t: any): t is string => typeof t === "string")
-        .map((id: any) => ({
+        .filter((test): test is string => typeof test === "string")
+        .map((id) => ({
           id,
           label: humanizeTestId(id), // Automatyczne nadawanie ładnych nazw z Twojego słownika
         })),

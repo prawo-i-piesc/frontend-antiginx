@@ -1,6 +1,15 @@
 "use client";
 
-import { evaluatePassword, MIN_PASSWORD_LENGTH, type PasswordContext } from "@/app/lib/passwordPolicy";
+import { useMemo } from "react";
+
+import { INTL_LOCALES } from "@/app/i18n/config";
+import { useI18n } from "@/app/i18n/I18nProvider";
+import {
+  evaluatePassword,
+  MIN_PASSWORD_LENGTH,
+  type PasswordContext,
+  type RequiredRuleId,
+} from "@/app/lib/passwordPolicy";
 
 /**
  * Compact feedback under a new-password field.
@@ -10,16 +19,44 @@ import { evaluatePassword, MIN_PASSWORD_LENGTH, type PasswordContext } from "@/a
  * advisory ones are folded into the bar — adding a symbol visibly moves it
  * without spending a line on saying so.
  *
- * Colours avoid `dark:` variants on purpose: this renders both on the
- * dark-only auth screens and on the theme-aware profile page.
+ * The auth screens are dark whatever the theme is, so `dark:` variants cannot
+ * tell them apart from the profile page; `tone` picks the colours instead.
  */
 
 const LEVELS = [
-  { label: "Weak", bar: "bg-red-500", text: "text-red-500", filled: 1 },
-  { label: "Fair", bar: "bg-amber-500", text: "text-amber-500", filled: 2 },
-  { label: "Good", bar: "bg-lime-500", text: "text-lime-600", filled: 3 },
-  { label: "Strong", bar: "bg-emerald-500", text: "text-emerald-500", filled: 4 },
+  {
+    id: "weak",
+    bar: "bg-red-500",
+    text: { dark: "text-red-500", auto: "text-red-700 dark:text-red-500" },
+    filled: 1,
+  },
+  {
+    id: "fair",
+    bar: "bg-amber-500",
+    text: { dark: "text-amber-500", auto: "text-amber-700 dark:text-amber-500" },
+    filled: 2,
+  },
+  {
+    id: "good",
+    bar: "bg-lime-500",
+    text: { dark: "text-lime-600", auto: "text-lime-700 dark:text-lime-600" },
+    filled: 3,
+  },
+  {
+    id: "strong",
+    bar: "bg-emerald-500",
+    text: { dark: "text-emerald-500", auto: "text-emerald-700 dark:text-emerald-500" },
+    filled: 4,
+  },
 ] as const;
+
+/** Text colours that keep 4.5:1 on each surface. */
+const TONES = {
+  /** The auth screens. */
+  dark: { muted: "text-zinc-400", failure: "text-red-500" },
+  /** Pages that follow the theme. */
+  auto: { muted: "text-zinc-600 dark:text-zinc-400", failure: "text-red-700 dark:text-red-500" },
+} as const;
 
 const SEGMENTS = 4;
 
@@ -47,54 +84,81 @@ export function PasswordStrength({
   password,
   context,
   showFailures,
+  id,
+  tone = "auto",
 }: {
   password: string;
   context?: PasswordContext;
   /** Turns the blocking line red; set once the user has tried to submit. */
   showFailures?: boolean;
+  /**
+   * Put on the line that says what is missing, so the field can point
+   * `aria-describedby` at it.
+   */
+  id?: string;
+  tone?: keyof typeof TONES;
 }) {
-  const { required, suggested, satisfied } = evaluatePassword(password, context);
+  const { t, locale } = useI18n();
+  const copy = t.password;
+  const styles = TONES[tone];
+  const list = useMemo(
+    () => new Intl.ListFormat(INTL_LOCALES[locale], { type: "conjunction" }),
+    [locale],
+  );
 
-  if (password.length === 0) {
-    return (
-      <p className="mt-2 text-xs text-zinc-500">
-        At least {MIN_PASSWORD_LENGTH} characters. A passphrase works well.
-      </p>
-    );
-  }
+  const { required, suggested, satisfied, remaining } = evaluatePassword(password, context);
+  const empty = password.length === 0;
+
+  const requiredLabels: Record<RequiredRuleId, string> = {
+    length: copy.required.length(MIN_PASSWORD_LENGTH),
+    obvious: copy.required.obvious,
+  };
 
   const missing = required.filter((rule) => !rule.met);
   const weakSpots = suggested.filter((rule) => !rule.met);
   const level = strengthOf(password, satisfied);
 
   return (
-    <div className="mt-2 space-y-1.5">
-      <div className="flex items-center gap-2">
-        <div className="flex h-1 flex-1 gap-1" aria-hidden="true">
-          {Array.from({ length: SEGMENTS }, (_, index) => (
-            <span
-              key={index}
-              className={`flex-1 rounded-full transition-colors ${
-                index < level.filled ? level.bar : "bg-zinc-500/25"
-              }`}
-            />
-          ))}
-        </div>
-        <span className={`text-xs font-medium ${level.text}`}>{level.label}</span>
-      </div>
+    <div className="mt-2">
+      {empty ? (
+        <p id={id} className={`text-xs ${styles.muted}`}>
+          {copy.hint(MIN_PASSWORD_LENGTH)}
+        </p>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <div className="flex h-1 flex-1 gap-1" aria-hidden="true">
+              {Array.from({ length: SEGMENTS }, (_, index) => (
+                <span
+                  key={index}
+                  className={`flex-1 rounded-full transition-colors ${
+                    index < level.filled ? level.bar : "bg-zinc-500/25"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className={`text-xs font-medium ${level.text[tone]}`}>
+              <span className="sr-only">{copy.strength} </span>
+              {copy.levels[level.id]}
+            </span>
+          </div>
 
-      <p className={`text-xs ${missing.length > 0 && showFailures ? "text-red-500" : "text-zinc-500"}`}>
-        {missing.length > 0
-          ? missing.map((rule) => rule.label).join(" · ")
-          : weakSpots.length > 0
-            ? `Stronger with ${weakSpots.map((rule) => rule.short).join(", ")}.`
-            : "Good to go."}
-      </p>
+          <p
+            id={id}
+            className={`mt-1.5 text-xs ${missing.length > 0 && showFailures ? styles.failure : styles.muted}`}
+          >
+            {missing.length > 0
+              ? missing.map((rule) => requiredLabels[rule.id]).join(" · ")
+              : weakSpots.length > 0
+                ? copy.strongerWith(list.format(weakSpots.map((rule) => copy.suggestions[rule.id])))
+                : copy.allGood}
+          </p>
+        </>
+      )}
 
-      <p role="status" aria-live="polite" className="sr-only">
-        {satisfied
-          ? "Password meets every requirement."
-          : `${missing.length} requirement${missing.length === 1 ? "" : "s"} left.`}
+      {/* Rendered even while empty: a live region has to exist before its text changes. */}
+      <p role="status" className="sr-only">
+        {empty ? "" : satisfied ? copy.status.met : copy.status.remaining(remaining)}
       </p>
     </div>
   );

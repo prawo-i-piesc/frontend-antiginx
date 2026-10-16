@@ -33,6 +33,8 @@ body {
   --scrollbar-track: rgba(255, 255, 255, 0.42);
   --scrollbar-thumb: rgba(148, 163, 184, 0.72);
   --scrollbar-thumb-hover: rgba(100, 116, 139, 0.9);
+  /* cyan-700: at least 3:1 against white and the zinc-100 page background. */
+  --focus-ring: #0e7490;
 }
 
 .dark {
@@ -40,6 +42,50 @@ body {
   --scrollbar-track: rgba(255, 255, 255, 0.04);
   --scrollbar-thumb: rgba(113, 113, 122, 0.58);
   --scrollbar-thumb-hover: rgba(161, 161, 170, 0.82);
+  /* cyan-400 on the near-black surfaces. */
+  --focus-ring: #22d3ee;
+}
+
+/*
+ * A visible focus indicator for anything that can take keyboard focus and
+ * does not draw its own (WCAG 2.4.7). :where() keeps the specificity at zero,
+ * so a component's own focus-visible ring still wins over this default.
+ */
+:where(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/*
+ * Windows High Contrast and other forced-colour modes drop box-shadow, which
+ * is what Tailwind's ring utilities are made of — without this, every
+ * "focus:outline-none focus-visible:ring-2" control loses its focus indicator.
+ */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText !important;
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * "Reduce motion" in the system settings stops decorative movement: the
+ * floating particles, spinners and transitions finish instantly instead of
+ * animating (WCAG 2.3.3). framer-motion is handled by MotionProvider.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    /* Zero, not the usual 0.01ms: transition-property defaults to "all", so
+       any duration at all makes every element without its own transitions
+       animate inherited visibility too — and for that one frame a control in
+       a just-opened drawer is hidden and cannot take focus. */
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html,
@@ -202,4 +248,10 @@ select:-webkit-autofill {
 /* The auth screens are dark whatever the theme is, so they pin their own value. */
 .auth-surface {
   --autofill-text: #ffffff;
+  --focus-ring: #22d3ee;
+}
+
+/* The landing and pricing pages are dark whatever the theme is, too. */
+.marketing-surface {
+  --focus-ring: #22d3ee;
 }

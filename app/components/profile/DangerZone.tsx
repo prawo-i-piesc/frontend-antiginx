@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { deleteAccount, type MfaMethod } from "@/app/lib/authApi";
 import { ApiError } from "@/app/lib/authErrors";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -15,17 +16,33 @@ import {
   ProfileCard,
   ProfileField,
   SecurityRow,
+  useFocusFirstInvalid,
 } from "@/app/components/profile/ui";
 
-/** Typed by hand, never pasted — the point is that it is read, not completed. */
-const CONFIRM_PHRASE = "I want to delete my account";
+/**
+ * Case, accents and doubled spaces do not count. Pasting is blocked, so the
+ * Polish phrase has to be typeable on a keyboard without Polish letters too.
+ */
+function normalizePhrase(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/ł/g, "l")
+    .replace(/\s+/g, " ");
+}
 
 type Step = "phrase" | "password" | "second-factor";
 
 export default function DangerZone() {
+  const { t } = useI18n();
+  const copy = t.profile.deleteAccount;
   const { user } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const phraseId = useId();
+  const [formRef, focusFirstInvalid] = useFocusFirstInvalid<HTMLFormElement>();
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("phrase");
@@ -39,19 +56,22 @@ export default function DangerZone() {
 
   const hasPassword = user?.auth?.password_set ?? true;
   const isTotp = method === "totp";
-  const phraseMatches = phrase.trim().toLowerCase() === CONFIRM_PHRASE.toLowerCase();
+  // Typed by hand, never pasted — the point is that it is read, not completed.
+  // The phrase is the one shown, in the language of the interface.
+  const phraseMatches = normalizePhrase(phrase) === normalizePhrase(copy.phrase);
 
   const close = () => {
     setOpen(false);
     setStep("phrase");
     setPhrase("");
     setPassword("");
+    setMethod("totp");
     setCode("");
     setError(null);
   };
 
   const finish = () => {
-    toast.success("Account deleted", { description: "Everything tied to it is gone." });
+    toast.success(copy.deleted, { description: copy.deletedHint });
     router.replace("/");
   };
 
@@ -72,8 +92,12 @@ export default function DangerZone() {
     } catch (caught) {
       setBusy(false);
       setCode("");
-      if (caught instanceof ApiError) setError(caught.message);
-      else toast.error("We could not reach the server. Try again in a moment.");
+      if (caught instanceof ApiError) {
+        setError(caught.message);
+        focusFirstInvalid();
+      } else {
+        toast.error(t.common.networkError);
+      }
     }
   };
 
@@ -95,7 +119,8 @@ export default function DangerZone() {
 
     if (step === "password") {
       if (password.length === 0) {
-        setError("Enter your password.");
+        setError(copy.passwordRequired);
+        focusFirstInvalid();
         return;
       }
       void remove({ password });
@@ -104,7 +129,8 @@ export default function DangerZone() {
 
     const value = isTotp ? code.replace(/\D/g, "") : code.trim().toUpperCase().replace(/-/g, "");
     if (value.length < (isTotp ? 6 : 8)) {
-      setError(isTotp ? "Enter the six digits from your app." : "Enter one of your recovery codes.");
+      setError(isTotp ? copy.totpRequired : copy.recoveryRequired);
+      focusFirstInvalid();
       return;
     }
     void remove({ password: hasPassword ? password : undefined, method, code: value });
@@ -112,19 +138,16 @@ export default function DangerZone() {
 
   return (
     <>
-      <ProfileCard
-        title="Delete account"
-        description="Removes the account and everything scanned under it."
-      >
+      <ProfileCard title={copy.title} description={copy.description}>
         <SecurityRow
           icon="ri-delete-bin-line"
           tone="warn"
-          title="This cannot be undone"
-          detail="Your scans, their results and every sign-in method go with the account."
+          title={copy.rowTitle}
+          detail={copy.rowDetail}
           action={
             <button type="button" onClick={() => setOpen(true)} className={ROW_BUTTON_DANGER}>
               <i className="ri-delete-bin-line" aria-hidden="true" />
-              <span>Delete account</span>
+              <span>{copy.open}</span>
             </button>
           }
         />
@@ -133,38 +156,33 @@ export default function DangerZone() {
       <Modal
         open={open}
         onClose={close}
-        title="Delete your account"
+        title={copy.dialog.title}
         description={
           step === "phrase"
-            ? "Read this before confirming."
+            ? copy.dialog.phraseStep
             : step === "password"
-              ? "Confirm it is you."
-              : "One more step."
+              ? copy.dialog.passwordStep
+              : copy.dialog.secondFactorStep
         }
       >
-        <form onSubmit={submit} className="space-y-5" noValidate>
+        <form ref={formRef} onSubmit={submit} className="space-y-5" noValidate>
           {step === "phrase" ? (
             <>
-              <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-400">
+              <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-700 dark:text-rose-400">
                 <i className="ri-alert-line mt-0.5 text-lg" aria-hidden="true" />
-                <p>
-                  Deleting removes your scans and their results, your recovery codes and every
-                  connected account. Nothing here can be restored afterwards.
-                </p>
+                <p>{copy.warning}</p>
               </div>
 
               {/* The phrase sits here rather than in the label, which is
                   styled uppercase and would show it in a case the check does
                   not accept. */}
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                To confirm, type{" "}
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                  {CONFIRM_PHRASE}
-                </span>
+              <p id={phraseId} className="text-sm text-zinc-600 dark:text-zinc-400">
+                {copy.typePhrase}{" "}
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">{copy.phrase}</span>
               </p>
 
               <ProfileField
-                label="Confirmation"
+                label={copy.confirmation}
                 icon="ri-keyboard-line"
                 autoComplete="off"
                 autoCorrect="off"
@@ -176,13 +194,16 @@ export default function DangerZone() {
                 // friction by design, not a security boundary.
                 onPaste={(event) => event.preventDefault()}
                 onDrop={(event) => event.preventDefault()}
-                placeholder={CONFIRM_PHRASE}
+                placeholder={copy.phrase}
+                describedBy={phraseId}
                 disabled={busy}
               />
             </>
           ) : step === "password" ? (
+            // Keyed per step, so each field mounts fresh and takes focus.
             <ProfileField
-              label="Your password"
+              key="password"
+              label={t.profile.fields.password}
               icon="ri-lock-line"
               type="password"
               autoComplete="current-password"
@@ -195,7 +216,8 @@ export default function DangerZone() {
             />
           ) : (
             <ProfileField
-              label={isTotp ? "Six-digit code" : "Recovery code"}
+              key={`second-factor-${method}`}
+              label={isTotp ? t.profile.fields.totp : t.profile.fields.recoveryCode}
               icon="ri-key-2-line"
               inputMode={isTotp ? "numeric" : "text"}
               autoComplete="one-time-code"
@@ -214,19 +236,28 @@ export default function DangerZone() {
             />
           )}
 
-          {step === "phrase" && error ? <p className="text-sm text-rose-500">{error}</p> : null}
+          {/* Errors of the later steps show under their field; this one has
+              none. Kept in place, empty, so its message is announced. */}
+          <p
+            role="alert"
+            className={step === "phrase" && error ? "text-sm text-rose-700 dark:text-rose-400" : "sr-only"}
+          >
+            {step === "phrase" ? error : null}
+          </p>
 
           <div className="flex flex-wrap justify-end gap-3">
             <button type="button" onClick={close} disabled={busy} className={BUTTON_QUIET}>
-              Cancel
+              {t.common.cancel}
             </button>
             <button
               type="submit"
-              disabled={busy || (step === "phrase" && !phraseMatches)}
+              disabled={step === "phrase" && !phraseMatches}
+              // Not disabled while busy: that would drop the focus it has.
+              aria-disabled={busy || undefined}
               className={BUTTON_DANGER}
             >
               {busy ? <i className="ri-loader-4-line animate-spin" aria-hidden="true" /> : null}
-              <span>{step === "phrase" ? "Continue" : "Delete permanently"}</span>
+              <span>{step === "phrase" ? t.common.continue : copy.submit}</span>
             </button>
           </div>
 
@@ -238,9 +269,9 @@ export default function DangerZone() {
                 setCode("");
                 setError(null);
               }}
-              className="w-full cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+              className="w-full cursor-pointer text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
             >
-              {isTotp ? "Use a recovery code instead" : "Use your authenticator app instead"}
+              {isTotp ? copy.useRecoveryCode : copy.useApp}
             </button>
           ) : null}
         </form>

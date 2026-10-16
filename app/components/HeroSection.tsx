@@ -1,80 +1,86 @@
 "use client";
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { useAuth } from '@/app/providers/AuthProvider';
 import { motion } from 'framer-motion';
-import SiteHeader from './SiteHeader';
 
-interface HeroSectionProps {
-  onScrollToScanner: () => void;
-  onScrollToFeatures: () => void;
-}
+import { useI18n } from '@/app/i18n/I18nProvider';
+import { SCANNER_HEADING_ID, SCANNER_SECTION_ID } from './ScannerSection';
+import { FEATURES_HEADING_ID, FEATURES_SECTION_ID, jumpToSection } from './SiteHeader';
+import { SCANNER_INPUT_ID } from './UrlScanner';
 
-export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: HeroSectionProps) {
-  const auth = useAuth();
+const STATS = ['accuracy', 'scans', 'threats', 'speed'] as const;
+
+/** Left offsets, delays and durations of the floating particles. */
+const PARTICLES = [
+  [5, -5, 15], [15, -8, 18], [25, -3, 16], [35, -12, 20], [45, -7, 14],
+  [55, -10, 18], [65, -4, 15], [75, -9, 17], [85, -6, 19], [95, -11, 18],
+  [10, -2, 16], [20, -13, 17], [30, -8, 19], [40, -5, 14], [50, -10, 18],
+  [60, -7, 15], [70, -3, 17], [80, -14, 20], [90, -6, 18], [8, -9, 16],
+] as const;
+
+/**
+ * Backdrop of the landing and pricing heroes. It reaches up behind the site
+ * header, which sits before <main> and so outside the hero; the negative top
+ * matches the header's height.
+ */
+export function HeroBackdrop({ gridSize = 'bg-size-[100px_100px]' }: { gridSize?: string }) {
   return (
-    <section className="relative min-h-screen flex flex-col pt-2 lg:pt-6">
-      {/* Animated Background */}
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -top-18 lg:-top-22">
       <div className="absolute inset-0" style={{ backgroundColor: '#09090b' }}></div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_150%_90%_at_50%_0%,rgba(6,140,190,0.13),transparent_90%)]"></div>
 
       {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-size-[100px_100px]"></div>
+      <div className={`absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] ${gridSize}`}></div>
 
       {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute bottom-0 left-[5%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-5s', animationDuration: '15s'}}></div>
-        <div className="absolute bottom-0 left-[15%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-8s', animationDuration: '18s'}}></div>
-        <div className="absolute bottom-0 left-[25%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-3s', animationDuration: '16s'}}></div>
-        <div className="absolute bottom-0 left-[35%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-12s', animationDuration: '20s'}}></div>
-        <div className="absolute bottom-0 left-[45%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-7s', animationDuration: '14s'}}></div>
-        <div className="absolute bottom-0 left-[55%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-10s', animationDuration: '18s'}}></div>
-        <div className="absolute bottom-0 left-[65%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-4s', animationDuration: '15s'}}></div>
-        <div className="absolute bottom-0 left-[75%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-9s', animationDuration: '17s'}}></div>
-        <div className="absolute bottom-0 left-[85%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-6s', animationDuration: '19s'}}></div>
-        <div className="absolute bottom-0 left-[95%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-11s', animationDuration: '18s'}}></div>
-        <div className="absolute bottom-0 left-[10%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-2s', animationDuration: '16s'}}></div>
-        <div className="absolute bottom-0 left-[20%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-13s', animationDuration: '17s'}}></div>
-        <div className="absolute bottom-0 left-[30%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-8s', animationDuration: '19s'}}></div>
-        <div className="absolute bottom-0 left-[40%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-5s', animationDuration: '14s'}}></div>
-        <div className="absolute bottom-0 left-[50%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-10s', animationDuration: '18s'}}></div>
-        <div className="absolute bottom-0 left-[60%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-7s', animationDuration: '15s'}}></div>
-        <div className="absolute bottom-0 left-[70%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-3s', animationDuration: '17s'}}></div>
-        <div className="absolute bottom-0 left-[80%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-14s', animationDuration: '20s'}}></div>
-        <div className="absolute bottom-0 left-[90%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-6s', animationDuration: '18s'}}></div>
-        <div className="absolute bottom-0 left-[8%] w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up" style={{animationDelay: '-9s', animationDuration: '16s'}}></div>
+      <div className="absolute inset-0 overflow-hidden">
+        {PARTICLES.map(([left, delay, duration]) => (
+          <div
+            key={left}
+            className="absolute bottom-0 w-0.5 h-0.5 bg-white rounded-full opacity-0 animate-float-up"
+            style={{ left: `${left}%`, animationDelay: `${delay}s`, animationDuration: `${duration}s` }}
+          ></div>
+        ))}
       </div>
+    </div>
+  );
+}
 
-      <SiteHeader />
+export default function HeroSection() {
+  const { t } = useI18n();
+  const copy = t.landing.hero;
+
+  return (
+    // Fills the first screen together with the site header above it (4.5rem, 5.5rem from lg).
+    <section className="relative min-h-[calc(100vh-4.5rem)] lg:min-h-[calc(100vh-5.5rem)] flex flex-col">
+      <HeroBackdrop />
 
       <div className="relative z-10 max-w-5xl mx-auto px-1 sm:px-6 lg:px-8 text-center flex-1 flex flex-col justify-center sm:pt-5 pb-8">
         <div className="mb-0">
-          <motion.h1 
+          <motion.h1
             className="text-[2.1rem] lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 md:mb-6 leading-tight px-0 md:px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <span className="text-zinc-200 ">Scan </span>
-            <span className="bg-linear-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent">websites security</span>
+            <span className="text-zinc-200 ">{copy.title.lead} </span>
+            <span className="bg-linear-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent">{copy.title.highlight}</span>
             <br className="hidden sm:block" /><span className="sm:hidden"> </span>
-            <span className="bg-linear-to-r from-zinc-300 via-white to-zinc-400 bg-clip-text text-transparent">before you visit</span>
+            <span className="bg-linear-to-r from-zinc-300 via-white to-zinc-400 bg-clip-text text-transparent">{copy.title.tail}</span>
           </motion.h1>
 
-          <motion.p 
+          <motion.p
             className="text-lg sm:text-sm md:text-base lg:text-lg xl:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed mb-5 sm:mb-6 md:mb-8 lg:mb-10 px-4 sm:px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
           >
-            The most advanced website security scanner powered by artificial intelligence 
-            and comprehensive threat analysis algorithms.
+            {copy.subtitle}
           </motion.p>
         </div>
 
-        {/* Action buttons */}
-        <motion.div 
+        {/* Action buttons: links, so they also work before the page is interactive */}
+        <motion.div
           className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 lg:gap-5 mb-6 sm:mb-8 px-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -91,45 +97,45 @@ export default function HeroSection({ onScrollToScanner, onScrollToFeatures }: H
             </div>
             <Image
               src="/logo.png"
-              alt="Logo"
+              alt=""
+              aria-hidden="true"
               width={96}
               height={32}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-6 sm:h-8 w-auto opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-150 group-hover:-translate-y-12 sm:group-hover:-translate-y-16 transition-all duration-500 pointer-events-none"
               style={{ zIndex: 5 }}
             />
-            <button onClick={onScrollToScanner} className="relative w-3/4 sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]" style={{ zIndex: 10 }}>
-              Try it out for free!
-            </button>
+            <a
+              href={`#${SCANNER_SECTION_ID}`}
+              onClick={(event) => jumpToSection(event, SCANNER_SECTION_ID, SCANNER_INPUT_ID, SCANNER_HEADING_ID)}
+              className="relative inline-block text-center w-3/4 sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-700 text-white rounded-full hover:bg-cyan-800 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]"
+              style={{ zIndex: 10 }}
+            >
+              {copy.tryIt}
+            </a>
           </div>
-          <button onClick={onScrollToFeatures} className="mx-auto sm:mx-0 w-3/4 sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-transparent text-white rounded-full hover:bg-white/10 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base border-2 border-white/30 hover:border-white/50">
-            Learn more
-          </button>
+          <a
+            href={`#${FEATURES_SECTION_ID}`}
+            onClick={(event) => jumpToSection(event, FEATURES_SECTION_ID, FEATURES_HEADING_ID)}
+            className="mx-auto sm:mx-0 w-3/4 sm:w-auto text-center px-6 sm:px-8 py-2.5 sm:py-3 bg-transparent text-white rounded-full hover:bg-white/10 transition-all duration-200 whitespace-nowrap cursor-pointer font-semibold text-sm sm:text-base border-2 border-white/30 hover:border-white/50"
+          >
+            {copy.learnMore}
+          </a>
         </motion.div>
 
-        {/* Trust Indicators */}
-        <motion.div 
+        {/* Trust Indicators; the value is shown above its label */}
+        <motion.dl
           className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-3xl mx-auto px-2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
         >
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1">99.8%</div>
-            <div className="text-zinc-400 text-xs">Accuracy</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1">30.0+</div>
-            <div className="text-zinc-400 text-xs">Scans</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1">150+</div>
-            <div className="text-zinc-400 text-xs">Threats blocked</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1">&lt;2s</div>
-            <div className="text-zinc-400 text-xs">Scan time</div>
-          </div>
-        </motion.div>
+          {STATS.map((stat) => (
+            <div key={stat} className="flex flex-col-reverse text-center">
+              <dt className="text-zinc-400 text-xs">{copy.stats[stat].label}</dt>
+              <dd className="text-xl sm:text-2xl font-bold text-cyan-400 mb-1">{copy.stats[stat].value}</dd>
+            </div>
+          ))}
+        </motion.dl>
       </div>
     </section>
   );

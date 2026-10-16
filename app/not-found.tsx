@@ -1,12 +1,26 @@
-"use client";
-
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import * as motion from 'framer-motion/client';
 
-export default function NotFound() {
+import { MAIN_CONTENT_ID } from './components/ui/SkipLink';
+import { getMessages } from './i18n/server';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getMessages();
+  return { title: t.notFound.title };
+}
+
+export default async function NotFound() {
+  const t = await getMessages();
+  const copy = t.notFound;
+
   return (
-    <div className="min-h-screen text-white flex items-center justify-center p-4 relative overflow-hidden">
+    <main
+      id={MAIN_CONTENT_ID}
+      tabIndex={-1}
+      className="marketing-surface min-h-screen text-white flex items-center justify-center p-4 relative overflow-hidden focus:outline-none"
+    >
 
       {/* Background copied from HeroSection, slightly darker */}
       <div className="absolute inset-0" style={{ backgroundColor: '#060607' }}></div>
@@ -29,33 +43,34 @@ export default function NotFound() {
           >
             <Image
               src="/logo404.png"
-              alt="404 Error"
+              alt={copy.imageAlt}
               width={250}
               height={250}
               className="mx-auto relative z-10"
-              priority
+              preload
             />
           </motion.div>
         </div>
 
         {/* Text */}
         <motion.h1 className="text-4xl sm:text-5xl font-bold text-white mb-4" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.08 }}>
-          Hey!
+          {copy.heading}
+          <span className="sr-only"> {copy.title}</span>
         </motion.h1>
         <motion.p className="text-xl text-zinc-400 mb-8" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.12 }}>
-          You shouldn't be here. <br /> The page you're looking for doesn't exist.
+          {copy.lead} <br /> {copy.body}
         </motion.p>
 
         {/* Back to home button */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.18 }}>
-          <Link 
+          <Link
             href="/"
-            className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-all duration-200 whitespace-nowrap font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]"
+            className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-700 text-white rounded-full hover:bg-cyan-800 transition-all duration-200 whitespace-nowrap font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]"
           >
-            Return to Home
+            {copy.home}
           </Link>
         </motion.div>
       </motion.div>
-    </div>
+    </main>
   );
 }

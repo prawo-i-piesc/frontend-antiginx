@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { register } from "@/app/lib/authApi";
 import { ApiError, fieldMessages } from "@/app/lib/authErrors";
 import { evaluatePassword } from "@/app/lib/passwordPolicy";
@@ -17,14 +18,20 @@ import {
   PasswordField,
   SubmitButton,
   TextField,
+  useFormFocus,
 } from "@/app/components/auth/Fields";
 
 /** Mirrors the backend binding on full_name, so it fails before the round trip. */
 const MIN_NAME_LENGTH = 6;
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function RegisterForm() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
+  const { formRef, trackFocus, focusAfterFailure } = useFormFocus();
+  const strengthId = useId();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,31 +42,34 @@ export default function RegisterForm() {
   const [attempted, setAttempted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // The strength meter under the field already names what is missing, so a
+  // weak password marks the field invalid without adding a second message.
+  const passwordOk = evaluatePassword(password, { name: fullName, email }).satisfied;
+
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!fullName.trim()) errors.full_name = "Enter your name.";
+    if (!fullName.trim()) errors.full_name = t.errors.fields.required.full_name;
     else if (fullName.trim().length < MIN_NAME_LENGTH)
-      errors.full_name = `Use at least ${MIN_NAME_LENGTH} characters.`;
-    if (!email.trim()) errors.email = "Enter your email address.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      errors.email = "That does not look like an email address.";
+      errors.full_name = t.errors.fields.min(MIN_NAME_LENGTH);
+    if (!email.trim()) errors.email = t.errors.fields.required.email;
+    else if (!EMAIL_PATTERN.test(email.trim())) errors.email = t.errors.fields.invalidEmail;
 
-    if (confirmPassword !== password) errors.confirm_password = "Both passwords have to match.";
-    if (!accepted) errors.terms = "Accept the terms to create an account.";
+    if (confirmPassword !== password) errors.confirm_password = t.auth.fields.passwordsMismatch;
+    if (!accepted) errors.terms = t.auth.register.termsRequired;
 
     setFieldErrors(errors);
-
-    // The strength meter under the field already names what is missing, so the
-    // password blocks the submit without adding a second message above it.
-    const passwordOk = evaluatePassword(password, { name: fullName, email }).satisfied;
     return passwordOk && Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAttempted(true);
-    if (loading || !validate()) return;
+    if (loading) return;
+    if (!validate()) {
+      focusAfterFailure();
+      return;
+    }
 
     setLoading(true);
     try {
@@ -72,46 +82,59 @@ export default function RegisterForm() {
       if (result.kind === "session") {
         // A fresh password account has an unverified address, so it goes to the
         // confirmation screen rather than the dashboard.
-        toast.success("Account created", { description: "Confirm your email to finish." });
+        toast.success(t.auth.register.created, { description: t.auth.register.confirmToFinish });
         router.replace("/confirm-email");
         return;
       }
 
       // Pre-E1 backend: the account exists but no session was issued.
-      toast.success("Account created", { description: "Sign in to continue." });
+      toast.success(t.auth.register.created, { description: t.auth.register.signInToContinue });
       router.replace("/login");
     } catch (error) {
       if (error instanceof ApiError) {
-        setFieldErrors(fieldMessages(error.fields));
+        // A taken address is a problem with that field, so it is shown there too.
+        setFieldErrors(
+          error.is("EMAIL_TAKEN") ? { email: error.message } : fieldMessages(error.fields),
+        );
         toast.error(error.message);
       } else {
-        toast.error("We could not reach the server. Check your connection and try again.");
+        toast.error(t.common.networkError);
       }
       setLoading(false);
+      focusAfterFailure();
     }
   };
 
   return (
     <AuthShell
       wide
-      title="Create your account"
-      subtitle="Start scanning your sites in a couple of minutes."
+      title={t.auth.register.title}
+      subtitle={t.auth.register.subtitle}
       footer={
         <>
-          Already have an account?{" "}
-          <Link href="/login" className="text-cyan-400 hover:text-cyan-300">
-            Sign in
+          {t.auth.register.haveAccount}{" "}
+          <Link
+            href="/login"
+            className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300"
+          >
+            {t.auth.register.signIn}
           </Link>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
+      <form
+        ref={formRef}
+        onFocus={trackFocus}
+        onSubmit={handleSubmit}
+        className="space-y-3.5"
+        noValidate
+      >
         <div className="grid gap-3.5 sm:grid-cols-2">
           <TextField
-            label="Full name"
+            label={t.auth.register.name}
             name="name"
             autoComplete="name"
-            placeholder="Jan Kowalski"
+            placeholder={t.auth.register.namePlaceholder}
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
             error={fieldErrors.full_name}
@@ -119,11 +142,11 @@ export default function RegisterForm() {
           />
 
           <TextField
-            label="Email address"
+            label={t.auth.fields.email}
             type="email"
             name="email"
             autoComplete="email"
-            placeholder="you@email.com"
+            placeholder={t.auth.fields.emailPlaceholder}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             error={fieldErrors.email}
@@ -133,16 +156,20 @@ export default function RegisterForm() {
 
         <div>
           <PasswordField
-            label="Password"
+            label={t.auth.fields.password}
             name="new-password"
             autoComplete="new-password"
-            placeholder="Choose a strong password"
+            placeholder={t.auth.fields.newPasswordPlaceholder}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={fieldErrors.password}
+            aria-invalid={attempted && !passwordOk ? true : undefined}
+            aria-describedby={strengthId}
             disabled={loading}
           />
           <PasswordStrength
+            id={strengthId}
+            tone="dark"
             password={password}
             context={{ name: fullName, email }}
             showFailures={attempted}
@@ -150,36 +177,29 @@ export default function RegisterForm() {
         </div>
 
         <PasswordField
-          label="Confirm password"
+          label={t.auth.register.confirmPassword}
           name="confirm-password"
           autoComplete="new-password"
-          placeholder="Repeat your password"
+          placeholder={t.auth.register.confirmPlaceholder}
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           error={fieldErrors.confirm_password}
           disabled={loading}
         />
 
-        <div>
-          <Checkbox
-            checked={accepted}
-            onChange={(event) => setAccepted(event.target.checked)}
-            disabled={loading}
-            label="I accept the terms of service and the privacy policy."
-          />
-          {fieldErrors.terms ? (
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-red-400">
-              <i className="ri-error-warning-line" aria-hidden="true" />
-              {fieldErrors.terms}
-            </p>
-          ) : null}
-        </div>
+        <Checkbox
+          checked={accepted}
+          onChange={(event) => setAccepted(event.target.checked)}
+          disabled={loading}
+          label={t.auth.register.terms}
+          error={fieldErrors.terms}
+        />
 
-        <SubmitButton loading={loading} loadingLabel="Creating account…">
-          Create account
+        <SubmitButton loading={loading} loadingLabel={t.auth.register.submitting}>
+          {t.auth.register.submit}
         </SubmitButton>
 
-        <Divider label="or" />
+        <Divider label={t.common.or} />
 
         <OAuthButtons disabled={loading} />
       </form>
