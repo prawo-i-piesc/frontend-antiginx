@@ -1,7 +1,13 @@
+import { activeMessages } from "@/app/i18n/active";
+
 /**
  * Error codes returned by the auth API (ISSUE-01-BACKEND-SPEC.md, section 3)
  * and the copy shown for each. The backend's own `error` string is written for
- * logs; everything a user reads is defined here.
+ * logs; everything a user reads comes from the `errors` dictionary.
+ *
+ * The copy is looked up when a message is built — in a fetch callback or an
+ * event handler, never during a render — so it comes out in the language the
+ * interface is in at that moment.
  */
 
 export type AuthErrorCode =
@@ -25,6 +31,7 @@ export type AuthErrorCode =
   | "OAUTH_EMAIL_UNVERIFIED"
   | "OAUTH_ACCOUNT_CONFLICT"
   | "OAUTH_PROVIDER_ERROR"
+  // Raised by the proxy, not the backend: the OAuth routes are not deployed yet.
   | "OAUTH_NOT_AVAILABLE"
   | "PROVIDER_ALREADY_LINKED"
   | "LAST_LOGIN_METHOD"
@@ -36,94 +43,34 @@ export type AuthErrorCode =
   | "FORBIDDEN"
   | "INTERNAL";
 
-const MESSAGES: Record<AuthErrorCode, string> = {
-  VALIDATION_FAILED:
-    "Some fields need fixing. Check the highlighted ones and try again.",
-  EMAIL_TAKEN: "An account with this email already exists. Sign in instead?",
-  INVALID_CREDENTIALS: "Incorrect email or password.",
-  ACCOUNT_LOCKED:
-    "Too many failed attempts. Your account is locked for a few minutes.",
-  MFA_INVALID_CODE:
-    "That code is not valid. Check your authenticator app and try again.",
-  MFA_TOKEN_EXPIRED:
-    "This verification step expired. Sign in again to get a new code prompt.",
-  MFA_ALREADY_ENABLED:
-    "Two-factor authentication is already set up on this account.",
-  MFA_NOT_ENABLED: "Two-factor authentication is not set up on this account.",
-  RECOVERY_CODE_INVALID:
-    "That recovery code is not valid or has already been used.",
-  STEP_UP_REQUIRED: "Confirm your password to continue.",
-  SESSION_EXPIRED: "Your session expired. Sign in again to continue.",
-  SESSION_REUSE_DETECTED:
-    "You were signed out for security reasons. Sign in again.",
-  TOKEN_INVALID: "This reset link is not valid. Request a new one.",
-  TOKEN_EXPIRED: "This reset link has expired. Request a new one.",
-  PASSWORD_TOO_WEAK:
-    "Choose a stronger password — at least 12 characters, and not a common one.",
-  PASSWORD_SAME_AS_OLD:
-    "Your new password has to be different from the current one.",
-  OAUTH_STATE_INVALID:
-    "That sign-in attempt could not be verified. Start again.",
-  OAUTH_EMAIL_UNVERIFIED:
-    "Your provider has not verified this email address. Verify it there first.",
-  OAUTH_ACCOUNT_CONFLICT:
-    "That account has no password to confirm with. Sign in with the provider it already uses.",
-  OAUTH_PROVIDER_ERROR:
-    "The sign-in provider did not respond. Try again in a moment.",
-  // Raised by the proxy, not the backend: the OAuth routes are not deployed yet.
-  OAUTH_NOT_AVAILABLE:
-    "Signing in with Google or GitHub is not available yet. Use your email and password.",
-  PROVIDER_ALREADY_LINKED:
-    "This provider account is already linked to another Antiginx account.",
-  LAST_LOGIN_METHOD:
-    "This is your only way to sign in. Add another method before removing it.",
-  WEBAUTHN_CHALLENGE_INVALID: "This passkey request expired. Try again.",
-  WEBAUTHN_VERIFICATION_FAILED: "That passkey could not be verified.",
-  CREDENTIAL_NOT_FOUND: "We could not find that credential.",
-  PASSKEY_PASSWORD_REQUIRED:
-    "This account signs in with a password first, then confirms with the passkey.",
-  RATE_LIMITED: "Too many attempts. Wait a moment before trying again.",
-  FORBIDDEN: "You do not have access to that.",
-  INTERNAL: "Something went wrong on our side. Try again in a moment.",
-};
-
-const FALLBACK = "Something went wrong. Try again in a moment.";
-
-/** What the backend calls a field, in the words the form uses. */
-const FIELD_LABELS: Record<string, string> = {
-  email: "email address",
-  password: "password",
-  new_password: "password",
-  current_password: "current password",
-  full_name: "name",
-  code: "code",
-};
+/**
+ * Own keys only: the code can come from a query string, and "constructor"
+ * must not find something on Object.prototype.
+ */
+function lookup<T>(table: Record<string, T>, key: string): T | undefined {
+  return Object.hasOwn(table, key) ? table[key] : undefined;
+}
 
 /**
  * Turns a validator reason from the `fields` map — "required", "invalid",
  * "min:12" — into something worth showing under an input.
  */
 export function messageForFieldReason(field: string, reason: string): string {
+  const copy = activeMessages().errors.fields;
   const [tag, param] = reason.split(":");
-  const label = FIELD_LABELS[field];
+  const count = param ? Number.parseInt(param, 10) : Number.NaN;
 
   switch (tag) {
     case "required":
-      return label ? `Enter your ${label}.` : "This field is required.";
+      return lookup(copy.required, field) ?? copy.requiredOther;
     case "invalid":
-      return field === "email"
-        ? "That does not look like an email address."
-        : "Check this value.";
+      return field === "email" ? copy.invalidEmail : copy.invalid;
     case "min":
-      return param
-        ? `Use at least ${param} characters.`
-        : "This value is too short.";
+      return Number.isFinite(count) ? copy.min(count) : copy.tooShort;
     case "max":
-      return param
-        ? `Use at most ${param} characters.`
-        : "This value is too long.";
+      return Number.isFinite(count) ? copy.max(count) : copy.tooLong;
     default:
-      return "Check this value.";
+      return copy.invalid;
   }
 }
 
@@ -144,10 +91,12 @@ export function fieldMessages(
 
 export function messageForCode(
   code: string | null | undefined,
-  fallback = FALLBACK,
+  fallback?: string,
 ): string {
-  if (!code) return fallback;
-  return MESSAGES[code as AuthErrorCode] ?? fallback;
+  const copy = activeMessages().errors;
+  // Typed against the code list, so a code without copy fails the type check.
+  const codes: Record<AuthErrorCode, string> = copy.codes;
+  return (code ? lookup(codes, code) : undefined) ?? fallback ?? copy.fallback;
 }
 
 /**
@@ -212,12 +161,11 @@ export async function apiErrorFromResponse(
 }
 
 function statusFallback(status: number): string {
-  if (status === 401) return "Your session expired. Sign in again to continue.";
-  if (status === 403) return "You do not have access to that.";
-  if (status === 404) return "That is not available yet.";
-  if (status === 429)
-    return "Too many attempts. Wait a moment before trying again.";
-  if (status >= 500)
-    return "Something went wrong on our side. Try again in a moment.";
-  return FALLBACK;
+  const copy = activeMessages().errors;
+  if (status === 401) return copy.status.unauthorized;
+  if (status === 403) return copy.status.forbidden;
+  if (status === 404) return copy.status.notFound;
+  if (status === 429) return copy.status.rateLimited;
+  if (status >= 500) return copy.status.server;
+  return copy.fallback;
 }

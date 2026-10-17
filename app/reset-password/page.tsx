@@ -1,21 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { resetPassword } from "@/app/lib/authApi";
 import { ApiError, fieldMessages } from "@/app/lib/authErrors";
 import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
 import PasswordStrength from "@/app/components/auth/PasswordStrength";
-import { PasswordField, SubmitButton } from "@/app/components/auth/Fields";
+import { PasswordField, SubmitButton, useFormFocus } from "@/app/components/auth/Fields";
 
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { t } = useI18n();
+  const { formRef, trackFocus, focusAfterFailure } = useFormFocus();
+  const strengthId = useId();
+  const copy = t.auth.resetPassword;
 
   const token = searchParams.get("token");
 
@@ -28,42 +33,47 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <AuthShell
-        title="This link is incomplete"
-        subtitle="The reset link is missing its token. Request a new one to continue."
+        title={copy.incompleteTitle}
+        subtitle={copy.incompleteSubtitle}
         footer={
           <Link href="/forgot-password" className="text-cyan-400 hover:text-cyan-300">
-            Request a new link
+            {copy.requestNew}
           </Link>
         }
       >
         <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4 text-sm text-zinc-400">
           <i className="ri-error-warning-line mt-0.5 text-lg text-red-400" aria-hidden="true" />
-          <p>Reset links expire after 30 minutes and can only be used once.</p>
+          <p>{copy.expiryNote}</p>
         </div>
       </AuthShell>
     );
   }
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  // The strength meter states what is missing, so a weak password marks the
+  // field invalid without a second message above it.
+  const passwordOk = evaluatePassword(password).satisfied;
+
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAttempted(true);
     if (loading) return;
 
     const errors: Record<string, string> = {};
-    if (confirmPassword !== password) errors.confirm = "Both passwords have to match.";
+    if (confirmPassword !== password) errors.confirm = t.auth.fields.passwordsMismatch;
 
     setFieldErrors(errors);
 
-    // The strength meter states what is missing; no second message above it.
-    const passwordOk = evaluatePassword(password).satisfied;
-    if (!passwordOk || Object.keys(errors).length > 0) return;
+    if (!passwordOk || Object.keys(errors).length > 0) {
+      focusAfterFailure();
+      return;
+    }
 
     setLoading(true);
     try {
       await resetPassword({ token, newPassword: password });
       // Every session was invalidated server-side, and the account may have a
       // second factor, so the user signs in again rather than landing inside.
-      toast.success("Password updated", { description: "Sign in with your new password." });
+      toast.success(copy.updated, { description: copy.updatedDetail });
       router.replace("/login");
     } catch (caught) {
       if (caught instanceof ApiError) {
@@ -74,51 +84,65 @@ function ResetPasswordForm() {
           return;
         }
       } else {
-        toast.error("We could not reach the server. Check your connection and try again.");
+        toast.error(t.common.networkError);
       }
       setLoading(false);
+      focusAfterFailure();
     }
   };
 
   return (
     <AuthShell
-      title="Choose a new password"
-      subtitle="Signing in on your other devices will be required again."
+      title={copy.title}
+      subtitle={copy.subtitle}
       footer={
         <Link href="/login" className="text-cyan-400 hover:text-cyan-300">
-          Back to sign in
+          {t.auth.backToSignIn}
         </Link>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form
+        ref={formRef}
+        onFocus={trackFocus}
+        onSubmit={handleSubmit}
+        className="space-y-4"
+        noValidate
+      >
         <div>
           <PasswordField
-            label="New password"
+            label={copy.newPassword}
             name="new-password"
             autoComplete="new-password"
             autoFocus
-            placeholder="Choose a strong password"
+            placeholder={t.auth.fields.newPasswordPlaceholder}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={fieldErrors.password}
+            aria-invalid={attempted && !passwordOk ? true : undefined}
+            aria-describedby={strengthId}
             disabled={loading}
           />
-          <PasswordStrength password={password} showFailures={attempted} />
+          <PasswordStrength
+            id={strengthId}
+            tone="dark"
+            password={password}
+            showFailures={attempted}
+          />
         </div>
 
         <PasswordField
-          label="Confirm new password"
+          label={copy.confirmPassword}
           name="confirm-password"
           autoComplete="new-password"
-          placeholder="Repeat your new password"
+          placeholder={copy.confirmPlaceholder}
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           error={fieldErrors.confirm}
           disabled={loading}
         />
 
-        <SubmitButton loading={loading} loadingLabel="Updating…">
-          Update password
+        <SubmitButton loading={loading} loadingLabel={copy.submitting}>
+          {copy.submit}
         </SubmitButton>
       </form>
     </AuthShell>

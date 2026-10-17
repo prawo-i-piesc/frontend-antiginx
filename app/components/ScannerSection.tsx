@@ -1,4 +1,11 @@
+"use client";
+
+import { useI18n } from '@/app/i18n/I18nProvider';
 import UrlScanner from './UrlScanner';
+
+export const SCANNER_SECTION_ID = 'scanner';
+/** Focus lands here when the scanner field cannot take it. */
+export const SCANNER_HEADING_ID = 'scanner-heading';
 
 interface ScannerSectionProps {
   onScan: (url: string) => void;
@@ -6,16 +13,24 @@ interface ScannerSectionProps {
 }
 
 export default function ScannerSection({ onScan, isScanning }: ScannerSectionProps) {
+  const { t } = useI18n();
+  const copy = t.landing.scanner;
+
   return (
-    <section id="scanner" className="py-20 px-4 sm:px-6 lg:px-8 relative">
+    <section id={SCANNER_SECTION_ID} className="py-20 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-5xl mx-auto text-center mb-8">
-        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-wider">
-          <i className="ri-spy-fill pr-3"></i>
-          Try it out!
+        <h2
+          id={SCANNER_HEADING_ID}
+          tabIndex={-1}
+          className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-wider focus:outline-none"
+        >
+          <i className="ri-spy-fill pr-3" aria-hidden="true"></i>
+          {copy.title}
         </h2>
         <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-          Check a website for potential threats before visiting{' '}
-          <strong className='tracking-wider text-cyan-400'>for free</strong>.
+          {copy.intro.before}
+          <strong className='tracking-wider text-cyan-400'>{copy.intro.emphasis}</strong>
+          {copy.intro.after}
         </p>
       </div>
 

@@ -1,18 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { ApiError, fieldMessages } from "@/app/lib/authErrors";
 import { evaluatePassword } from "@/app/lib/passwordPolicy";
 import { updatePassword } from "@/app/lib/profileApi";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import PasswordStrength from "@/app/components/auth/PasswordStrength";
-import { ExpandableRow, ProfileCard, ProfileField, SubmitRow } from "@/app/components/profile/ui";
+import {
+  ExpandableRow,
+  ProfileCard,
+  ProfileField,
+  SubmitRow,
+  useFocusFirstInvalid,
+} from "@/app/components/profile/ui";
+
+/** The fields this form can show a message under; the API may name others. */
+const FIELDS = ["old_password", "new_password", "confirm"];
 
 export default function PasswordSection() {
+  const { t } = useI18n();
+  const copy = t.profile.password;
   const { user } = useAuth();
   const toast = useToast();
+  const meterId = useId();
+  const [formRef, focusFirstInvalid] = useFocusFirstInvalid<HTMLFormElement>();
 
   // An account created through Google has no password to compare against, and
   // the endpoint requires the current one, so there is nothing this form could
@@ -28,25 +42,28 @@ export default function PasswordSection() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const context = { name: user?.full_name, email: user?.email };
+  const passwordOk = evaluatePassword(newPassword, context).satisfied;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setAttempted(true);
 
     const found: Record<string, string> = {};
-    if (!currentPassword) found.old_password = "Enter your current password.";
-    if (confirmPassword !== newPassword) found.confirm = "Both passwords have to match.";
+    if (!currentPassword) found.old_password = copy.currentRequired;
+    if (confirmPassword !== newPassword) found.confirm = copy.mismatch;
 
     setErrors(found);
 
     // The strength meter states what is missing; no second message above it.
-    const passwordOk = evaluatePassword(newPassword, context).satisfied;
-    if (!passwordOk || Object.keys(found).length > 0) return;
+    if (!passwordOk || Object.keys(found).length > 0) {
+      focusFirstInvalid();
+      return;
+    }
 
     setBusy(true);
     try {
       await updatePassword({ currentPassword, newPassword });
-      toast.success("Password updated", { description: "Use it the next time you sign in." });
+      toast.success(copy.updated, { description: copy.updatedHint });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -54,13 +71,19 @@ export default function PasswordSection() {
       setOpen(false);
     } catch (error) {
       if (error instanceof ApiError) {
-        const mapped = fieldMessages(error.fields);
-        setErrors(
-          Object.keys(mapped).length > 0 ? mapped : { old_password: error.message },
+        const shown = Object.fromEntries(
+          Object.entries(fieldMessages(error.fields)).filter(([field]) => FIELDS.includes(field)),
         );
-        toast.error(error.message);
+        // With no field named, a rejected new password is about the new one;
+        // anything else — a wrong password, a lockout — about the current one.
+        const field =
+          error.is("PASSWORD_TOO_WEAK") || error.is("PASSWORD_SAME_AS_OLD")
+            ? "new_password"
+            : "old_password";
+        setErrors(Object.keys(shown).length > 0 ? shown : { [field]: error.message });
+        focusFirstInvalid();
       } else {
-        toast.error("We could not reach the server. Try again in a moment.");
+        toast.error(t.common.networkError);
       }
     } finally {
       setBusy(false);
@@ -72,12 +95,15 @@ export default function PasswordSection() {
   if (!hasPassword) return null;
 
   return (
-    <ProfileCard title="Password" description="How you prove it is you.">
+    <ProfileCard title={copy.title} description={copy.description}>
       <ExpandableRow
         icon="ri-lock-line"
-        title="Password"
+        title={copy.rowTitle}
         value="••••••••••"
-        actionLabel="Change"
+        valueLabel={copy.hidden}
+        actionLabel={t.common.change}
+        actionContext={copy.changeContext}
+        cancelContext={copy.cancelContext}
         open={open}
         onToggle={() => {
           setOpen((current) => !current);
@@ -88,10 +114,10 @@ export default function PasswordSection() {
           setConfirmPassword("");
         }}
       >
-        <form onSubmit={submit} className="max-w-md" noValidate>
+        <form ref={formRef} onSubmit={submit} className="max-w-md" noValidate>
           <div className="space-y-5">
             <ProfileField
-              label="Current password"
+              label={copy.current}
               icon="ri-lock-line"
               type="password"
               autoComplete="current-password"
@@ -104,7 +130,7 @@ export default function PasswordSection() {
             />
             <div>
               <ProfileField
-                label="New password"
+                label={copy.next}
                 icon="ri-lock-password-line"
                 type="password"
                 autoComplete="new-password"
@@ -112,12 +138,16 @@ export default function PasswordSection() {
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
                 error={errors.new_password}
+                invalid={attempted && !passwordOk}
+                describedBy={meterId}
                 disabled={busy}
               />
-              <PasswordStrength password={newPassword} context={context} showFailures={attempted} />
+              <div id={meterId}>
+                <PasswordStrength password={newPassword} context={context} showFailures={attempted} />
+              </div>
             </div>
             <ProfileField
-              label="Confirm new password"
+              label={copy.confirm}
               icon="ri-lock-password-line"
               type="password"
               autoComplete="new-password"
@@ -129,7 +159,7 @@ export default function PasswordSection() {
             />
           </div>
 
-          <SubmitRow busy={busy} label="Update password" icon="ri-shield-keyhole-line" />
+          <SubmitRow busy={busy} label={copy.submit} icon="ri-shield-keyhole-line" />
         </form>
       </ExpandableRow>
     </ProfileCard>

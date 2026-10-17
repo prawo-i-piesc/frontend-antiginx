@@ -1,250 +1,282 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useTheme } from "@/app/providers/ThemeProvider";
-import useRequireAuth from "@/app/hooks/useRequireAuth";
-import useProfile from "@/app/hooks/useProfile";
-import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
-import DashboardSidebar from "@/app/components/layout/DashboardSidebar";
-import {
-  ApiRequestError,
-  calculateThreatLevel,
-  getUserScans,
-  UserScanResponse,
-} from "@/app/lib/api";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { useEffect, useId, useMemo, useState } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-type ScanRow = {
-  id: string;
+import DashboardShell from "@/app/components/layout/DashboardShell";
+import useRequireAuth from "@/app/hooks/useRequireAuth";
+import { INTL_LOCALES } from "@/app/i18n/config";
+import { useI18n } from "@/app/i18n/I18nProvider";
+import { ApiRequestError, calculateThreatLevel, getUserScans, type UserScanResponse } from "@/app/lib/api";
+import { useTheme } from "@/app/providers/ThemeProvider";
+
+type ScanPoint = {
   url: string;
-  status: "safe" | "warning" | "danger";
+  createdAt: string;
   threat: number;
-  date: string;
 };
 
-function formatDate(dateIso: string): string {
-  if (!dateIso) return "-";
-  return dateIso.slice(0, 10);
-}
+/** What the person can do about a failed request: check the connection, or just retry. */
+type LoadError = "network" | "other";
 
-function mapScanToRow(scan: UserScanResponse): ScanRow {
-  const threat = calculateThreatLevel(scan.results || []);
+/** Tagged with the request it answers, so "loading" is simply "not answered yet". */
+type ScanHistory = { request: number; points: ScanPoint[]; error: LoadError | null };
 
-  let status: ScanRow["status"] = "safe";
-  if (scan.status === "FAILED") {
-    status = "danger";
-  } else if (scan.status === "RUNNING" || scan.status === "PENDING") {
-    status = "warning";
-  } else if (threat >= 80) {
-    status = "danger";
-  } else if (threat >= 40) {
-    status = "warning";
-  }
+// red-500: at least 3:1 against the card in both themes.
+const LINE_COLOR = "#ef4444";
 
+function toPoint(scan: UserScanResponse): ScanPoint {
   return {
-    id: scan.id,
     url: scan.target_url,
-    status,
-    threat,
-    date: formatDate(scan.created_at),
+    createdAt: scan.created_at,
+    threat: calculateThreatLevel(scan.results || []),
   };
 }
 
-const COLORS = {
-  danger: "#ef4444",  // bg-red-500
-};
+function loadErrorOf(error: unknown): LoadError {
+  if (error instanceof ApiRequestError) return error.code === "NETWORK_ERROR" ? "network" : "other";
+  // fetch() rejects with a TypeError when the network is down.
+  return error instanceof TypeError ? "network" : "other";
+}
 
 export default function DashboardChartsPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [scanRows, setScanRows] = useState<ScanRow[]>([]);
-  const [isLoadingScans, setIsLoadingScans] = useState(false);
-  const [scanListError, setScanListError] = useState<string | null>(null);
-  const [selectedUrl, setSelectedUrl] = useState<string>("");
+  const { t, locale, format } = useI18n();
+  const { theme } = useTheme();
+  const { authenticated, initialized } = useRequireAuth();
 
-  const { theme, toggleTheme } = useTheme();
-  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
-  const auth = authFromHook;
-  const { profileName } = useProfile();
+  const [request, setRequest] = useState(0);
+  const [history, setHistory] = useState<ScanHistory | null>(null);
+  const [selectedUrl, setSelectedUrl] = useState("");
+
+  const selectId = useId();
 
   useEffect(() => {
     if (!authenticated) return;
 
     let active = true;
-    const loadScans = async () => {
-      setIsLoadingScans(true);
-      setScanListError(null);
-
-      try {
-        const scans = await getUserScans();
+    getUserScans().then(
+      (scans) => {
         if (!active) return;
-
-        const completedScans = scans.filter((scan) => scan.status === "COMPLETED");
-        const mapped = completedScans.map(mapScanToRow);
-
-        setScanRows(mapped);
-
-        if (mapped.length > 0) {
-          const uniqueUrls = Array.from(new Set(mapped.map((s) => s.url)));
-          setSelectedUrl(uniqueUrls[0]);
-        }
-      } catch (error) {
+        setHistory({
+          request,
+          points: scans.filter((scan) => scan.status === "COMPLETED").map(toPoint),
+          error: null,
+        });
+      },
+      (error: unknown) => {
         if (!active) return;
-        if (error instanceof ApiRequestError || error instanceof Error) {
-          setScanListError(error.message);
-        } else {
-          setScanListError("Failed to load scans");
-        }
-      } finally {
-        if (active) setIsLoadingScans(false);
-      }
-    };
+        console.error("Failed to load scans for the charts:", error);
+        setHistory({ request, points: [], error: loadErrorOf(error) });
+      },
+    );
 
-    loadScans();
     return () => {
       active = false;
     };
-  }, [authenticated]);
+  }, [authenticated, request]);
 
-  // Lista unikalnych domen do dropdownu
-  const uniqueUrls = useMemo(() => {
-    return Array.from(new Set(scanRows.map((row) => row.url)));
-  }, [scanRows]);
+  const isLoading = history?.request !== request;
+  const loadError = isLoading ? null : (history?.error ?? null);
+  const points = useMemo(() => history?.points ?? [], [history]);
 
-  // Historia poziomu zagrożenia w czasie dla wybranej strony
-  const urlHistoryData = useMemo(() => {
-    if (!selectedUrl) return [];
-    return scanRows
-      .filter((row) => row.url === selectedUrl)
-      .sort((a, b) => (a.date > b.date ? 1 : -1))
-      .map((row) => ({
-        date: row.date,
-        threat: row.threat,
-      }));
-  }, [scanRows, selectedUrl]);
+  // Domains for the dropdown, in the order the scans arrived.
+  const uniqueUrls = useMemo(() => Array.from(new Set(points.map((point) => point.url))), [points]);
+  const currentUrl = uniqueUrls.includes(selectedUrl) ? selectedUrl : (uniqueUrls[0] ?? "");
+
+  // The selected domain's threat level, oldest scan first.
+  const urlHistory = useMemo(
+    () =>
+      points
+        .filter((point) => point.url === currentUrl)
+        .sort((a, b) => (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0)),
+    [points, currentUrl],
+  );
+
+  const percent = useMemo(
+    () => new Intl.NumberFormat(INTL_LOCALES[locale], { style: "percent", maximumFractionDigits: 0 }),
+    [locale],
+  );
 
   if (!initialized) return null;
   if (!authenticated) return null;
 
-  const axisColor = theme === "dark" ? "#52525b" : "#a1a1aa"; 
-  const gridColor = theme === "dark" ? "#27272a" : "#e4e4e7"; 
-  const tooltipBg = theme === "dark" ? "#18181b" : "#ffffff";
+  const formatThreat = (level: number) => percent.format(level / 100);
+
+  let summary = "";
+  if (urlHistory.length > 0) {
+    const levels = urlHistory.map((point) => point.threat);
+    const first = urlHistory[0];
+    const last = urlHistory[urlHistory.length - 1];
+    summary = `${t.charts.summary(
+      currentUrl,
+      urlHistory.length,
+      format.date(first.createdAt),
+      format.date(last.createdAt),
+    )} ${t.charts.levels(
+      formatThreat(last.threat),
+      formatThreat(Math.max(...levels)),
+      formatThreat(Math.min(...levels)),
+    )}`;
+  }
+
+  const isDark = theme === "dark";
+  // zinc-400 on the dark card, zinc-600 on the light one: tick labels stay above 4.5:1.
+  const axisColor = isDark ? "#a1a1aa" : "#52525b";
+  const gridColor = isDark ? "#27272a" : "#e4e4e7";
+  const tooltipBg = isDark ? "#18181b" : "#ffffff";
+  const tooltipText = isDark ? "#e4e4e7" : "#18181b";
+  // The line's red-500 is too light for text on white; the value uses red-700 there.
+  const tooltipValue = isDark ? "#f87171" : "#b91c1c";
+
+  const hasData = !isLoading && !loadError && points.length > 0;
 
   return (
-    <div className="h-screen xl:flex bg-zinc-200 dark:bg-zinc-950 transition-colors select-none">
-      <DashboardSidebar
-        sidebarOpen={sidebarOpen}
-        profileName={profileName}
-        onLogout={() => auth.logout()}
-        activePage="charts"
-      />
+    <DashboardShell area="dashboard" activePage="charts">
+      <div className="p-6">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{t.charts.title}</h1>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{t.charts.subtitle}</p>
+          </div>
+        </div>
 
-      <div className="flex-1 flex flex-col min-h-screen xl:ml-0">
-        <DashboardTopBar
-          sidebarOpen={sidebarOpen}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          showSearch
-          showNotifications
-          showMessages
-        />
+        <div role="status">
+          {isLoading && <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.charts.loading}</p>}
+          {!isLoading && !loadError && points.length === 0 && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.charts.empty}</p>
+          )}
+        </div>
 
-        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
-          <div className="p-6">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Charts</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Analyze website security metrics and scan history</p>
+        <div role="alert">
+          {loadError && (
+            <p className="text-sm text-rose-700 dark:text-rose-400">
+              {t.charts.loadError} {loadError === "network" ? t.common.networkError : t.common.genericError}
+            </p>
+          )}
+        </div>
+        {loadError && (
+          <button
+            type="button"
+            onClick={() => setRequest((previous) => previous + 1)}
+            className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white/85 dark:bg-zinc-900/40 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            <i className="ri-refresh-line" aria-hidden="true"></i>
+            {t.common.retry}
+          </button>
+        )}
+
+        {hasData && (
+          <div className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 p-6 shadow-sm">
+            <div className="mb-5 max-w-md">
+              <label
+                htmlFor={selectId}
+                className="block text-zinc-600 dark:text-zinc-400 text-xs uppercase tracking-wider mb-2"
+              >
+                {t.charts.domainFilter}
+              </label>
+              <div className="relative">
+                <i
+                  className="ri-global-line absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 pointer-events-none"
+                  aria-hidden="true"
+                ></i>
+                <select
+                  id={selectId}
+                  value={currentUrl}
+                  onChange={(event) => setSelectedUrl(event.target.value)}
+                  className="w-full h-12 pl-12 pr-10 bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-700/60 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-cyan-500/50 transition-all cursor-pointer appearance-none"
+                >
+                  {uniqueUrls.map((url) => (
+                    <option key={url} value={url} className="bg-white dark:bg-zinc-950">
+                      {url}
+                    </option>
+                  ))}
+                </select>
+                <i
+                  className="ri-arrow-down-s-line absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 pointer-events-none"
+                  aria-hidden="true"
+                ></i>
               </div>
             </div>
 
-            {isLoadingScans && (
-              <div className="text-sm text-zinc-500 dark:text-zinc-400">Loading charts...</div>
-            )}
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">{t.charts.heading}</h2>
 
-            {!isLoadingScans && scanListError && (
-              <div className="text-sm text-rose-500">{scanListError}</div>
-            )}
+            {urlHistory.length < 1 ? (
+              <p className="h-72 flex items-center justify-center text-sm text-zinc-600 dark:text-zinc-400">
+                {t.charts.noScansForDomain}
+              </p>
+            ) : (
+              <figure>
+                {/* The chart's text alternative: a summary here and every value in the table below. */}
+                <figcaption className="sr-only">{summary}</figcaption>
 
-            {!isLoadingScans && !scanListError && scanRows.length === 0 && (
-              <div className="text-sm text-zinc-500 dark:text-zinc-400">No data available to display charts.</div>
-            )}
-
-            {!isLoadingScans && !scanListError && scanRows.length > 0 && (
-              <div className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 p-6 shadow-sm">
-                
-                {/* Dropdown identyczny stylizacją jak pole z URL z Twojego scannera */}
-                <div className="mb-5 max-w-md">
-                  <label className="block text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider mb-2">
-                    Domain History Filter
-                  </label>
-                  <div className="relative">
-                    <i className="ri-global-line absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"></i>
-                    <select
-                      value={selectedUrl}
-                      onChange={(e) => setSelectedUrl(e.target.value)}
-                      className="w-full h-12 pl-12 pr-10 bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-700/60 rounded-xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer appearance-none"
-                    >
-                      {uniqueUrls.map((url) => (
-                        <option key={url} value={url} className="bg-white dark:bg-zinc-950">
-                          {url}
-                        </option>
-                      ))}
-                    </select>
-                    <i className="ri-arrow-down-s-line absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
-                  </div>
-                </div>
-
-                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Threat Level Over Time</h3>
-                
                 <div className="h-72">
-                  {urlHistoryData.length < 1 ? (
-                    <div className="h-full flex items-center justify-center text-sm text-zinc-500">
-                      No scans found for the selected domain.
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={urlHistoryData} margin={{ left: -20, right: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                        <XAxis dataKey="date" stroke={axisColor} fontSize={11} tickMargin={8} />
-                        <YAxis stroke={axisColor} fontSize={11} domain={[0, 100]} tickFormatter={(val) => `${val}%`} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: tooltipBg, borderColor: gridColor, borderRadius: '12px' }}
-                          formatter={(value: any) => [`${value}%`, "Threat Level"]}
-                        />
-                        <Line 
-                          type="linear" 
-                          dataKey="threat" 
-                          stroke={COLORS.danger} 
-                          strokeWidth={2}
-                          dot={{ r: 4, fill: COLORS.danger }}
-                          activeDot={{ r: 6 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
+                  {/* accessibilityLayer is on by default: the chart takes focus and the arrow keys move between scans. */}
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={urlHistory}
+                      margin={{ left: -20, right: 10 }}
+                      title={t.charts.chartTitle(currentUrl)}
+                      desc={t.charts.keyboardHint}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                      <XAxis
+                        dataKey="createdAt"
+                        stroke={axisColor}
+                        tick={{ fill: axisColor }}
+                        fontSize={11}
+                        tickMargin={8}
+                        tickFormatter={(value) => format.date(value)}
+                      />
+                      <YAxis
+                        stroke={axisColor}
+                        tick={{ fill: axisColor }}
+                        fontSize={11}
+                        domain={[0, 100]}
+                        tickFormatter={(value) => formatThreat(Number(value))}
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: tooltipBg, borderColor: gridColor, borderRadius: "12px" }}
+                        labelStyle={{ color: tooltipText }}
+                        itemStyle={{ color: tooltipValue }}
+                        separator=": "
+                        labelFormatter={(label) => format.dateTime(String(label))}
+                        formatter={(value) => [formatThreat(Number(value)), t.charts.threatLevel]}
+                      />
+                      <Line
+                        type="linear"
+                        dataKey="threat"
+                        name={t.charts.threatLevel}
+                        stroke={LINE_COLOR}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: LINE_COLOR }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
 
-              </div>
+                <table className="sr-only">
+                  <caption>{t.charts.tableCaption(currentUrl)}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">{t.charts.scanDate}</th>
+                      <th scope="col">{t.charts.threatLevel}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {urlHistory.map((point, index) => (
+                      <tr key={`${point.createdAt}-${index}`}>
+                        <td>{format.dateTime(point.createdAt)}</td>
+                        <td>{formatThreat(point.threat)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </figure>
             )}
           </div>
-        </main>
+        )}
       </div>
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 xl:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-    </div>
+    </DashboardShell>
   );
 }

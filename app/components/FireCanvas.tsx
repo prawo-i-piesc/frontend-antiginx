@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
+import { REDUCED_MOTION_QUERY, useMediaQuery } from '@/app/hooks/useMediaQuery';
+
 interface Particle {
   x: number;
   y: number;
@@ -26,8 +28,12 @@ interface Color {
 
 export default function FireCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // The flames are nothing but movement, so reduced motion leaves them out.
+  const reduceMotion = useMediaQuery(REDUCED_MOTION_QUERY);
 
   useEffect(() => {
+    if (reduceMotion) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -163,11 +169,14 @@ export default function FireCanvas() {
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, []);
+  }, [reduceMotion]);
+
+  if (reduceMotion) return null;
 
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       className="absolute inset-0 w-full h-full pointer-events-none"
       style={{ filter: 'blur(1px)' }}
     />

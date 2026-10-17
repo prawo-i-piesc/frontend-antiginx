@@ -4,12 +4,21 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { verifyEmail } from "@/app/lib/authApi";
 import { ApiError } from "@/app/lib/authErrors";
 import { useAuth } from "@/app/providers/AuthProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
 
-type State = { name: "working" } | { name: "done" } | { name: "failed"; message: string };
+/**
+ * `message` is the API's own, already in the interface language; the other
+ * reasons are worded when they render, so they follow a language switch.
+ */
+type State =
+  | { name: "working" }
+  | { name: "done" }
+  | { name: "failed"; reason: "missing-token" | "unreachable" }
+  | { name: "failed"; reason: "rejected"; message: string };
 
 /**
  * Opened from the link in the verification email.
@@ -21,9 +30,11 @@ function VerifyEmail() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const { reloadUser } = useAuth();
+  const { t } = useI18n();
+  const copy = t.auth.verifyEmail;
 
   const [state, setState] = useState<State>(() =>
-    token ? { name: "working" } : { name: "failed", message: "This link is missing its token." },
+    token ? { name: "working" } : { name: "failed", reason: "missing-token" },
   );
 
   useEffect(() => {
@@ -41,13 +52,11 @@ function VerifyEmail() {
       })
       .catch((caught: unknown) => {
         if (!active) return;
-        setState({
-          name: "failed",
-          message:
-            caught instanceof ApiError
-              ? caught.message
-              : "We could not reach the server. Try the link again in a moment.",
-        });
+        setState(
+          caught instanceof ApiError
+            ? { name: "failed", reason: "rejected", message: caught.message }
+            : { name: "failed", reason: "unreachable" },
+        );
       });
 
     return () => {
@@ -55,12 +64,14 @@ function VerifyEmail() {
     };
   }, [token, reloadUser]);
 
+  // `view`: when the result replaces the spinner, focus goes to the heading,
+  // so a screen reader announces how it went.
   if (state.name === "working") {
     return (
-      <AuthShell title="Confirming your address" subtitle="This takes a second.">
+      <AuthShell view={state.name} title={copy.workingTitle} subtitle={copy.workingSubtitle}>
         <p className="flex items-center gap-3 text-sm text-zinc-400">
           <i className="ri-loader-4-line animate-spin text-lg" aria-hidden="true" />
-          Checking the link…
+          {copy.working}
         </p>
       </AuthShell>
     );
@@ -69,20 +80,18 @@ function VerifyEmail() {
   if (state.name === "done") {
     return (
       <AuthShell
-        title="Address confirmed"
-        subtitle="Your email address is verified."
+        view={state.name}
+        title={copy.doneTitle}
+        subtitle={copy.doneSubtitle}
         footer={
           <Link href="/dashboard" className="text-cyan-400 hover:text-cyan-300">
-            Go to the dashboard
+            {copy.toDashboard}
           </Link>
         }
       >
         <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-zinc-300">
           <i className="ri-checkbox-circle-line mt-0.5 text-lg text-emerald-400" aria-hidden="true" />
-          <p>
-            Signing in with a provider on this address will now connect to this account instead of
-            asking for your password.
-          </p>
+          <p>{copy.doneDetail}</p>
         </div>
       </AuthShell>
     );
@@ -90,17 +99,24 @@ function VerifyEmail() {
 
   return (
     <AuthShell
-      title="That link did not work"
-      subtitle="Confirmation links expire and can only be used once."
+      view={state.name}
+      title={copy.failedTitle}
+      subtitle={copy.failedSubtitle}
       footer={
         <Link href="/dashboard/profile" className="text-cyan-400 hover:text-cyan-300">
-          Send a new one from your profile
+          {copy.sendNew}
         </Link>
       }
     >
       <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4 text-sm text-zinc-300">
         <i className="ri-error-warning-line mt-0.5 text-lg text-red-400" aria-hidden="true" />
-        <p>{state.message}</p>
+        <p>
+          {state.reason === "rejected"
+            ? state.message
+            : state.reason === "missing-token"
+              ? copy.missingToken
+              : t.common.networkError}
+        </p>
       </div>
     </AuthShell>
   );

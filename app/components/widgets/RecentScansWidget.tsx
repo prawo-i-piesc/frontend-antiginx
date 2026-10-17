@@ -1,6 +1,10 @@
-import React from "react";
+"use client";
 
-// Uproszczony typ danych z API - interesuje nas tylko URL i ID do klucza
+import Link from "next/link";
+
+import { useI18n } from "@/app/i18n/I18nProvider";
+
+/** The widget only needs the address and an id to key it by. */
 export interface ApiScanData {
   id: string;
   target_url: string;
@@ -9,46 +13,64 @@ export interface ApiScanData {
 interface RecentScansWidgetProps {
   scans?: ApiScanData[];
   isLoading?: boolean;
+  /** Where "View all" leads; without it the link is left out. */
+  viewAllHref?: string;
+  /** The scans could not be loaded. */
+  error?: boolean;
 }
 
-export default function RecentScansWidget({ scans = [], isLoading = false }: RecentScansWidgetProps) {
+export default function RecentScansWidget({
+  scans = [],
+  isLoading = false,
+  viewAllHref,
+  error = false,
+}: RecentScansWidgetProps) {
+  const { t } = useI18n();
+  const copy = t.widgets.recentScans;
+  const messageClass = "flex items-center justify-center h-full text-sm text-zinc-600 dark:text-zinc-400";
+
   return (
     <div className="rounded-xl bg-white/85 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-300 dark:border-zinc-800/30 p-6 h-full flex flex-col">
-      {/* Nagłówek widgetu */}
       <div className="mb-6 flex items-center justify-between shrink-0">
-        <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Recent Scans</h4>
-        <button className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium">
-          View All
-        </button>
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{t.widgets.names.recentScans}</h2>
+        {viewAllHref ? (
+          <Link
+            href={viewAllHref}
+            className="inline-flex min-h-6 items-center text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium"
+          >
+            {t.widgets.viewAll}
+            <span className="sr-only"> {copy.viewAllContext}</span>
+          </Link>
+        ) : null}
       </div>
 
-      {/* Lista skanów */}
-      <div className="space-y-2 overflow-y-auto flex-1 pr-2 scrollbar-theme">
+      <div className="overflow-y-auto flex-1 pr-2 scrollbar-theme">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full text-sm text-zinc-500 dark:text-zinc-400">
-            Loading recent scans...
-          </div>
+          <p className={messageClass}>{copy.loading}</p>
+        ) : error ? (
+          <p className={messageClass}>{copy.error}</p>
         ) : scans.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-zinc-500 dark:text-zinc-400">
-            No recent scans found.
-          </div>
+          <p className={messageClass}>{copy.empty}</p>
         ) : (
-          scans.map((scan) => (
-            <div
-              key={scan.id}
-              className="flex items-center gap-3 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/40"
-            >
-              {/* Prosta ikonka globusa z boku dla ładnego wyglądu */}
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-                <i className="ri-global-line text-cyan-500 dark:text-cyan-400 text-sm"></i>
-              </div>
-              
-              {/* Nazwa domeny / URL */}
-              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                {scan.target_url}
-              </span>
-            </div>
-          ))
+          <ul className="space-y-2">
+            {scans.map((scan) => (
+              <li
+                key={scan.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/40"
+              >
+                <div
+                  className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0"
+                  aria-hidden="true"
+                >
+                  <i className="ri-global-line text-cyan-500 dark:text-cyan-400 text-sm" aria-hidden="true"></i>
+                </div>
+                {/* Truncated on screen only; the whole address stays in the text. */}
+                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate" title={scan.target_url}>
+                  {scan.target_url}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>

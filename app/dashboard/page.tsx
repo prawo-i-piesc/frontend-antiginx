@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useRef, useMemo, useEffect } from "react";
-import React from "react";
-import { useRouter } from 'next/navigation';
-import { useTheme } from "../providers/ThemeProvider";
-import useRequireAuth from '@/app/hooks/useRequireAuth';
-import useProfile from '@/app/hooks/useProfile';
-import { authorizedFetch } from "@/app/lib/session";
-import DashboardTopBar from "../components/layout/DashboardTopBar";
-import DashboardSidebar from "../components/layout/DashboardSidebar";
-import StatsCard from "../components/interface/StatsCard";
-import RecentScansWidget from "../components/widgets/RecentScansWidget";
-import TopThreatsWidget from "../components/widgets/TopThreatsWidget";
+import { useEffect, useState } from "react";
 
-// TWORZYMY TYPY ODPOWIADAJĄCE JSON Z API
-export interface ApiScanData {
+import StatsCard from "@/app/components/interface/StatsCard";
+import DashboardShell from "@/app/components/layout/DashboardShell";
+import RecentScansWidget from "@/app/components/widgets/RecentScansWidget";
+import TopThreatsWidget from "@/app/components/widgets/TopThreatsWidget";
+import WidgetBoard from "@/app/components/widgets/WidgetBoard";
+import useRequireAuth from "@/app/hooks/useRequireAuth";
+import type { WidgetConfig } from "@/app/hooks/useWidgetLayout";
+import { useI18n } from "@/app/i18n/I18nProvider";
+import { authorizedFetch } from "@/app/lib/session";
+
+/** GET /api/users/widgets */
+interface ApiScanData {
   id: string;
   target_url: string;
   status: string;
@@ -22,436 +21,128 @@ export interface ApiScanData {
   type: string;
 }
 
-export interface UserWidgetsData {
+interface UserWidgetsData {
   detected_threats: number;
   recent_scans: ApiScanData[];
   safe_sites: number;
   total_scans: number;
 }
 
-type WidgetType = 'totalScans' | 'safeSites' | 'threats' | 'scheduled' | 'recentScans' | 'topThreats';
+type WidgetType = "totalScans" | "safeSites" | "threats" | "scheduled" | "recentScans" | "topThreats";
 
-interface DashboardWidget {
-  id: string;
-  type: WidgetType;
-  size: "1x1" | "2x1" | "1x2" | "2x2";
-}
-
-const WIDGET_LIBRARY: DashboardWidget[] = [
-  { id: 'totalScans', type: 'totalScans', size: '1x1' },
-  { id: 'safeSites', type: 'safeSites', size: '1x1' },
-  { id: 'threats', type: 'threats', size: '1x1' },
-  { id: 'scheduled', type: 'scheduled', size: '1x1' },
-  { id: 'recentScans', type: 'recentScans', size: '2x2' },
-  { id: 'topThreats', type: 'topThreats', size: '2x2' },
+const WIDGET_LIBRARY: readonly WidgetConfig<WidgetType>[] = [
+  { id: "totalScans", type: "totalScans", size: "1x1" },
+  { id: "safeSites", type: "safeSites", size: "1x1" },
+  { id: "threats", type: "threats", size: "1x1" },
+  { id: "scheduled", type: "scheduled", size: "1x1" },
+  { id: "recentScans", type: "recentScans", size: "2x2" },
+  { id: "topThreats", type: "topThreats", size: "2x2" },
 ];
 
-const DASHBOARD_WIDGETS_STORAGE_KEY = 'dashboard.widgets';
-
-function getDefaultWidgets(): DashboardWidget[] {
-  return [
-    { id: 'totalScans', type: 'totalScans', size: '1x1' },
-    { id: 'safeSites', type: 'safeSites', size: '1x1' },
-    { id: 'threats', type: 'threats', size: '1x1' },
-    { id: 'scheduled', type: 'scheduled', size: '1x1' },
-    { id: 'recentScans', type: 'recentScans', size: '2x2' },
-    { id: 'topThreats', type: 'topThreats', size: '2x2' },
-  ];
-}
-
-function isWidgetType(value: string): value is WidgetType {
-  return WIDGET_LIBRARY.some(widget => widget.type === value);
-}
-
-function normalizeWidgets(widgets: unknown): DashboardWidget[] | null {
-  if (!Array.isArray(widgets)) return null;
-
-  const normalized = widgets
-    .filter((widget): widget is DashboardWidget => {
-      if (!widget || typeof widget !== 'object') return false;
-
-      const candidate = widget as DashboardWidget;
-      return (
-        typeof candidate.id === 'string' &&
-        typeof candidate.type === 'string' &&
-        typeof candidate.size === 'string' &&
-        isWidgetType(candidate.type) &&
-        ['1x1', '2x1', '1x2', '2x2'].includes(candidate.size)
-      );
-    })
-    .filter(widget => WIDGET_LIBRARY.some(available => available.type === widget.type));
-
-  const seenTypes = new Set<WidgetType>();
-  const ordered = normalized.filter(widget => {
-    if (seenTypes.has(widget.type)) return false;
-    seenTypes.add(widget.type);
-    return true;
-  });
-
-  if (ordered.length === 0) return null;
-  return ordered;
-}
+const DEFAULT_WIDGETS = WIDGET_LIBRARY;
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const { t } = useI18n();
+  const { authenticated, initialized } = useRequireAuth();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [customizeMode, setCustomizeMode] = useState(false);
-  const { theme, toggleTheme } = useTheme();
-  const [widgetsLoaded, setWidgetsLoaded] = useState(false);
-  
-  const [activeWidgets, setActiveWidgets] = useState<DashboardWidget[]>(() => getDefaultWidgets());
+  const [data, setData] = useState<UserWidgetsData | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
 
-  // STAN DO PRZECHOWYWANIA DANYCH WIDŻETÓW Z API
-  const [widgetData, setWidgetData] = useState<UserWidgetsData | null>(null);
-  const [isDataLoading, setIsDataLoading] = useState(true);
-
-  const [draggedWidget, setDraggedWidget] = useState<DashboardWidget | null>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const [selectedWidgetIndex, setSelectedWidgetIndex] = useState<number | null>(null);
-  const [blockBodyScroll, setBlockBodyScroll] = useState(false);
-  const [dragOffsetState, setDragOffsetState] = useState({ x: 0, y: 0 });
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const draggedIndexRef = useRef<number | null>(null);
-  const hoverIndexRef = useRef<number | null>(null);
-  const nextWidgetId = useRef(0);
-  
-  const { authenticated, initialized, auth: authFromHook } = useRequireAuth();
-  const auth = authFromHook;
-  const { profileName } = useProfile();
-
-  // FETCHOWANIE DANYCH WIDŻETÓW Z ENDPOINTU UŻYTKOWNIKA
   useEffect(() => {
     if (!authenticated) return;
 
     let active = true;
-
     const fetchWidgetData = async () => {
-      setIsDataLoading(true);
       try {
         const response = await authorizedFetch("/api/users/widgets");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch widget data");
-        }
-
-        const data: UserWidgetsData = await response.json();
-        
-        if (active) {
-          setWidgetData(data);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const json: UserWidgetsData = await response.json();
+        if (!active) return;
+        setData(json);
+        setStatus("ready");
       } catch (error) {
         console.error("Error fetching widgets data:", error);
-      } finally {
-        if (active) setIsDataLoading(false);
+        if (active) setStatus("error");
       }
     };
 
-    fetchWidgetData();
-
-    return () => { active = false; };
-  }, [authenticated]);
-
-  const displayWidgets = useMemo(() => {
-    if (draggedIndex !== null && hoverIndex !== null && draggedIndex !== hoverIndex) {
-      const widgets = [...activeWidgets];
-      const [removed] = widgets.splice(draggedIndex, 1);
-      widgets.splice(hoverIndex, 0, removed);
-      return widgets;
-    }
-    return activeWidgets;
-  }, [activeWidgets, draggedIndex, hoverIndex]);
-  
-  const availableWidgets = WIDGET_LIBRARY.filter(
-    widget => !activeWidgets.find(aw => aw.type === widget.type)
-  );
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (blockBodyScroll) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-    }
-
+    void fetchWidgetData();
     return () => {
-      if (typeof document === 'undefined') return;
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      active = false;
     };
-  }, [blockBodyScroll]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const storedWidgets = window.localStorage.getItem(DASHBOARD_WIDGETS_STORAGE_KEY);
-      if (storedWidgets) {
-        const parsedWidgets = normalizeWidgets(JSON.parse(storedWidgets));
-        if (parsedWidgets) {
-          setActiveWidgets(parsedWidgets);
-          const nextId = parsedWidgets.reduce((max, widget) => {
-            const match = widget.id.match(/-(\d+)$/);
-            if (!match) return max;
-            return Math.max(max, Number(match[1]) + 1);
-          }, 0);
-          nextWidgetId.current = nextId;
-        }
-      }
-    } catch {
-      // ignore invalid or unavailable storage
-    } finally {
-      setWidgetsLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!widgetsLoaded || typeof window === 'undefined') return;
-
-    try {
-      window.localStorage.setItem(DASHBOARD_WIDGETS_STORAGE_KEY, JSON.stringify(activeWidgets));
-    } catch {
-      // ignore storage errors
-    }
-  }, [activeWidgets, widgetsLoaded]);
+  }, [authenticated, attempt]);
 
   if (!initialized) return null;
   if (!authenticated) return null;
 
+  const loading = status === "loading";
+  // A failed load shows "no data", not a misleading zero.
+  const count = (value: number | undefined) => (status === "error" ? null : value ?? 0);
 
-  function handleMouseDown(e: React.MouseEvent, widget: DashboardWidget, index: number) {
-    if (!customizeMode) return;
-    e.preventDefault();
-    
-    const target = e.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    
-    dragOffset.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-    setDragOffsetState({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    
-    setDraggedWidget(widget);
-    setDraggedIndex(index);
-    draggedIndexRef.current = index;
-    setMousePos({ x: e.clientX, y: e.clientY });
-    
-    const handleMouseMoveLocal = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    
-    const handleMouseUpLocal = () => {
-      if (draggedIndexRef.current !== null && hoverIndexRef.current !== null && draggedIndexRef.current !== hoverIndexRef.current) {
-        const widgets = [...activeWidgets];
-        const [removed] = widgets.splice(draggedIndexRef.current, 1);
-        widgets.splice(hoverIndexRef.current, 0, removed);
-        setActiveWidgets(widgets);
-      }
-      
-      setDraggedWidget(null);
-      setDraggedIndex(null);
-      setHoverIndex(null);
-      draggedIndexRef.current = null;
-      hoverIndexRef.current = null;
-      
-      document.removeEventListener('mousemove', handleMouseMoveLocal);
-      document.removeEventListener('mouseup', handleMouseUpLocal);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMoveLocal);
-    document.addEventListener('mouseup', handleMouseUpLocal);
+  function retry() {
+    setStatus("loading");
+    setAttempt((current) => current + 1);
   }
 
-  function handleTouchStart(e: React.TouchEvent, widget: DashboardWidget, index: number) {
-    if (!customizeMode) return;
-    e.preventDefault();
-    
-    const target = e.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    const touch = e.touches[0];
-    
-    dragOffset.current = {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top,
-    };
-    setDragOffsetState({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
-    
-    setDraggedWidget(widget);
-    setDraggedIndex(index);
-    draggedIndexRef.current = index;
-    setMousePos({ x: touch.clientX, y: touch.clientY });
-    
-    setBlockBodyScroll(true);
-    
-    const handleTouchMoveLocal = (e: TouchEvent) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      setMousePos({ x: touch.clientX, y: touch.clientY });
-      
-      const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-      const widgetElement = elements.find(el => el.hasAttribute('data-widget-index'));
-      if (widgetElement) {
-        const newIndex = parseInt(widgetElement.getAttribute('data-widget-index') || '-1');
-        if (newIndex >= 0 && newIndex !== draggedIndexRef.current) {
-          setHoverIndex(newIndex);
-          hoverIndexRef.current = newIndex;
-        }
-      }
-    };
-    
-    const handleTouchEndLocal = () => {
-      if (draggedIndexRef.current !== null && hoverIndexRef.current !== null && draggedIndexRef.current !== hoverIndexRef.current) {
-        const widgets = [...activeWidgets];
-        const [removed] = widgets.splice(draggedIndexRef.current, 1);
-        widgets.splice(hoverIndexRef.current, 0, removed);
-        setActiveWidgets(widgets);
-      }
-      
-      setDraggedWidget(null);
-      setDraggedIndex(null);
-      setHoverIndex(null);
-      draggedIndexRef.current = null;
-      hoverIndexRef.current = null;
-      
-      setBlockBodyScroll(false);
-      
-      document.removeEventListener('touchmove', handleTouchMoveLocal);
-      document.removeEventListener('touchend', handleTouchEndLocal);
-      document.removeEventListener('touchcancel', handleTouchEndLocal);
-    };
-    
-    document.addEventListener('touchmove', handleTouchMoveLocal, { passive: false });
-    document.addEventListener('touchend', handleTouchEndLocal);
-    document.addEventListener('touchcancel', handleTouchEndLocal);
-  }
-
-  function handleWidgetMouseEnter(index: number) {
-    if (draggedWidget) {
-      setHoverIndex(index);
-      hoverIndexRef.current = index;
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent, index: number) {
-    if (!customizeMode) return;
-
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (selectedWidgetIndex === index) {
-        setSelectedWidgetIndex(null);
-      } else {
-        setSelectedWidgetIndex(index);
-      }
-      return;
-    }
-
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      setSelectedWidgetIndex(null);
-      return;
-    }
-
-    if (selectedWidgetIndex === index) {
-      let newIndex = index;
-      
-      if (e.key === 'ArrowUp' && index > 0) {
-        e.preventDefault();
-        newIndex = index - 1;
-      } else if (e.key === 'ArrowDown' && index < activeWidgets.length - 1) {
-        e.preventDefault();
-        newIndex = index + 1;
-      } else if (e.key === 'ArrowLeft' && index > 0) {
-        e.preventDefault();
-        newIndex = index - 1;
-      } else if (e.key === 'ArrowRight' && index < activeWidgets.length - 1) {
-        e.preventDefault();
-        newIndex = index + 1;
-      }
-
-      if (newIndex !== index) {
-        const widgets = [...activeWidgets];
-        const [removed] = widgets.splice(index, 1);
-        widgets.splice(newIndex, 0, removed);
-        setActiveWidgets(widgets);
-        setSelectedWidgetIndex(newIndex);
-      }
-    }
-  }
-
-  function removeWidget(widgetId: string) {
-    setActiveWidgets(activeWidgets.filter(w => w.id !== widgetId));
-  }
-
-  function addWidget(widget: DashboardWidget) {
-    const id = `${widget.type}-${nextWidgetId.current++}`;
-    const newWidget = { ...widget, id };
-    setActiveWidgets([...activeWidgets, newWidget]);
-  }
-
-  // W TYM MIEJSCU WPIĘTY JEST ZWRACANY STAN Z API W MIEJSCE HARDCODED WARTOSCI
-  function renderWidgetContent(widget: DashboardWidget) {
-    const loadingStr = isDataLoading ? "..." : "0";
+  function renderWidget(widget: WidgetConfig<WidgetType>) {
+    const label = t.widgets.names[widget.type];
 
     switch (widget.type) {
-      case 'totalScans':
+      case "totalScans":
         return (
           <StatsCard
             icon="ri-search-line"
             iconColor="text-cyan-400"
             iconBgColor="bg-cyan-500/10"
-            value={widgetData?.total_scans?.toString() || loadingStr}
-            label="Total Scans"
-            trend={undefined}
+            value={count(data?.total_scans)}
+            loading={loading}
+            label={label}
           />
         );
-      case 'safeSites':
+      case "safeSites":
         return (
           <StatsCard
             icon="ri-shield-check-line"
             iconColor="text-green-400"
             iconBgColor="bg-green-500/10"
-            value={widgetData?.safe_sites?.toString() || loadingStr}
-            label="Safe Sites"
-            trend={undefined}
+            value={count(data?.safe_sites)}
+            loading={loading}
+            label={label}
           />
         );
-      case 'threats':
+      case "threats":
         return (
           <StatsCard
             icon="ri-alert-line"
             iconColor="text-red-400"
             iconBgColor="bg-red-500/10"
-            value={widgetData?.detected_threats?.toString() || loadingStr}
-            label="Detected Threats"
-            trend={undefined}
+            value={count(data?.detected_threats)}
+            loading={loading}
+            label={label}
           />
         );
-      case 'scheduled':
-        // Dla zaplanowanych testów nie ma nic w obiekcie JSON, więc zostaje statyczna atrapa, lub możesz zintegrować w innej chwili.
+      case "scheduled":
+        // The API does not report scheduled tests yet.
         return (
           <StatsCard
             icon="ri-calendar-line"
             iconColor="text-purple-400"
             iconBgColor="bg-purple-500/10"
-            value="-"
-            label="Scheduled Tests"
-            trend={undefined}
+            value={null}
+            label={label}
           />
         );
-      case 'recentScans':
+      case "recentScans":
         return (
-          <RecentScansWidget 
-             scans={widgetData?.recent_scans || []} 
-             isLoading={isDataLoading} 
+          <RecentScansWidget
+            scans={data?.recent_scans ?? []}
+            isLoading={loading}
+            error={status === "error"}
+            viewAllHref="/dashboard/scanner"
           />
         );
-      case 'topThreats':
-        // Top Threats też nie ma wsparcia z obecnego API JSON, ale to już inna para kaloszy
+      case "topThreats":
         return <TopThreatsWidget />;
       default:
         return null;
@@ -459,176 +150,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-screen xl:flex bg-zinc-200 dark:bg-zinc-950 transition-colors select-none">
-      <DashboardSidebar
-        sidebarOpen={sidebarOpen}
-        profileName={profileName}
-        onLogout={() => auth.logout()}
-        activePage="overview"
+    <DashboardShell area="dashboard" activePage="overview">
+      <WidgetBoard
+        storageKey="dashboard.widgets"
+        library={WIDGET_LIBRARY}
+        defaults={DEFAULT_WIDGETS}
+        title={t.dashboard.title}
+        description={t.dashboard.description}
+        widgetName={(type) => t.widgets.names[type]}
+        renderWidget={renderWidget}
+        error={status === "error" ? t.dashboard.loadError : null}
+        onRetry={retry}
       />
-
-      <div className="flex-1 flex flex-col min-h-screen xl:ml-0">
-        <DashboardTopBar
-          sidebarOpen={sidebarOpen}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          showSearch
-          showNotifications
-          showMessages
-        />
-
-        <main className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">Dashboard Overview</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Main activity and statistics summary
-                </p>
-              </div>
-              <button 
-                onClick={() => setCustomizeMode(!customizeMode)}
-                aria-pressed={customizeMode}
-                aria-label={customizeMode ? 'Exit customize mode' : 'Enter customize mode'}
-                className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer rounded-xl border transition-all font-medium ${
-                  customizeMode 
-                    ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 dark:bg-cyan-500/10' 
-                    : 'border-zinc-300 bg-white/85 dark:bg-zinc-900/20 dark:border-zinc-500/30 text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
-                }`}
-              >
-                <i className={`text-lg ${customizeMode ? 'ri-check-line' : 'ri-edit-line'}`}></i>
-                <span className="hidden sm:block">{customizeMode ? 'Done' : 'Customize'}</span>
-              </button>
-            </div>
-
-            <div id="widget-instructions" className="sr-only">
-              Press Enter or Space to select a widget. Use arrow keys to move the selected widget. Press Escape to deselect.
-            </div>
-            
-            {/* Wyświetlanie błędu krytycznego - jeśli chcesz */}
-            
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-4 relative" style={{ transition: 'all 0.3s ease-out' }}>
-              {displayWidgets.map((widget, index) => {
-                const isDragging = draggedIndex === activeWidgets.indexOf(widget);
-                const sizeClasses = {
-                  "1x1": "",
-                  "2x1": "col-span-2",
-                  "1x2": "row-span-2",
-                  "2x2": "col-span-2 row-span-2",
-                };
-                
-                return (
-                  <React.Fragment key={widget.id}>
-                    
-                    <div
-                      key={widget.id}
-                      data-widget-index={index}
-                      tabIndex={customizeMode ? 0 : -1}
-                      role={customizeMode ? 'button' : undefined}
-                      aria-label={customizeMode ? `${widget.type} widget. Press Enter to select, use arrow keys to move` : undefined}
-                      aria-grabbed={selectedWidgetIndex === index}
-                      aria-describedby={customizeMode ? 'widget-instructions' : undefined}
-                      className={`group relative h-full ${sizeClasses[widget.size]} ${
-                      isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-                        } ${
-                      selectedWidgetIndex === index ? 'ring-2 ring-cyan-500 ring-offset-2 ring-offset-zinc-100 dark:ring-offset-zinc-950' : ''
-                        }`}
-                        onMouseDown={(e) => handleMouseDown(e, widget, activeWidgets.indexOf(widget))}
-                        onTouchStart={(e) => handleTouchStart(e, widget, activeWidgets.indexOf(widget))}
-                        onMouseEnter={() => handleWidgetMouseEnter(index)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        style={{
-                            cursor: customizeMode ? 'move' : 'default',
-                            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            touchAction: customizeMode ? 'none' : 'auto',
-                        }}
-                        >
-                      {customizeMode && !draggedWidget && (
-                        <div className="absolute -top-2 -right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeWidget(widget.id);
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            aria-label={`Remove ${widget.type} widget`}
-                            className="cursor-pointer w-7 h-7 bg-red-500/90 hover:bg-red-500 rounded-lg flex items-center justify-center text-white shadow-lg transition-all"
-                          >
-                            <i className="ri-close-line text-sm"></i>
-                          </button>
-                        </div>
-                      )}
-                      {renderWidgetContent(widget)}
-                    </div>
-                  </React.Fragment>
-                );
-              })}
-              
-              {draggedWidget && (
-                <div
-                  className="fixed pointer-events-none z-50 opacity-80"
-                  style={{
-                    left: mousePos.x - dragOffsetState.x,
-                    top: mousePos.y - dragOffsetState.y,
-                    width: draggedWidget.size.includes('2x') 
-                      ? 'min(616px, calc(100vw - 2rem))' 
-                      : 'min(300px, calc(50vw - 1rem))',
-                  }}
-                >
-                  <div className="bg-white dark:bg-zinc-900 rounded-xl border-2 border-cyan-500 shadow-2xl">
-                    {renderWidgetContent(draggedWidget)}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {customizeMode && availableWidgets.length > 0 && (
-              <>
-                <div className="relative my-8">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-zinc-300 dark:border-zinc-800"></div>
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-zinc-100 dark:bg-zinc-950 px-4 text-sm text-zinc-600 dark:text-zinc-400 font-medium">
-                      Available Widgets
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 auto-rows-fr">
-                  {availableWidgets.map((widget) => (
-                    <div
-                      key={widget.type}
-                      onClick={() => addWidget(widget)}
-                      className={`cursor-pointer opacity-60 hover:opacity-100 hover:scale-[1.02] transition-all ${
-                        widget.size === '2x1' ? 'col-span-2' :
-                        widget.size === '1x2' ? 'row-span-2' :
-                        widget.size === '2x2' ? 'col-span-2 row-span-2' : ''
-                      }`}
-                    >
-                      <div className="h-full relative group/library">
-                        <div className="absolute inset-0 bg-cyan-500/10 rounded-xl opacity-0 group-hover/library:opacity-100 transition-opacity pointer-events-none"></div>
-                        <div className="absolute -top-2 -right-2 z-10 w-7 h-7 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg opacity-0 group-hover/library:opacity-100 transition-opacity">
-                          <i className="ri-add-line text-sm"></i>
-                        </div>
-                        {renderWidgetContent(widget)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </main>
-      </div>
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 xl:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-    </div>
+    </DashboardShell>
   );
 }

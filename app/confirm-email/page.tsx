@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import { requestEmailVerification } from "@/app/lib/authApi";
 import { ApiError } from "@/app/lib/authErrors";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
-import { SubmitButton } from "@/app/components/auth/Fields";
+import { SubmitButton, useFormFocus } from "@/app/components/auth/Fields";
 
 /**
  * Where an account waits until its address is confirmed.
@@ -20,7 +21,10 @@ import { SubmitButton } from "@/app/components/auth/Fields";
 export default function ConfirmEmailPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
+  const { formRef, trackFocus, restoreFocus } = useFormFocus<HTMLDivElement>();
   const { user, initialized, reloadUser } = useAuth();
+  const copy = t.auth.confirmEmail;
 
   const [busy, setBusy] = useState<"resend" | "check" | null>(null);
 
@@ -36,27 +40,30 @@ export default function ConfirmEmailPage() {
 
   const report = (caught: unknown) => {
     if (!(caught instanceof ApiError)) {
-      toast.error("We could not reach the server. Try again in a moment.");
+      toast.error(t.common.networkError);
       return;
     }
     toast.error(caught.message, {
       description:
         caught.is("RATE_LIMITED") && caught.retryAfter
-          ? `Try again in about ${Math.ceil(caught.retryAfter / 60)} minute(s).`
+          ? t.common.retryInMinutes(Math.ceil(caught.retryAfter / 60))
           : undefined,
     });
   };
 
+  // The pressed button is disabled while its request runs, which drops focus;
+  // `restore` puts it back. The toasts announce the outcome.
   const resend = async () => {
     if (busy) return;
     setBusy("resend");
     try {
       await requestEmailVerification();
-      toast.success("Confirmation sent", { description: `Check ${user.email}.` });
+      toast.success(copy.sent, { description: copy.sentDetail(user.email) });
     } catch (caught) {
       report(caught);
     } finally {
       setBusy(null);
+      restoreFocus();
     }
   };
 
@@ -66,59 +73,56 @@ export default function ConfirmEmailPage() {
     try {
       const fresh = await reloadUser();
       if (fresh.auth?.email_verified) {
-        toast.success("Address confirmed");
+        toast.success(copy.confirmed);
         router.replace("/dashboard");
         return;
       }
-      toast.info("Still waiting on that link.", {
-        description: "Open the one we sent, or send yourself a new one.",
-      });
+      toast.info(copy.stillWaiting, { description: copy.stillWaitingDetail });
     } catch (caught) {
       report(caught);
     } finally {
       setBusy(null);
+      restoreFocus();
     }
   };
 
   return (
     <AuthShell
-      title="Confirm your email"
-      subtitle={`We sent a link to ${user.email}.`}
+      title={copy.title}
+      subtitle={copy.subtitle(user.email)}
       footer={
         <button
           type="button"
           onClick={() => void logoutAndLeave(router)}
           className="cursor-pointer text-cyan-400 hover:text-cyan-300"
         >
-          Sign out
+          {copy.signOut}
         </button>
       }
     >
-      <div className="space-y-3.5">
+      <div ref={formRef} onFocus={trackFocus} className="space-y-3.5">
         <div className="flex items-start gap-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-zinc-300">
           <i className="ri-mail-send-line mt-0.5 text-lg text-cyan-400" aria-hidden="true" />
-          <p>
-            Open it and you are in. The link is good for a limited time, and confirming also lets us
-            reach you if you ever need to reset your password.
-          </p>
+          <p>{copy.detail}</p>
         </div>
 
         <SubmitButton
           type="button"
           onClick={recheck}
           loading={busy === "check"}
-          loadingLabel="Checking…"
+          loadingLabel={copy.checking}
         >
-          I have confirmed it
+          {copy.recheck}
         </SubmitButton>
 
         <button
           type="button"
           onClick={resend}
           disabled={busy !== null}
+          aria-busy={busy === "resend" || undefined}
           className="w-full cursor-pointer text-sm text-zinc-400 transition-colors hover:text-zinc-200 disabled:opacity-60"
         >
-          {busy === "resend" ? "Sending…" : "Send the link again"}
+          {busy === "resend" ? copy.sending : copy.resend}
         </button>
       </div>
     </AuthShell>

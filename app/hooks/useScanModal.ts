@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ApiRequestError,
   createScan,
@@ -8,12 +8,14 @@ import {
 } from "@/app/lib/api";
 import usePollScan from "./usePollScan";
 import { SCAN_CONFIG } from "@/app/config/constants";
+import { useI18n } from "@/app/i18n/I18nProvider";
 
 interface UseScanModalOptions {
   mode?: ScanAccessMode;
 }
 
 export function useScanModal(options?: UseScanModalOptions) {
+  const { t } = useI18n();
   const mode = options?.mode ?? "free";
   const pollMaxAttempts =
     mode === "free"
@@ -24,55 +26,58 @@ export function useScanModal(options?: UseScanModalOptions) {
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { startPolling, stopPolling, isPolling, setScan } = usePollScan({
+  const { startPolling, setScan } = usePollScan({
     maxAttempts: pollMaxAttempts,
     intervalMs: SCAN_CONFIG.POLL_INTERVAL,
     requestOptions: { mode },
   });
 
+  // The progress callback outlives the render it was created in, so it checks
+  // this ref rather than state: once the user has closed the modal mid-scan,
+  // the next poll must not open it again and pull focus back into it.
+  const shownWhileRunning = useRef(false);
+
   function getFriendlyScanError(error: unknown): string {
+    const messages = t.scan.errors;
+
     if (error instanceof ApiRequestError) {
       if (error.code === "SCAN_TIMEOUT") {
-        return mode === "free"
-          ? "The scan is taking longer than usual. Try again in a moment or verify that the URL is reachable."
-          : "The scan did not finish within the expected time. Please try again shortly.";
+        return mode === "free" ? messages.timeoutFree : messages.timeoutPremium;
       }
 
       if (error.code === "NETWORK_ERROR") {
-        return "Cannot connect to the scanner backend. Please check your network connection and try again.";
-      }
-
-      if (error.status === 400) {
-        return "Invalid scan request. Please verify the URL and try again.";
+        return messages.network;
       }
 
       if (error.status === 401 || error.status === 403) {
-        return "You are not authorized to run this scan. Please sign in again.";
+        return messages.unauthorized;
       }
 
       if (error.status === 404) {
-        return "Scan not found. The job may have expired or been removed.";
+        return messages.notFound;
       }
 
       if (error.status === 429) {
-        return "Too many requests. Please wait a moment and try again.";
+        return messages.rateLimited;
       }
 
       if (error.status && error.status >= 500) {
-        return "The scanner server is temporarily unavailable. Please try again shortly.";
+        return messages.server;
       }
 
-      return error.message;
-    }
-
-    if (error instanceof Error) {
-      if (/failed to fetch|network/i.test(error.message)) {
-        return "Cannot connect to the scanner backend. Check your connection and try again.";
+      // Any other refusal; the backend explains it in English only.
+      if (error.status && error.status >= 400) {
+        return messages.invalidRequest;
       }
-      return error.message;
+
+      return messages.unexpected;
     }
 
-    return "An unexpected error occurred while scanning the URL.";
+    if (error instanceof Error && /failed to fetch|network/i.test(error.message)) {
+      return messages.network;
+    }
+
+    return messages.unexpected;
   }
 
   // Block body scroll when modal is open
@@ -88,18 +93,6 @@ export function useScanModal(options?: UseScanModalOptions) {
     };
   }, [isModalOpen]);
 
-  // Close modal on Escape key press
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isModalOpen) {
-        setIsModalOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isModalOpen]);
-
   const handleScan = async (
     url: string,
     tests?: string[],
@@ -109,6 +102,7 @@ export function useScanModal(options?: UseScanModalOptions) {
     setIsScanning(true);
     setScanError(null);
     setScanResult(null);
+    shownWhileRunning.current = false;
 
     try {
       const { scanId } = await createScan(url.trim(), tests, compliance, {
@@ -119,7 +113,7 @@ export function useScanModal(options?: UseScanModalOptions) {
       // start polling, update state on progress — await to preserve spinner lifecycle
       const completedScan = await startPolling(scanId, (scan) => {
         setScanResult(scan);
-        setScan(scan as any);
+        setScan(scan);
         console.log(
           "Scan status:",
           scan.status,
@@ -131,17 +125,17 @@ export function useScanModal(options?: UseScanModalOptions) {
         if (
           scan.status === "RUNNING" &&
           scan.results.length === 0 &&
-          !isModalOpen
+          !shownWhileRunning.current
         ) {
+          shownWhileRunning.current = true;
           setIsModalOpen(true);
           setIsScanning(false);
         }
       });
 
-      setScanResult(completedScan as ScanResponse);
-      if (completedScan.status === "COMPLETED" && !isModalOpen) {
-        setIsModalOpen(true);
-      }
+      setScanResult(completedScan);
+      // Failed scans too: they used to end without any feedback.
+      setIsModalOpen(true);
     } catch (error) {
       console.error("Scan error:", error);
       setScanError(getFriendlyScanError(error));

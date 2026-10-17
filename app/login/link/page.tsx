@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 
+import { useI18n } from "@/app/i18n/I18nProvider";
 import {
   confirmOAuthLink,
   pendingOAuthLink,
@@ -13,7 +16,12 @@ import { ApiError } from "@/app/lib/authErrors";
 import { OAUTH_PROVIDERS } from "@/app/lib/oauthProviders";
 import { useToast } from "@/app/providers/ToastProvider";
 import AuthShell, { AuthShellFallback } from "@/app/components/auth/AuthShell";
-import { PasswordField, SubmitButton, TextField } from "@/app/components/auth/Fields";
+import {
+  PasswordField,
+  SubmitButton,
+  TextField,
+  useFormFocus,
+} from "@/app/components/auth/Fields";
 
 type Step = "password" | "second-factor";
 
@@ -28,6 +36,9 @@ function providerLabel(provider: string): string {
 export default function LinkAccountPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
+  const { formRef, trackFocus, focusAfterFailure, restoreFocus } = useFormFocus();
+  const codeRef = useRef<HTMLInputElement>(null);
 
   const [pending, setPending] = useState<PendingOAuthLink | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -55,16 +66,23 @@ export default function LinkAccountPage() {
     };
   }, []);
 
+  const expiredMessage = t.auth.link.expired;
   useEffect(() => {
     if (!loadFailed) return;
-    toast.error("That sign-in attempt expired. Start again.");
+    toast.error(expiredMessage);
     router.replace("/login");
-  }, [loadFailed, toast, router]);
+  }, [loadFailed, toast, router, expiredMessage]);
 
   if (!pending) return <AuthShellFallback />;
 
   const isTotp = method === "totp";
   const label = providerLabel(pending.provider);
+
+  const backToSignIn = (text: string) => (
+    <Link href="/login" replace className="text-cyan-400 hover:text-cyan-300">
+      {text}
+    </Link>
+  );
 
   // The backend only asks for confirmation when the existing account has an
   // unverified address, which today means it has a password. Reaching this
@@ -73,41 +91,32 @@ export default function LinkAccountPage() {
   if (!pending.password_set) {
     return (
       <AuthShell
-        title={`Connect ${label} to your account`}
-        subtitle={`An account already uses ${pending.email}.`}
-        footer={
-          <button
-            type="button"
-            onClick={() => router.replace("/login")}
-            className="cursor-pointer text-cyan-400 hover:text-cyan-300"
-          >
-            Back to sign in
-          </button>
-        }
+        title={t.auth.link.title(label)}
+        subtitle={t.auth.link.accountExists(pending.email)}
+        footer={backToSignIn(t.auth.backToSignIn)}
       >
         <div className="flex items-start gap-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4 text-sm text-zinc-300">
           <i className="ri-information-line mt-0.5 text-lg text-cyan-400" aria-hidden="true" />
-          <p>
-            That account has no password to confirm with. Sign in the way you normally do, then
-            connect {label} from your profile.
-          </p>
+          <p>{t.auth.link.noPassword(label)}</p>
         </div>
       </AuthShell>
     );
   }
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
 
     if (step === "password" && password.length === 0) {
-      setError("Enter your password.");
+      setError(t.errors.fields.required.password);
+      focusAfterFailure();
       return;
     }
 
     const value = isTotp ? code.replace(/\D/g, "") : code.trim().toUpperCase().replace(/-/g, "");
     if (step === "second-factor" && value.length < (isTotp ? 6 : 8)) {
-      setError(isTotp ? "Enter the six digits from your app." : "Enter one of your recovery codes.");
+      setError(isTotp ? t.auth.fields.totpRequired : t.auth.fields.recoveryCodeRequired);
+      focusAfterFailure();
       return;
     }
 
@@ -126,14 +135,15 @@ export default function LinkAccountPage() {
         return;
       }
 
-      toast.success(`${label} connected`, { description: "You can sign in with it from now on." });
+      toast.success(t.auth.link.connected(label), { description: t.auth.link.connectedDetail });
       router.replace("/dashboard");
     } catch (caught) {
       setBusy(false);
       setCode("");
 
       if (!(caught instanceof ApiError)) {
-        toast.error("We could not reach the server. Try again in a moment.");
+        toast.error(t.common.networkError);
+        restoreFocus();
         return;
       }
 
@@ -142,36 +152,45 @@ export default function LinkAccountPage() {
       if (caught.is("OAUTH_STATE_INVALID") || caught.is("RATE_LIMITED")) {
         toast.error(caught.message);
         router.replace("/login");
+        return;
       }
+      focusAfterFailure();
     }
+  };
+
+  // Rendered synchronously first, so the field is announced under its new label.
+  const switchMethod = () => {
+    flushSync(() => {
+      setMethod(isTotp ? "recovery_code" : "totp");
+      setCode("");
+      setError(null);
+    });
+    codeRef.current?.focus();
   };
 
   return (
     <AuthShell
-      title={`Connect ${label} to your account`}
+      view={step}
+      title={t.auth.link.title(label)}
       subtitle={
-        step === "password"
-          ? `An account already uses ${pending.email}. Confirm its password to join them.`
-          : "One more step — the code from your authenticator app."
+        step === "password" ? t.auth.link.passwordPrompt(pending.email) : t.auth.link.codePrompt
       }
-      footer={
-        <button
-          type="button"
-          onClick={() => router.replace("/login")}
-          className="cursor-pointer text-cyan-400 hover:text-cyan-300"
-        >
-          Cancel and sign in normally
-        </button>
-      }
+      footer={backToSignIn(t.auth.link.cancel)}
     >
-      <form onSubmit={submit} className="space-y-3.5" noValidate>
+      <form
+        ref={formRef}
+        onFocus={trackFocus}
+        onSubmit={submit}
+        className="space-y-3.5"
+        noValidate
+      >
         {step === "password" ? (
           <PasswordField
-            label="Password"
+            label={t.auth.fields.password}
             name="password"
             autoComplete="current-password"
             autoFocus
-            placeholder="Password for this account"
+            placeholder={t.auth.link.passwordPlaceholder}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={error}
@@ -179,7 +198,8 @@ export default function LinkAccountPage() {
           />
         ) : (
           <TextField
-            label={isTotp ? "Six-digit code" : "Recovery code"}
+            ref={codeRef}
+            label={isTotp ? t.auth.fields.totpCode : t.auth.fields.recoveryCode}
             inputMode={isTotp ? "numeric" : "text"}
             autoComplete="one-time-code"
             autoFocus
@@ -193,26 +213,23 @@ export default function LinkAccountPage() {
               )
             }
             error={error}
+            hint={isTotp ? undefined : t.auth.fields.recoveryCodeHint}
             className={isTotp ? "[&_input]:text-center [&_input]:tracking-[0.4em]" : ""}
             disabled={busy}
           />
         )}
 
-        <SubmitButton loading={busy} loadingLabel="Connecting…">
-          {step === "password" ? "Confirm and connect" : "Verify and connect"}
+        <SubmitButton loading={busy} loadingLabel={t.auth.link.connecting}>
+          {step === "password" ? t.auth.link.confirm : t.auth.link.verify}
         </SubmitButton>
 
         {step === "second-factor" && methods.includes("recovery_code") ? (
           <button
             type="button"
-            onClick={() => {
-              setMethod(isTotp ? "recovery_code" : "totp");
-              setCode("");
-              setError(null);
-            }}
+            onClick={switchMethod}
             className="w-full cursor-pointer text-sm text-zinc-400 transition-colors hover:text-zinc-200"
           >
-            {isTotp ? "Use a recovery code instead" : "Use your authenticator app instead"}
+            {isTotp ? t.auth.fields.useRecoveryCode : t.auth.fields.useAuthenticator}
           </button>
         ) : null}
       </form>

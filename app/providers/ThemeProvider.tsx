@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { prefersReducedMotion } from "@/app/hooks/useMediaQuery";
+
 type Theme = "dark" | "light";
 
 interface ThemeContextType {
@@ -20,6 +22,9 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>('dark');
 
   const [isAnimating, setIsAnimating] = useState(false);
+  // False until the saved theme has been read, so the placeholder "dark" never
+  // reaches the document over the class the layout's script already applied.
+  const [restored, setRestored] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -31,24 +36,31 @@ export function ThemeProvider({
     } catch {
       // ignore storage errors
     }
+    setRestored(true);
   }, []);
 
-  // keep document class and storage in sync when theme changes
+  // Keep the document class in sync with the theme. Storage is written only
+  // when the user toggles: writing it here as well saved the initial "dark"
+  // over their choice before it was read back, which reset a light theme on
+  // every reload in development (StrictMode runs mount effects twice).
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      document.documentElement.className = theme;
-      localStorage.setItem('theme', theme);
-    } catch (error) {
-      // ignore storage errors
-    }
-  }, [theme]);
+    if (!restored) return;
+    document.documentElement.className = theme;
+  }, [theme, restored]);
 
   const toggleTheme = (event?: React.MouseEvent) => {
     if (isAnimating || typeof window === 'undefined') return;
-    
+
     const newTheme = theme === "light" ? "dark" : "light";
-    
+
+    // The expanding circle sweeps across the whole screen; with "reduce
+    // motion" on, the theme simply changes.
+    if (prefersReducedMotion()) {
+      setTheme(newTheme);
+      try { localStorage.setItem("theme", newTheme); } catch {}
+      return;
+    }
+
     // Get click position or use center
     const x = event?.clientX ?? window.innerWidth / 2;
     const y = event?.clientY ?? window.innerHeight / 2;

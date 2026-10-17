@@ -1,6 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
+
+import { useI18n } from '@/app/i18n/I18nProvider';
+
+/** The hero's "Try it out" link moves focus here. */
+export const SCANNER_INPUT_ID = 'scanner-url';
 
 interface UrlScannerProps {
   onScan: (url: string) => void;
@@ -8,10 +13,14 @@ interface UrlScannerProps {
 }
 
 export default function UrlScanner({ onScan, isScanning }: UrlScannerProps) {
+  const { t } = useI18n();
+  const copy = t.landing.scanner;
+  const disclaimerId = useId();
   const [url, setUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isScanning) return;
     if (url.trim()) {
       onScan(url.trim());
     }
@@ -20,44 +29,65 @@ export default function UrlScanner({ onScan, isScanning }: UrlScannerProps) {
   return (
     <div className="w-full px-4 sm:w-4/5 max-w-4xl mx-auto">
       <form onSubmit={handleSubmit}>
-        <div className="bg-black/60 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.05)] hover:shadow-[0_0_40px_rgba(6,182,212,0.15)] font-mono">
+        <label htmlFor={SCANNER_INPUT_ID} className="sr-only">
+          {copy.inputLabel}
+        </label>
+        <div className="bg-black/60 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.05)] hover:shadow-[0_0_40px_rgba(6,182,212,0.15)] font-mono">
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-cyan-400 text-sm sm:text-base select-none">$</span>
-            <span className="text-purple-400 text-sm sm:text-base select-none">scan</span>
+            <span className="text-cyan-400 text-sm sm:text-base select-none" aria-hidden="true">$</span>
+            <span className="text-purple-400 text-sm sm:text-base select-none" aria-hidden="true">scan</span>
+            {/*
+              Read-only rather than disabled while a scan runs, here and on the
+              button below: disabling the focused control would drop keyboard
+              focus to the top of the page, and the result dialog would then
+              return focus there instead of to the scanner.
+            */}
             <input
+              id={SCANNER_INPUT_ID}
               type="text"
+              inputMode="url"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="example.com"
-              className="flex-1 px-2 py-1 bg-transparent text-white placeholder-zinc-600 focus:outline-none text-sm sm:text-base caret-cyan-400"
-              disabled={isScanning}
-              aria-label="URL to scan"
+              readOnly={isScanning}
+              aria-describedby={disclaimerId}
+              className="flex-1 min-w-0 px-2 py-1 bg-transparent text-white placeholder-zinc-400 focus:outline-none text-sm sm:text-base caret-cyan-400"
             />
 
             <button
               type="submit"
-              disabled={isScanning || !url.trim()}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-center bg-cyan-500/20 border border-cyan-500/40 rounded hover:bg-cyan-500/30 hover:border-cyan-400/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer shrink-0 text-cyan-400 text-xs sm:text-sm"
-              aria-label="Start scan"
-              title="Scan"
+              disabled={!url.trim()}
+              aria-disabled={isScanning || undefined}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-center bg-cyan-500/20 border border-cyan-500/40 rounded hover:bg-cyan-500/30 hover:border-cyan-400/60 disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed transition-all duration-200 cursor-pointer shrink-0 text-cyan-400 text-xs sm:text-sm"
             >
               {isScanning ? (
                 <>
-                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-cyan-400 border-t-transparent mr-2" />
-                  <span>SCANNING</span>
+                  <span
+                    className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-cyan-400 border-t-transparent mr-2"
+                    aria-hidden="true"
+                  />
+                  <span>{copy.scanning}</span>
                 </>
               ) : (
                 <>
                   <i className="ri-arrow-right-line text-cyan-400 mr-1" aria-hidden="true"></i>
-                  <span>RUN</span>
+                  <span>{copy.run}</span>
+                  <span className="sr-only"> {copy.runContext}</span>
                 </>
               )}
             </button>
           </div>
         </div>
-        
-        <p className="text-center text-zinc-500 text-xs sm:text-sm mt-3 px-2">
-          By scanning, you confirm that you have the right to analyze this domain
+
+        <p role="status" className="sr-only">
+          {isScanning ? copy.started(url.trim()) : ''}
+        </p>
+
+        <p id={disclaimerId} className="text-center text-zinc-400 text-xs sm:text-sm mt-3 px-2">
+          {copy.disclaimer}
         </p>
       </form>
     </div>

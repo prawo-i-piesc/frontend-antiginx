@@ -6,6 +6,10 @@
  * submission — rejecting a password the API would accept is a bug. The rest
  * are shown as advice, which follows current guidance: length and a blocklist
  * do the work, and composition rules mostly push people toward "Password1!".
+ *
+ * Rules carry ids rather than copy: the wording lives in the `password`
+ * dictionary under the same ids, so the meter can show it in the interface
+ * language.
  */
 
 export const MIN_PASSWORD_LENGTH = 12;
@@ -26,11 +30,14 @@ export interface PasswordContext {
   email?: string;
 }
 
-export interface PasswordRule {
-  id: string;
-  label: string;
-  /** Two or three words, for listing several rules on one line. */
-  short: string;
+/** Rules that block a submission. */
+export type RequiredRuleId = "length" | "obvious";
+
+/** Rules that are only advice. */
+export type SuggestionId = "case" | "digit" | "symbol";
+
+export interface PasswordRule<Id extends string = string> {
+  id: Id;
   test: (password: string, context: PasswordContext) => boolean;
 }
 
@@ -55,54 +62,42 @@ function containsPersonalDetail(password: string, context: PasswordContext): boo
 }
 
 /** Enforced by the backend; failing one of these blocks the form. */
-export const PASSWORD_RULES: PasswordRule[] = [
+export const PASSWORD_RULES: PasswordRule<RequiredRuleId>[] = [
   {
     id: "length",
-    label: `At least ${MIN_PASSWORD_LENGTH} characters`,
-    short: "more characters",
     test: (password) => password.length >= MIN_PASSWORD_LENGTH,
   },
   {
     id: "obvious",
-    label: "Too common, or contains your name or email",
-    short: "something less obvious",
     test: (password, context) =>
       password.length > 0 && !isCommon(password) && !containsPersonalDetail(password, context),
   },
 ];
 
 /** Advice only — these never stop a submission. */
-export const PASSWORD_SUGGESTIONS: PasswordRule[] = [
+export const PASSWORD_SUGGESTIONS: PasswordRule<SuggestionId>[] = [
   {
     id: "case",
-    label: "An uppercase and a lowercase letter",
-    short: "mixed case",
     test: (password) => /[a-z]/.test(password) && /[A-Z]/.test(password),
   },
   {
     id: "digit",
-    label: "A number",
-    short: "a number",
     test: (password) => /\d/.test(password),
   },
   {
     id: "symbol",
-    label: "A symbol, such as ! ? # or -",
-    short: "a symbol",
     test: (password) => /[^A-Za-z0-9]/.test(password),
   },
 ];
 
-export interface PasswordRuleResult {
-  id: string;
-  label: string;
-  short: string;
+export interface PasswordRuleResult<Id extends string = string> {
+  id: Id;
   met: boolean;
 }
 
 export interface PasswordEvaluation {
-  required: PasswordRuleResult[];
-  suggested: PasswordRuleResult[];
+  required: PasswordRuleResult<RequiredRuleId>[];
+  suggested: PasswordRuleResult<SuggestionId>[];
   /** True once every required rule passes; suggestions are ignored here. */
   satisfied: boolean;
   /** How many required rules still fail, for a one-line summary. */
@@ -113,13 +108,8 @@ export function evaluatePassword(
   password: string,
   context: PasswordContext = {},
 ): PasswordEvaluation {
-  const evaluate = (rules: PasswordRule[]) =>
-    rules.map((rule) => ({
-      id: rule.id,
-      label: rule.label,
-      short: rule.short,
-      met: rule.test(password, context),
-    }));
+  const evaluate = <Id extends string>(rules: PasswordRule<Id>[]): PasswordRuleResult<Id>[] =>
+    rules.map((rule) => ({ id: rule.id, met: rule.test(password, context) }));
 
   const required = evaluate(PASSWORD_RULES);
   const remaining = required.filter((result) => !result.met).length;

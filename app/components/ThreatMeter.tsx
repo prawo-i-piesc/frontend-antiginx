@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react';
 
+import { useI18n } from '@/app/i18n/I18nProvider';
+
 interface ThreatMeterProps {
   threatLevel: number;
 }
 
 export default function ThreatMeter({ threatLevel }: ThreatMeterProps) {
+  const { t } = useI18n();
+  const copy = t.landing.threatMeter;
   const [animatedLevel, setAnimatedLevel] = useState(0);
 
   useEffect(() => {
@@ -28,10 +32,10 @@ export default function ThreatMeter({ threatLevel }: ThreatMeterProps) {
     return 'from-red-400 to-red-600';
   };
 
-  const getText = (level: number) => {
-    if (level < 30) return 'Bezpieczne';
-    if (level < 70) return 'Ostrożnie';
-    return 'Niebezpieczne';
+  const getVerdict = (level: number) => {
+    if (level < 30) return copy.verdicts.safe;
+    if (level < 70) return copy.verdicts.caution;
+    return copy.verdicts.danger;
   };
 
   const radius = 120;
@@ -43,7 +47,8 @@ export default function ThreatMeter({ threatLevel }: ThreatMeterProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative">
+      {/* One image for assistive technology: the count-up and the ring are only visual. */}
+      <div className="relative" role="img" aria-label={copy.label(Math.round(threatLevel), getVerdict(threatLevel))}>
         <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
           <circle stroke="#374151" fill="transparent" strokeWidth={strokeWidth} r={normalizedRadius} cx={radius} cy={radius} />
           <circle
@@ -67,24 +72,24 @@ export default function ThreatMeter({ threatLevel }: ThreatMeterProps) {
           <div className={`text-5xl font-bold bg-linear-to-br ${getGradientColor(threatLevel)} bg-clip-text text-transparent`}>
             {Math.round(animatedLevel)}%
           </div>
-          <div className="text-gray-300 font-semibold text-lg mt-2">{getText(threatLevel)}</div>
+          <div className="text-gray-300 font-semibold text-lg mt-2">{getVerdict(threatLevel)}</div>
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-center space-x-8">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg"></div>
-          <span className="text-sm font-medium text-gray-300">0-29% Bezpieczne</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-yellow-500 rounded-full shadow-lg"></div>
-          <span className="text-sm font-medium text-gray-300">30-69% Średnie</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-red-500 rounded-full shadow-lg"></div>
-          <span className="text-sm font-medium text-gray-300">70-100% Wysokie</span>
-        </div>
-      </div>
+      <ul className="mt-8 flex items-center justify-center space-x-8">
+        <li className="flex items-center space-x-2">
+          <span className="w-4 h-4 bg-green-500 rounded-full shadow-lg" aria-hidden="true"></span>
+          <span className="text-sm font-medium text-gray-300">{copy.legend.low}</span>
+        </li>
+        <li className="flex items-center space-x-2">
+          <span className="w-4 h-4 bg-yellow-500 rounded-full shadow-lg" aria-hidden="true"></span>
+          <span className="text-sm font-medium text-gray-300">{copy.legend.medium}</span>
+        </li>
+        <li className="flex items-center space-x-2">
+          <span className="w-4 h-4 bg-red-500 rounded-full shadow-lg" aria-hidden="true"></span>
+          <span className="text-sm font-medium text-gray-300">{copy.legend.high}</span>
+        </li>
+      </ul>
     </div>
   );
 }
