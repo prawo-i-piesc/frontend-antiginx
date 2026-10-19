@@ -4,7 +4,7 @@ const meta: Messages["meta"] = {
   defaultTitle: "Antiginx – skaner bezpieczeństwa stron",
   titleTemplate: "%s · Antiginx",
   description:
-    "Skaner bezpieczeństwa stron internetowych oparty na sztucznej inteligencji i kompleksowych algorytmach analizy zagrożeń.",
+    "Skaner bezpieczeństwa stron internetowych: szyfrowanie, nagłówki bezpieczeństwa, ciasteczka, ujawnione wersje oprogramowania i oznaki phishingu.",
 
   titles: {
     pricing: "Cennik",

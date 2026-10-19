@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import * as motion from 'framer-motion/client';
 
+import { PRIMARY_BUTTON } from './components/ui/buttonStyles';
 import { MAIN_CONTENT_ID } from './components/ui/SkipLink';
 import { getMessages } from './i18n/server';
 
@@ -65,7 +66,7 @@ export default async function NotFound() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.18 }}>
           <Link
             href="/"
-            className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-cyan-700 text-white rounded-full hover:bg-cyan-800 transition-all duration-200 whitespace-nowrap font-semibold text-sm sm:text-base shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_rgba(6,182,212,0.35)]"
+            className={`inline-block px-6 sm:px-8 py-2.5 sm:py-3 rounded-full border transition-colors duration-200 whitespace-nowrap font-semibold text-sm sm:text-base ${PRIMARY_BUTTON}`}
           >
             {copy.home}
           </Link>

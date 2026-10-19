@@ -3,7 +3,7 @@ const meta = {
   defaultTitle: "Antiginx – website security scanner",
   titleTemplate: "%s · Antiginx",
   description:
-    "Website security scanner powered by artificial intelligence and comprehensive threat analysis algorithms.",
+    "Website security scanner: encryption, security headers, cookies, exposed software versions and the signs of a phishing site.",
 
   titles: {
     pricing: "Pricing",

@@ -1,91 +1,100 @@
-/** The public pricing page. Amounts stay in dollars in every language. */
+/**
+ * The public pricing page. Amounts stay in dollars in every language.
+ *
+ * Plans describe what each tier includes as the product is planned: the free
+ * account has today's features, Pro adds the scheduled scans, higher limits
+ * and every test, Enterprise a private instance. No payment provider is wired
+ * up yet, so nothing here promises payment methods, trials or billing terms.
+ */
 const pricing = {
-  /** One sentence in three styled parts. */
-  title: {
-    lead: "Simple,",
-    highlight: "transparent",
-    tail: "pricing",
-  },
-  intro: "Choose the perfect plan for your needs. Always know what you’ll pay.",
+  title: "Pricing",
+  intro:
+    "Scanning a site needs no account. A free account keeps your scans in one place; Pro gives you every test, premium ones included, and scans your domains on a schedule.",
 
   plansHeading: "Plans",
-  mostPopular: "Most popular",
   perMonth: "/month",
+  /** Shown over the extra features of the higher plans. */
+  plus: (plan: string) => `Everything in ${plan}, plus:`,
 
   plans: {
     free: {
       name: "Free",
-      description: "Perfect for personal use and testing",
-      features: ["10 scans per day", "Basic threat detection", "Email support", "Community access", "Basic reports"],
-      cta: "Get started",
+      price: "$0",
+      description: "Your scans in one place.",
+      features: [
+        "Core set of tests",
+        "Choosing which tests to run",
+        "Scan history and dashboard",
+        "Threat level charts over time",
+        "Downloadable report",
+      ],
+      cta: "Create a free account",
     },
     pro: {
       name: "Pro",
-      description: "Best for professionals and small teams",
-      features: [
-        "Unlimited scans",
-        "Advanced threat detection",
-        "Priority support 24/7",
-        "API access",
-        "Detailed analytics",
-        "Custom alerts",
-        "Export reports (PDF/CSV)",
-      ],
-      cta: "Start free trial",
+      price: "$10",
+      description: "For sites worth checking regularly.",
+      features: ["Access to every test, premium ones included", "Scans on a schedule", "Higher scan limits"],
+      cta: "Choose Pro",
     },
     enterprise: {
       name: "Enterprise",
-      description: "For large organizations with custom needs",
-      features: [
-        "Everything in Pro",
-        "Dedicated account manager",
-        "Custom integrations",
-        "SLA guarantee",
-        "On-premise deployment",
-        "Advanced security features",
-        "Custom training & onboarding",
-      ],
-      cta: "Contact sales",
-      /** Shown in place of an amount, with `period` after it in smaller type. */
+      /** Shown in place of an amount. */
       price: "Custom",
-      period: "",
+      description: "For organisations that care about privacy.",
+      features: [
+        "A private instance just for your organisation",
+        "Control over how long results are kept",
+        "Limits tailored to your organisation",
+      ],
+      cta: "Get in touch",
+      /** Subject of the e-mail the button starts. */
+      subject: "Antiginx Enterprise",
     },
   },
 
+  /** The small piece of the app above each plan, showing what it adds. */
+  art: {
+    schedule: "Schedule",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    premium: "Premium tests",
+    unlocked: "unlocked",
+    instance: "Private instance",
+    org: "your-company",
+    retention: "keep results",
+    retentionValue: "30 days",
+    limits: "scan limits",
+    limitsValue: "tailored",
+  },
+
   faq: {
-    title: {
-      lead: "Frequently asked",
-      highlight: "questions",
-    },
+    title: "Questions",
+    docs: "Documentation",
     items: [
       {
-        question: "Can I switch plans later?",
+        question: "Do I need an account to scan a site?",
         answer:
-          "Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.",
+          "No. The scanner on the home page works without signing up: enter an address, the result opens right away, and you can download it as a report. An account helps when you want to come back to your results.",
       },
       {
-        question: "What payment methods do you accept?",
-        answer: "We accept all major credit cards (Visa, Mastercard, American Express) and PayPal.",
-      },
-      {
-        question: "What happens after my trial ends?",
+        question: "How is Pro different from the free account?",
         answer:
-          "After your trial ends, you’ll automatically be moved to the Free plan unless you choose to subscribe to a paid plan.",
+          "Pro gives you access to every test, premium ones included, scans the domains you pick on a schedule, and comes with higher scan limits.",
       },
       {
-        question: "Can I cancel anytime?",
-        answer: "Absolutely. You can cancel your subscription at any time with no penalties or fees.",
+        question: "Can I scan any site?",
+        answer: "Only scan sites you have the right to: your own, or ones you have permission to scan.",
+      },
+      {
+        question: "What happens to my scan results?",
+        answer:
+          "Scans from your account go to the history in your dashboard. On the Enterprise plan they run on a private instance just for your organisation, and how long results are kept is agreed one to one.",
       },
     ],
   },
 
   cta: {
-    title: {
-      lead: "Ready to",
-      highlight: "get started?",
-    },
-    body: "Start protecting your websites today with our free plan. No credit card required.",
-    trial: "Start free trial",
+    note: "The scanner on the home page works without an account.",
     scanner: "Try the scanner",
   },
 };

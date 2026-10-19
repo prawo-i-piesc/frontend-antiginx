@@ -23,3 +23,12 @@ export const SCAN_CONFIG = {
  * client bundle at build time and cannot be overridden per environment, which
  * would force one image build per environment.
  */
+
+/** Engine documentation: what every test checks and how it reaches a verdict. */
+export const DOCS_URL = 'https://prawo-i-piesc.github.io/engine-antiginx/';
+
+/** The GitHub organization with all of the project's repositories. */
+export const GITHUB_URL = 'https://github.com/prawo-i-piesc';
+
+/** Where the Enterprise plan's "Get in touch" button writes to. */
+export const CONTACT_EMAIL = 'kontakt@antiginx.pl';

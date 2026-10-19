@@ -1,96 +1,90 @@
 import type { Messages } from "@/app/i18n/messages/en";
 
 const pricing: Messages["pricing"] = {
-  title: {
-    lead: "Prosty,",
-    highlight: "przejrzysty",
-    tail: "cennik",
-  },
-  intro: "Wybierz plan dopasowany do potrzeb. Zawsze wiesz, ile zapłacisz.",
+  title: "Cennik",
+  intro:
+    "Do skanu strony nie potrzebujesz konta. Darmowe konto trzyma Twoje skany w jednym miejscu, a Pro daje dostęp do wszystkich testów, w tym premium, i skanuje Twoje domeny według harmonogramu.",
 
   plansHeading: "Plany",
-  mostPopular: "Najpopularniejszy",
   perMonth: "/miesiąc",
+  plus: (plan) => `Wszystko z ${plan}, a do tego:`,
 
   plans: {
     free: {
       name: "Free",
-      description: "Idealny do użytku osobistego i testów",
+      price: "$0",
+      description: "Twoje skany w jednym miejscu.",
       features: [
-        "10 skanów dziennie",
-        "Podstawowe wykrywanie zagrożeń",
-        "Pomoc przez e-mail",
-        "Dostęp do społeczności",
-        "Podstawowe raporty",
+        "Podstawowy zestaw testów",
+        "Wybór testów do skanu",
+        "Historia skanów i pulpit",
+        "Wykresy poziomu zagrożenia w czasie",
+        "Raport do pobrania",
       ],
-      cta: "Zacznij teraz",
+      cta: "Załóż darmowe konto",
     },
     pro: {
       name: "Pro",
-      description: "Najlepszy dla profesjonalistów i małych zespołów",
-      features: [
-        "Nielimitowane skany",
-        "Zaawansowane wykrywanie zagrożeń",
-        "Priorytetowa pomoc 24/7",
-        "Dostęp do API",
-        "Szczegółowe statystyki",
-        "Własne alerty",
-        "Eksport raportów (PDF/CSV)",
-      ],
-      cta: "Rozpocznij okres próbny",
+      price: "$10",
+      description: "Dla stron, które warto sprawdzać regularnie.",
+      features: ["Dostęp do wszystkich testów, w tym premium", "Skany według harmonogramu", "Wyższe limity skanów"],
+      cta: "Wybierz Pro",
     },
     enterprise: {
       name: "Enterprise",
-      description: "Dla dużych organizacji o nietypowych potrzebach",
+      price: "Indywidualnie",
+      description: "Dla organizacji, którym zależy na prywatności.",
       features: [
-        "Wszystko, co w planie Pro",
-        "Dedykowany opiekun klienta",
-        "Integracje na zamówienie",
-        "Gwarancja SLA",
-        "Wdrożenie on-premise",
-        "Zaawansowane funkcje bezpieczeństwa",
-        "Szkolenia i wdrożenie na miarę",
+        "Prywatna instancja tylko dla Twojej organizacji",
+        "Kontrola nad czasem przechowywania wyników",
+        "Limity dopasowane do organizacji",
       ],
-      cta: "Skontaktuj się z nami",
-      price: "Wycena",
-      period: "indywidualna",
+      cta: "Napisz do nas",
+      subject: "Antiginx Enterprise",
     },
   },
 
+  art: {
+    schedule: "Harmonogram",
+    days: ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"],
+    premium: "Testy premium",
+    unlocked: "odblokowane",
+    instance: "Prywatna instancja",
+    org: "twoja-firma",
+    retention: "przechowywanie wyników",
+    retentionValue: "30 dni",
+    limits: "limity skanów",
+    limitsValue: "dopasowane",
+  },
+
   faq: {
-    title: {
-      lead: "Najczęściej zadawane",
-      highlight: "pytania",
-    },
+    title: "Pytania",
+    docs: "Dokumentacja",
     items: [
       {
-        question: "Czy mogę później zmienić plan?",
+        question: "Czy do skanu potrzebuję konta?",
         answer:
-          "Tak, w każdej chwili możesz przejść na wyższy lub niższy plan. Zmiana obowiązuje od następnego okresu rozliczeniowego.",
+          "Nie. Skaner na stronie głównej działa bez rejestracji: wpisujesz adres, wynik otwiera się od razu i możesz go pobrać jako raport. Konto przydaje się, gdy chcesz wracać do wyników.",
       },
       {
-        question: "Jakie metody płatności akceptujecie?",
-        answer: "Akceptujemy wszystkie popularne karty płatnicze (Visa, Mastercard, American Express) oraz PayPal.",
-      },
-      {
-        question: "Co się stanie po zakończeniu okresu próbnego?",
+        question: "Czym Pro różni się od darmowego konta?",
         answer:
-          "Po zakończeniu okresu próbnego automatycznie przejdziesz na plan Free, chyba że wykupisz plan płatny.",
+          "Pro daje dostęp do wszystkich testów, w tym premium, skanuje wybrane domeny według harmonogramu i ma wyższe limity skanów.",
       },
       {
-        question: "Czy mogę zrezygnować w dowolnym momencie?",
-        answer: "Oczywiście. Subskrypcję możesz anulować w każdej chwili, bez kar i dodatkowych opłat.",
+        question: "Czy mogę skanować dowolną stronę?",
+        answer: "Skanuj tylko strony, do których masz prawo: swoje albo te, na których skanowanie masz zgodę.",
+      },
+      {
+        question: "Co dzieje się z wynikami moich skanów?",
+        answer:
+          "Skany z konta trafiają do historii w Twoim pulpicie. W planie Enterprise działają na prywatnej instancji tylko dla Twojej organizacji, a czas przechowywania wyników ustalamy indywidualnie.",
       },
     ],
   },
 
   cta: {
-    title: {
-      lead: "Zacznij",
-      highlight: "już dziś",
-    },
-    body: "Zabezpiecz strony w darmowym planie. Karta płatnicza nie jest wymagana.",
-    trial: "Rozpocznij okres próbny",
+    note: "Skaner na stronie głównej działa bez konta.",
     scanner: "Wypróbuj skaner",
   },
 };

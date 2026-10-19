@@ -3,11 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef } from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { useI18n } from "@/app/i18n/I18nProvider";
 import LanguageSwitcher from "@/app/components/ui/LanguageSwitcher";
 import { MAIN_CONTENT_ID } from "@/app/components/ui/SkipLink";
+import { entrance } from "@/app/components/ui/entrance";
 
 /**
  * Shared frame for every auth screen.
@@ -16,28 +17,6 @@ import { MAIN_CONTENT_ID } from "@/app/components/ui/SkipLink";
  * the same page with a different form in the middle, so the backdrop, logo and
  * card live here instead of being copied into each route.
  */
-
-/**
- * Same fade-and-rise the landing page opens with, toned down: the auth card is
- * a couple of hundred pixels tall, so it does not need the travel a hero does.
- * The three blocks come in one after another rather than as one slab.
- */
-function entrance(reduced: boolean | null): { container: Variants; item: Variants } {
-  return {
-    container: {
-      hidden: {},
-      show: { transition: { staggerChildren: reduced ? 0 : 0.07, delayChildren: reduced ? 0 : 0.04 } },
-    },
-    item: {
-      hidden: reduced ? { opacity: 0 } : { opacity: 0, y: 12 },
-      show: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: reduced ? 0.15 : 0.35, ease: "easeOut" },
-      },
-    },
-  };
-}
 
 const PARTICLES = [
   { left: "15%", delay: "-8s", duration: "18s" },

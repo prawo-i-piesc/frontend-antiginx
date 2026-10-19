@@ -12,28 +12,35 @@ const landing: Messages["landing"] = {
 
   hero: {
     title: {
-      lead: "Sprawdź",
-      highlight: "bezpieczeństwo strony,",
-      tail: "zanim ją odwiedzisz",
+      lead: "Zobacz to, czego strona",
+      highlight: "Ci nie pokazuje.",
     },
     subtitle:
-      "Najbardziej zaawansowany skaner bezpieczeństwa stron internetowych, oparty na sztucznej inteligencji i kompleksowych algorytmach analizy zagrożeń.",
-    tryIt: "Wypróbuj za darmo!",
-    learnMore: "Dowiedz się więcej",
-    stats: {
-      accuracy: { value: "99,8%", label: "Skuteczność" },
-      scans: { value: "30,0+", label: "Skany" },
-      threats: { value: "150+", label: "Zablokowane zagrożenia" },
-      speed: { value: "<2 s", label: "Czas skanu" },
+      "Nagłówki, certyfikat, ciasteczka, DNS i ślady phishingu: wszystko, co przeglądarka chowa przed Tobą, sprawdzone w jednym skanie.",
+    tryIt: "Wypróbuj za darmo",
+    learnMore: "Jak to działa",
+    xray: {
+      label:
+        "Ilustracja: skaner prześwietla przykładowy sklep internetowy i odsłania jego nagłówki HTTP, certyfikat TLS, ciasteczka i rekordy DNS.",
+      pause: "Zatrzymaj prześwietlanie",
+      resume: "Wznów prześwietlanie",
+      validFor: (days) => `ważny jeszcze ${days} dni`,
+      registered: "rejestracja",
+      findings: {
+        server: "Ujawniona wersja nginx",
+        hsts: "Brak nagłówka HSTS",
+        tls: "TLS 1.3, ważny certyfikat",
+        domain: "Domena z 2009 roku",
+      },
     },
   },
 
   scanner: {
-    title: "Wypróbuj!",
+    title: "Wypróbuj za darmo",
     intro: {
-      before: "Sprawdź ",
-      emphasis: "za darmo",
-      after: ", czy strona jest bezpieczna, zanim na nią wejdziesz.",
+      before: "Wpisz adres i zobacz, jak wypada strona, ",
+      emphasis: "bez zakładania konta",
+      after: ". Wynik otworzy się tutaj.",
     },
     inputLabel: "Adres strony do przeskanowania",
     run: "URUCHOM",
@@ -43,99 +50,115 @@ const landing: Messages["landing"] = {
     disclaimer: "Uruchamiając skanowanie, potwierdzasz, że masz prawo analizować tę domenę.",
   },
 
-  security: {
-    title: {
-      lead: "Praktyczne bezpieczeństwo,",
-      highlight: "na którym możesz polegać",
+  checks: {
+    title: "Co sprawdza skan",
+    body: "Od certyfikatu TLS po wiek domeny: co sprawdzają testy, obszar po obszarze.",
+    more: "i więcej",
+    growing: "Lista stale rośnie: nowe testy dochodzą regularnie.",
+    fullList: "Pełna lista w dokumentacji",
+    art: {
+      lookalike: "rn udaje m",
+      registeredAgo: (days) => `zarejestrowana ${days} dni temu`,
+      cve: "znane podatności",
+      exposed: "wypisane w sitemap.xml",
     },
-    body: "Stawiamy na rozsądne, sprawdzone praktyki – szyfrowane połączenia, ostrożne obchodzenie się z danymi i regularne kontrole, dzięki którym wszystko jest aktualne.",
-    points: {
+    groups: {
       encryption: {
-        title: "Szyfrowane połączenia",
-        body: "Cały ruch jest szyfrowany podczas przesyłania (HTTPS/TLS).",
+        title: "Szyfrowanie",
+        body: "Czy połączenie idzie przez TLS, czy strona zabrania przeglądarkom wracać do zwykłego HTTP i jak mocny jest jej certyfikat.",
       },
-      updates: {
-        title: "Regularne aktualizacje",
-        body: "Rutynowo sprawdzamy zabezpieczenia i szybko instalujemy aktualizacje.",
+      headers: {
+        title: "Nagłówki bezpieczeństwa",
+        body: "Polityki, które blokują wstrzyknięte skrypty, osadzanie strony w cudzych ramkach, dostęp do kamery czy mikrofonu i wyciek adresu strony do innych serwisów.",
       },
-      retention: {
-        title: "Minimum przechowywanych danych",
-        body: "Przechowujemy tylko to, co niezbędne, i nie gromadzimy zbędnych danych użytkowników.",
+      cookies: {
+        title: "Ciasteczka i sesja",
+        body: "Czy każde ciasteczko ma flagi HttpOnly, Secure i SameSite, które chronią sesję przed skryptami i podsłuchem.",
       },
-    },
-    highlights: {
-      tls: { value: "TLS", label: "Szyfrowane połączenia" },
-      reliability: { value: "99%+", label: "Niezawodność od podstaw" },
-      monitoring: { value: "24/7", label: "Monitorowanie" },
-      reviews: { value: "Kontrole", label: "Regularne przeglądy bezpieczeństwa" },
-    },
-  },
-
-  features: {
-    title: {
-      lead: "Kompleksowa",
-      tail: "ochrona przed zagrożeniami",
-    },
-    body: "Korzystamy z najnowszych technologii AI i uczenia maszynowego, aby wykrywać złośliwe oprogramowanie, phishing, podejrzane treści i inne zagrożenia.",
-    cards: {
-      detection: {
-        title: "Wykrywanie wielu zagrożeń",
-        body: "Kompleksowe skanowanie w czasie rzeczywistym pod kątem złośliwego oprogramowania, phishingu, podejrzanych skryptów i innych zagrożeń.",
-        points: [
-          "Wykrywanie złośliwego oprogramowania i wirusów",
-          "Rozpoznawanie stron phishingowych",
-          "Analiza podejrzanych skryptów",
-        ],
+      exposure: {
+        title: "Ujawnione informacje",
+        body: "Wersje oprogramowania zdradzane w nagłówkach, sprawdzane w bazie podatności NIST, ścieżki, które mapa witryny podsuwa wyszukiwarkom, i CDN albo WAF stojący przed stroną.",
       },
-      intelligence: {
-        title: "Globalna wiedza o zagrożeniach",
-        body: "Stale aktualizowana baza tysięcy znanych złośliwych stron, zainfekowanych domen i zagrożeń z całego świata.",
-        points: [
-          "Bieżące źródła informacji o zagrożeniach",
-          "Współpraca z dostawcami zabezpieczeń",
-          "Wymiana wiedzy o zagrożeniach w społeczności",
-        ],
-      },
-      ai: {
-        title: "AI i uczenie maszynowe",
-        body: "Sztuczna inteligencja wytrenowana na milionach próbek wykrywa nowe, wcześniej nieznane zagrożenia i wzorce ataków.",
-        points: ["Zaawansowane wykrywanie zagrożeń", "Analiza behawioralna", "Wykrywanie zagrożeń typu zero-day"],
+      phishing: {
+        title: "Oznaki phishingu",
+        body: "Domeny podszywające się pod znane marki, wiek i dane rejestracji domeny, favikona pożyczona z innej strony i celowo zaciemniony JavaScript.",
       },
     },
   },
 
-  cta: {
-    title: "Chcesz pełnej ochrony?",
-    body: "Dołącz do tysięcy firm, które już chronią się przed zagrożeniami dzięki Antiginx.",
-    start: "Zacznij za darmo",
-    expert: "Porozmawiaj z ekspertem",
+  how: {
+    title: "Jak działa skan",
+    body: "Silnik dzieli skan na trzy tory i uruchamia je równolegle, więc nawet gdy strona zablokuje skaner, testy adresu i domeny i tak dają wynik.",
+    lanes: {
+      address: { tag: "adres", note: "wystarczy im sam adres i DNS" },
+      response: { tag: "strona", note: "czytają odpowiedź strony" },
+      own: { tag: "połączenie", note: "otwierają własne: certyfikat, mapa witryny" },
+    },
+    terminal: {
+      title: "antiginx · skan",
+      label:
+        "Przykładowy skan shop.example: testy adresu, DNS i certyfikatu przechodzą; strona nie wysyła nagłówka HSTS, zdradza wersję nginx i ustawia ciasteczko bez SameSite. Poziom zagrożenia 38%, ostrożnie.",
+      queued: "zadanie w kolejce silnika",
+      fetch: "GET / → 200",
+      cookie: "brak SameSite",
+      more: "…i kolejne testy",
+      done: "gotowe",
+      threat: "poziom zagrożenia",
+      replay: "Odtwórz ponownie",
+    },
+    steps: {
+      submit: {
+        title: "Wpisujesz adres",
+        body: "Tutaj, żeby szybko sprawdzić stronę, albo w pulpicie, gdzie wybierasz, które testy uruchomić.",
+      },
+      run: {
+        title: "Silnik uruchamia testy",
+        body: "Trzema torami naraz. Tor strony czeka na jej odpowiedź, pozostałe dwa ruszają od razu:",
+      },
+      result: {
+        title: "Dostajesz wynik",
+        body: "Każdy test zwraca werdykt, poziom zagrożenia i szczegóły, z których powstaje ogólny poziom zagrożenia. Całość pobierzesz jako raport.",
+      },
+    },
+  },
+
+  account: {
+    title: "Więcej po zalogowaniu",
+    body: "Skaner powyżej to szybki test. W pulpicie dostajesz:",
+    items: {
+      pick: "Wybór testów do każdego skanu",
+      schedule: "Skany uruchamiane według harmonogramu",
+      history: "Historię skanów i podsumowanie w pulpicie",
+      charts: "Wykresy poziomu zagrożenia domen w czasie",
+      security: "Konto chronione 2FA i kluczami dostępu",
+    },
+    more: "I wiele więcej",
+    moreContext: "zobacz cennik",
+    register: "Załóż konto",
+    dashboard: "Przejdź do pulpitu",
+    pricing: "Zobacz cennik",
+    mock: {
+      dashboard: "Pulpit",
+      chart: "Poziom zagrożenia · shop.example",
+      recent: "Ostatnie skany",
+      today: "dziś",
+      yesterday: "wczoraj",
+      daysAgo: (days) => `${days} dni temu`,
+      schedule: "Harmonogram",
+      weekly: "Co tydzień · pon. 06:00",
+    },
   },
 
   footer: {
-    tagline: "Zaawansowany skaner bezpieczeństwa stron oparty na AI, który chroni użytkowników przed zagrożeniami w sieci.",
-    columns: {
-      product: "Produkt",
-      company: "Firma",
-      support: "Wsparcie",
-      legal: "Informacje prawne",
-    },
+    tagline: "Skaner bezpieczeństwa stron internetowych.",
+    nav: "Stopka",
     links: {
-      features: "Funkcje",
-      api: "API",
-      docs: "Dokumentacja",
       pricing: "Cennik",
-      about: "O nas",
-      blog: "Blog",
-      careers: "Kariera",
-      help: "Pomoc",
-      contact: "Kontakt",
-      status: "Status usług",
-      privacy: "Prywatność",
-      terms: "Regulamin",
-      cookies: "Pliki cookie",
+      docs: "Dokumentacja",
+      github: "GitHub",
     },
-    social: (network) => `Antiginx w serwisie ${network}`,
-    copyright: (year) => `© ${year} Antiginx. Wszelkie prawa zastrzeżone.`,
+    license: "Licencja MIT",
+    copyright: (year) => `© ${year} Antiginx`,
   },
 
   threatMeter: {
