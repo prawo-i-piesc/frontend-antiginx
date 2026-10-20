@@ -1,6 +1,10 @@
 /**
  * The public landing page: site header and footer (shared with the pricing
- * page), hero, free scanner and the marketing sections. Also the threat meter.
+ * page), hero, free scanner and the sections describing what a scan does.
+ * Also the threat meter.
+ *
+ * Everything here has to hold for the product as it is: the tests the engine
+ * runs, what an account adds, what the scanner does not do.
  */
 const landing = {
   header: {
@@ -13,31 +17,39 @@ const landing = {
   },
 
   hero: {
-    /** One sentence in three styled parts; the line break falls before `tail`. */
+    /** One sentence; `highlight` is shown in colour. */
     title: {
-      lead: "Scan",
-      highlight: "website security",
-      tail: "before you visit",
+      lead: "See what a website",
+      highlight: "doesn’t show you.",
     },
     subtitle:
-      "The most advanced website security scanner powered by artificial intelligence and comprehensive threat analysis algorithms.",
-    tryIt: "Try it out for free!",
-    learnMore: "Learn more",
-    stats: {
-      accuracy: { value: "99.8%", label: "Accuracy" },
-      scans: { value: "30.0+", label: "Scans" },
-      threats: { value: "150+", label: "Threats blocked" },
-      speed: { value: "<2s", label: "Scan time" },
+      "Headers, certificate, cookies, DNS and the traces of phishing: everything your browser keeps out of sight, checked in a single scan.",
+    tryIt: "Try it for free",
+    learnMore: "How it works",
+    /** The illustration of a scan next to the scanner. */
+    xray: {
+      label:
+        "Illustration: the scanner X-raying an example online shop, revealing its HTTP headers, TLS certificate, cookies and DNS records.",
+      pause: "Pause the X-ray",
+      resume: "Resume the X-ray",
+      validFor: (days: number) => `valid for ${days} more days`,
+      registered: "registered",
+      findings: {
+        server: "nginx version exposed",
+        hsts: "No HSTS header",
+        tls: "TLS 1.3, valid certificate",
+        domain: "Domain registered in 2009",
+      },
     },
   },
 
   scanner: {
-    title: "Try it out!",
+    title: "Try it for free",
     /** `emphasis` is shown in bold between the two halves. */
     intro: {
-      before: "Check a website for potential threats before visiting ",
-      emphasis: "for free",
-      after: ".",
+      before: "Enter an address and see how the site does, ",
+      emphasis: "no account needed",
+      after: ". The result opens right here.",
     },
     inputLabel: "Website address to scan",
     run: "RUN",
@@ -48,92 +60,121 @@ const landing = {
     disclaimer: "By scanning, you confirm that you have the right to analyze this domain.",
   },
 
-  security: {
-    title: {
-      lead: "Practical security",
-      highlight: "you can rely on",
+  checks: {
+    title: "What a scan checks",
+    body: "From the TLS certificate to the age of the domain: what the tests look at, area by area.",
+    /** Read in place of the "…" that ends each area's list of tests. */
+    more: "and more",
+    growing: "The list keeps growing: new tests are added regularly.",
+    fullList: "Full list in the documentation",
+    /** Words in the small illustration above each area. */
+    art: {
+      lookalike: "rn passes for m",
+      registeredAgo: (days: number) => `registered ${days} days ago`,
+      cve: "known vulnerabilities",
+      exposed: "listed in sitemap.xml",
     },
-    body: "We focus on sensible, well-tested security practices — secure connections, careful handling of data, and regular checks to keep things up to date.",
-    points: {
+    groups: {
       encryption: {
-        title: "Encrypted connections",
-        body: "All traffic is encrypted in transit (HTTPS/TLS).",
+        title: "Encryption",
+        body: "Whether the connection uses TLS, whether the site tells browsers never to fall back to plain HTTP, and how strong its certificate is.",
       },
-      updates: {
-        title: "Regular updates",
-        body: "We run routine security checks and apply updates promptly.",
+      headers: {
+        title: "Security headers",
+        body: "The policies that stop injected scripts, framing by other sites, access to the camera or microphone, and the page address leaking to third parties.",
       },
-      retention: {
-        title: "Minimal data retention",
-        body: "We keep only what’s necessary and avoid storing unnecessary user data.",
+      cookies: {
+        title: "Cookies and sessions",
+        body: "Whether every cookie carries the HttpOnly, Secure and SameSite flags that keep a session away from scripts and eavesdroppers.",
       },
-    },
-    highlights: {
-      tls: { value: "TLS", label: "Encrypted connections" },
-      reliability: { value: "99%+", label: "Designed for reliability" },
-      monitoring: { value: "24/7", label: "Monitoring" },
-      reviews: { value: "Checks", label: "Regular security reviews" },
-    },
-  },
-
-  features: {
-    title: {
-      lead: "Comprehensive",
-      tail: "security protection",
-    },
-    body: "We use the latest AI and machine learning technologies to detect malware, phishing, suspicious content and other security threats.",
-    cards: {
-      detection: {
-        title: "Multi-threat detection",
-        body: "Comprehensive scanning for malware, phishing, suspicious scripts, and other security threats in real time.",
-        points: ["Malware and virus detection", "Phishing site identification", "Suspicious script analysis"],
+      exposure: {
+        title: "Exposed information",
+        body: "Software versions the headers give away, looked up in the NIST vulnerability database, paths the sitemap hands to search engines, and the CDN or WAF in front of the site.",
       },
-      intelligence: {
-        title: "Global threat intelligence",
-        body: "Constantly updated database containing thousands of known malicious sites, infected domains and security threats from around the world.",
-        points: ["Real-time threat feeds", "Security vendor collaboration", "Community threat sharing"],
-      },
-      ai: {
-        title: "AI & machine learning",
-        body: "Artificial intelligence trained on millions of samples detecting new, previously unknown security threats and attack patterns.",
-        points: ["Advanced threat detection", "Behavioral analysis", "Zero-day threat detection"],
+      phishing: {
+        title: "Signs of phishing",
+        body: "Domains that imitate well-known brands, the domain’s age and registration details, a favicon borrowed from another site, and deliberately obfuscated JavaScript.",
       },
     },
   },
 
-  cta: {
-    title: "Ready for complete protection?",
-    body: "Join thousands of companies that already protect themselves from security threats with Antiginx.",
-    start: "Start for free",
-    expert: "Talk to an expert",
+  how: {
+    title: "How a scan works",
+    body: "The engine splits a scan into three tracks and runs them side by side, so even when a site blocks the scanner, the address and domain tests still report.",
+    /** The engine's three tracks: a short tag, shown in the terminal, and what it means. */
+    lanes: {
+      address: { tag: "address", note: "need only the address and the DNS" },
+      response: { tag: "page", note: "read the page’s response" },
+      own: { tag: "connection", note: "open their own: certificate, sitemap" },
+    },
+    /** The made-up scan the terminal plays back. */
+    terminal: {
+      title: "antiginx · scan",
+      label:
+        "Example scan of shop.example: the address, DNS and certificate tests pass; the page sends no HSTS header, gives away its nginx version and sets a cookie without SameSite. Threat level 38%, caution.",
+      queued: "queued for the engine",
+      fetch: "GET / → 200",
+      cookie: "no SameSite",
+      more: "…and more tests",
+      done: "done",
+      threat: "threat level",
+      replay: "Replay",
+    },
+    steps: {
+      submit: {
+        title: "You enter an address",
+        body: "Here for a quick check, or in your dashboard, where you choose which tests to run.",
+      },
+      run: {
+        title: "The engine runs the tests",
+        body: "On three tracks at once. The page track waits for the site to answer; the other two start right away:",
+      },
+      result: {
+        title: "You get the result",
+        body: "Each test returns a verdict, a threat level and details, which add up to an overall threat level. You can download it all as a report.",
+      },
+    },
+  },
+
+  account: {
+    title: "Get more with an account",
+    body: "The scanner above is a quick check. Your dashboard gives you:",
+    items: {
+      pick: "Your choice of tests for every scan",
+      schedule: "Scans that run on a schedule",
+      history: "Scan history and a dashboard summary",
+      charts: "Charts of each domain’s threat level over time",
+      security: "An account protected by 2FA and passkeys",
+    },
+    /** Last tile, a link to the pricing page. */
+    more: "And much more",
+    moreContext: "see pricing",
+    register: "Create an account",
+    dashboard: "Go to your dashboard",
+    pricing: "See pricing",
+    /** The made-up dashboard next to the list. */
+    mock: {
+      dashboard: "Dashboard",
+      chart: "Threat level · shop.example",
+      recent: "Recent scans",
+      today: "today",
+      yesterday: "yesterday",
+      daysAgo: (days: number) => `${days} days ago`,
+      schedule: "Schedule",
+      weekly: "Weekly · Mon 06:00",
+    },
   },
 
   footer: {
-    tagline: "Advanced AI-powered website security scanner protecting users from online threats.",
-    columns: {
-      product: "Product",
-      company: "Company",
-      support: "Support",
-      legal: "Legal",
-    },
+    tagline: "Website security scanner.",
+    nav: "Footer",
     links: {
-      features: "Features",
-      api: "API",
-      docs: "Docs",
       pricing: "Pricing",
-      about: "About",
-      blog: "Blog",
-      careers: "Careers",
-      help: "Help",
-      contact: "Contact",
-      status: "Status",
-      privacy: "Privacy",
-      terms: "Terms",
-      cookies: "Cookies",
+      docs: "Documentation",
+      github: "GitHub",
     },
-    /** Name of an icon-only link to a social network profile. */
-    social: (network: string) => `Antiginx on ${network}`,
-    copyright: (year: number) => `© ${year} Antiginx. All rights reserved.`,
+    license: "MIT licence",
+    copyright: (year: number) => `© ${year} Antiginx`,
   },
 
   threatMeter: {

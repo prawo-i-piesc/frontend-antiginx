@@ -2,197 +2,310 @@
 
 import { useId } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 import Footer from '../components/Footer';
 import { HeroBackdrop } from '../components/HeroSection';
 import { SCANNER_SECTION_ID } from '../components/ScannerSection';
 import SiteHeader from '../components/SiteHeader';
 import { MAIN_CONTENT_ID } from '../components/ui/SkipLink';
+import { PRIMARY_BUTTON } from '../components/ui/buttonStyles';
+import { entrance } from '../components/ui/entrance';
+import { CONTACT_EMAIL, DOCS_URL } from '../config/constants';
+import { levelClass } from '../components/AccountSection';
 import { useI18n } from '../i18n/I18nProvider';
+import { useAuth } from '../providers/AuthProvider';
+
+const PLANS = ['free', 'pro', 'enterprise'] as const;
+type Plan = (typeof PLANS)[number];
+
+/** A small piece of the app above each plan, showing what the plan adds. */
+type ArtProps = { delay: number; reduced: boolean | null };
+
+const panel = 'w-full max-w-68 rounded-lg border border-white/10 bg-zinc-900/90 p-3 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.9)]';
+
+/** Appears a moment after the card, one piece after another. */
+function staggered(reduced: boolean | null, delay: number) {
+  return (index: number, gap = 0.12) =>
+    reduced
+      ? { initial: false as const }
+      : {
+          initial: { opacity: 0, y: 4 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.3, delay: delay + index * gap },
+        };
+}
+
+/** Free: your scans in one place. */
+function FreeArt({ delay, reduced }: ArtProps) {
+  const { t } = useI18n();
+  const mock = t.landing.account.mock;
+  const step = staggered(reduced, delay);
+  const scans = [
+    { host: 'shop.example', when: mock.today, level: 12 },
+    { host: 'blog.example', when: mock.yesterday, level: 41 },
+    { host: 'api.example', when: mock.daysAgo(3), level: 7 },
+  ];
+
+  return (
+    <div className={panel}>
+      <p className="font-mono text-[10px] text-zinc-500">{mock.recent}</p>
+      <ul className="mt-2 space-y-1.5">
+        {scans.map((scan, index) => (
+          <motion.li key={scan.host} {...step(index)} className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-zinc-800 font-mono text-[10px] uppercase text-zinc-300">
+              {scan.host[0]}
+            </span>
+            <span className="font-mono text-[11px] text-zinc-200">{scan.host}</span>
+            <span className="text-[10px] text-zinc-500">{scan.when}</span>
+            <span className={`ml-auto rounded-full border px-1.5 font-mono text-[10px] ${levelClass(scan.level)}`}>{scan.level}%</span>
+          </motion.li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Pro: scans on a schedule, and the premium tests. */
+const SCHEDULED_DAYS = [0, 2, 4];
+
+function ProArt({ delay, reduced }: ArtProps) {
+  const { t } = useI18n();
+  const art = t.pricing.art;
+  const step = staggered(reduced, delay);
+
+  return (
+    <div className={panel}>
+      <p className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500">
+        <i className="ri-calendar-schedule-line text-cyan-400" />
+        {art.schedule} · shop.example
+      </p>
+      <div className="mt-2 grid grid-cols-7 gap-1">
+        {art.days.map((day, index) => (
+          <div key={day} className="flex flex-col items-center gap-1">
+            <span className="font-mono text-[9px] text-zinc-500">{day}</span>
+            {SCHEDULED_DAYS.includes(index) ? (
+              <motion.span {...step(index, 0.08)} className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
+            ) : (
+              <span className="h-2.5 w-2.5 rounded-full border border-zinc-700" />
+            )}
+          </div>
+        ))}
+      </div>
+      <motion.div
+        {...step(7, 0.08)}
+        className="mt-3 flex items-center gap-1.5 rounded-md border border-cyan-500/25 bg-cyan-500/5 px-2 py-1.5"
+      >
+        <i className="ri-vip-diamond-line text-xs text-cyan-300" />
+        <span className="text-[11px] text-white">{art.premium}</span>
+        <span className="ml-auto font-mono text-[10px] text-emerald-300">{art.unlocked}</span>
+      </motion.div>
+    </div>
+  );
+}
+
+/** Enterprise: a private instance, and how long it keeps results. */
+function EnterpriseArt({ delay, reduced }: ArtProps) {
+  const { t } = useI18n();
+  const art = t.pricing.art;
+  const step = staggered(reduced, delay);
+
+  return (
+    <div className={panel}>
+      <motion.div {...step(0)} className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-cyan-500/25 bg-cyan-500/10">
+          <i className="ri-lock-2-line text-sm text-cyan-300" />
+        </span>
+        <span>
+          <span className="block text-[11px] text-white">{art.instance}</span>
+          <span className="block font-mono text-[10px] text-zinc-500">{art.org}</span>
+        </span>
+      </motion.div>
+      <div className="mt-3 space-y-1.5 border-t border-white/5 pt-2.5 font-mono text-[10.5px]">
+        <motion.p {...step(1)} className="flex items-center justify-between gap-2">
+          <span className="text-zinc-400">{art.retention}</span>
+          <span className="inline-flex items-center gap-1 rounded border border-zinc-700 px-1.5 text-zinc-200">
+            {art.retentionValue}
+            <i className="ri-arrow-down-s-line text-zinc-500" />
+          </span>
+        </motion.p>
+        <motion.p {...step(2)} className="flex items-center justify-between gap-2">
+          <span className="text-zinc-400">{art.limits}</span>
+          <span className="text-zinc-200">{art.limitsValue}</span>
+        </motion.p>
+      </div>
+    </div>
+  );
+}
+
+const ART: Record<Plan, (props: ArtProps) => React.ReactElement> = {
+  free: FreeArt,
+  pro: ProArt,
+  enterprise: EnterpriseArt,
+};
+
+const buttonClass =
+  'inline-flex w-full items-center justify-center gap-2 rounded-full border px-6 py-2.5 text-sm font-semibold transition-colors duration-200';
 
 export default function PricingPage() {
   const { t } = useI18n();
   const copy = t.pricing;
+  const auth = useAuth();
+  const signedIn = Boolean(auth?.initialized && auth?.authenticated);
   const plansHeadingId = useId();
-
-  const plans = [
-    { id: 'free', ...copy.plans.free, price: '$0', period: copy.perMonth, href: '/register', popular: false },
-    { id: 'pro', ...copy.plans.pro, price: '$29', period: copy.perMonth, href: '/register', popular: true },
-    // There is no sales contact yet, so "Contact sales" has nowhere to go.
-    { id: 'enterprise', ...copy.plans.enterprise, href: null, popular: false },
-  ];
+  const faqHeadingId = useId();
+  // The same entrance as the sign-in card: the title and intro, then the plans,
+  // then, as they scroll into view, the questions.
+  const reduced = useReducedMotion();
+  const intro = entrance(reduced);
+  const cards = entrance(reduced, 0.18);
+  const below = entrance(reduced);
 
   return (
-    <div className="marketing-surface min-h-screen text-white" style={{ backgroundColor: '#09090b' }}>
+    <div className="marketing-surface min-h-screen overflow-x-clip text-white" style={{ backgroundColor: '#09090b' }}>
       <SiteHeader />
 
       <main id={MAIN_CONTENT_ID} tabIndex={-1} className="focus:outline-none">
-        {/* Hero Section; with the site header above it, at least 45% of the screen (header: 4.5rem, 5.5rem from lg) */}
-        <section className="relative min-h-[calc(45vh-4.5rem)] lg:min-h-[calc(45vh-5.5rem)] flex flex-col">
+        <section className="relative">
           <HeroBackdrop gridSize="bg-size-[120px_120px]" />
-
-          {/* Hero Content */}
-          <div className="relative z-10 pb-20 mt-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex-1 flex flex-col justify-center pt-10">
-            <div className="mb-0">
-              <motion.h1
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-linear-to-r from-zinc-200 to-zinc-300 bg-clip-text text-transparent mb-4 leading-tight"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              >
-                {copy.title.lead} <span className="bg-linear-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent">{copy.title.highlight}</span> {copy.title.tail}
+          <div className="relative z-10 px-4 sm:px-6 lg:px-8 pt-10 pb-10 sm:pt-16 sm:pb-12">
+            <motion.div className="max-w-5xl mx-auto" variants={intro.container} initial="hidden" animate="show">
+              <motion.h1 variants={intro.item} className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
+                {copy.title}
               </motion.h1>
-
-              <motion.p
-                className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-              >
+              <motion.p variants={intro.item} className="mt-4 max-w-2xl text-base sm:text-lg text-zinc-400 leading-relaxed">
                 {copy.intro}
               </motion.p>
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Pricing Cards Section */}
-        <section
-          aria-labelledby={plansHeadingId}
-          className="relative py-4 pb-8 px-4 sm:px-6 lg:px-8"
-          style={{ backgroundColor: '#09090b' }}
-        >
+        <section aria-labelledby={plansHeadingId} className="relative z-10 px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24">
           <h2 id={plansHeadingId} className="sr-only">{copy.plansHeading}</h2>
 
-          <div className="max-w-7xl mx-auto relative" style={{ zIndex: 1 }}>
-            <ul className="grid md:grid-cols-3 gap-6 lg:gap-8">
-              {plans.map((plan, index) => {
-                const actionClass = `block w-full text-center py-3 px-6 rounded-full font-semibold transition-all duration-200 cursor-pointer ${
-                  plan.popular
-                    ? 'bg-cyan-700 text-white hover:bg-cyan-800 shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_0_rgba(6,182,212,0.35)]'
-                    : 'bg-zinc-800/80 text-white hover:bg-zinc-700/80 border border-zinc-700/50'
-                }`;
+          <motion.ul
+            className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4"
+            variants={cards.container}
+            initial="hidden"
+            animate="show"
+          >
+            {PLANS.map((planKey, index) => {
+              const plan = copy.plans[planKey];
+              const pro = planKey === 'pro';
+              const previous = index > 0 ? copy.plans[PLANS[index - 1]].name : null;
+              const Art = ART[planKey];
+              const actionClass = `${buttonClass} ${
+                pro
+                  ? PRIMARY_BUTTON
+                  : 'border-zinc-700 text-white hover:border-zinc-500 hover:bg-white/5'
+              }`;
 
-                return (
-                  <motion.li
-                    key={plan.id}
-                    className={`relative rounded-2xl p-8 lg:p-10 ${
-                      plan.popular
-                        ? 'bg-zinc-900/60 border-2 border-cyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-sm scale-105 hover:scale-108'
-                        : 'bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm hover:scale-102'
-                    } hover:shadow-[0_0_50px_rgba(6,182,212,0.2)]`}
-                    style={{ transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.15 }}
-                  >
-                    <div className="mb-6">
-                      <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                      {/* After the name in reading order; drawn on the card's top edge. */}
-                      {plan.popular && (
-                        <p className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-linear-to-r from-cyan-700 to-cyan-800 text-white text-xs font-bold uppercase whitespace-nowrap rounded-full shadow-lg">
-                          {copy.mostPopular}
-                        </p>
-                      )}
-                      <p className="text-zinc-400 text-sm">{plan.description}</p>
-                    </div>
-
-                    <div className="mb-8">
-                      <p className="flex flex-wrap items-baseline gap-x-2">
-                        <span className="text-5xl font-bold text-white">{plan.price}</span>
-                        {plan.period && (
-                          <span className="text-zinc-400">{plan.period}</span>
-                        )}
-                      </p>
-                    </div>
-
-                    <ul className="space-y-4 mb-8">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start">
-                          <svg
-                            className="w-5 h-5 text-cyan-500 mr-3 mt-0.5 shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          <span className="text-zinc-300 text-sm">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {plan.href ? (
-                      <Link href={plan.href} className={actionClass}>
-                        {plan.cta}
-                      </Link>
-                    ) : (
-                      <button type="button" className={actionClass}>
-                        {plan.cta}
-                      </button>
-                    )}
-                  </motion.li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section className="relative py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-t border-zinc-800/30" style={{ backgroundColor: '#09090b' }}>
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10 sm:mb-12 text-zinc-200">
-              {copy.faq.title.lead} <span className="bg-linear-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent">{copy.faq.title.highlight}</span>
-            </h2>
-
-            <div className="grid sm:grid-cols-2 gap-6 lg:gap-8">
-              {copy.faq.items.map((item) => (
-                <div
-                  key={item.question}
-                  className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-6 backdrop-blur-sm hover:border-zinc-700/60 transition-colors duration-300"
+              return (
+                <motion.li
+                  key={planKey}
+                  variants={cards.item}
+                  className={`flex flex-col overflow-hidden rounded-2xl border bg-zinc-950/80 ${pro ? 'border-cyan-400/50' : 'border-zinc-800'}`}
                 >
-                  <h3 className="text-lg font-semibold text-white mb-3">{item.question}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed">
-                    {item.answer}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+                  {/* What the plan adds, as a small piece of the app */}
+                  <div
+                    aria-hidden="true"
+                    className="flex h-44 items-center justify-center border-b border-zinc-800 bg-[linear-gradient(rgba(34,211,238,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.05)_1px,transparent_1px)] bg-size-[22px_22px] px-6"
+                  >
+                    <Art delay={0.18 + index * 0.07 + 0.3} reduced={reduced} />
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-6 sm:p-7">
+                    <h3 className={`font-mono text-sm uppercase tracking-[0.2em] ${pro ? 'text-cyan-300' : 'text-zinc-400'}`}>
+                      {plan.name}
+                    </h3>
+                    <p className="mt-3 flex items-baseline gap-1.5">
+                      <span className="text-4xl font-bold text-white">{plan.price}</span>
+                      {planKey !== 'enterprise' && <span className="font-mono text-sm text-zinc-500">{copy.perMonth}</span>}
+                    </p>
+                    {/* Two lines tall beside the others, so the buttons below line up */}
+                    <p className="mt-2 text-sm leading-5 text-zinc-400 lg:min-h-10">{plan.description}</p>
+
+                    <div className="mt-6">
+                      {planKey === 'enterprise' ? (
+                        <a
+                          href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(copy.plans.enterprise.subject)}`}
+                          className={actionClass}
+                        >
+                          <i className="ri-mail-line" aria-hidden="true"></i>
+                          {plan.cta}
+                        </a>
+                      ) : (
+                        <Link href={planKey === 'free' && signedIn ? '/dashboard' : '/register'} className={actionClass}>
+                          {planKey === 'free' && signedIn ? t.landing.account.dashboard : plan.cta}
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="mt-6 border-t border-zinc-800 pt-6">
+                      {previous && <p className="mb-3 text-sm font-medium text-zinc-300">{copy.plus(previous)}</p>}
+                      <ul className="space-y-2.5">
+                        {plan.features.map((feature) => (
+                          <li key={feature} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                            <i className="ri-check-line mt-0.5 text-cyan-400" aria-hidden="true"></i>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </motion.li>
+              );
+            })}
+          </motion.ul>
         </section>
 
-        {/* CTA Section */}
-        <section className="relative py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#09090b' }}>
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(6,182,212,0.1),transparent)]" style={{ zIndex: 0 }}></div>
-
-          <div className="max-w-4xl mx-auto text-center relative" style={{ zIndex: 1 }}>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-200 mb-4 sm:mb-6">
-              {copy.cta.title.lead} <span className="bg-linear-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent">{copy.cta.title.highlight}</span>
-            </h2>
-            <p className="text-base sm:text-lg text-zinc-400 mb-8 sm:mb-10 max-w-2xl mx-auto">
-              {copy.cta.body}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href="/register"
-                className="px-8 py-3 bg-cyan-700 text-white rounded-full hover:bg-cyan-800 transition-all duration-200 font-semibold shadow-[0_4px_14px_0_rgba(6,182,212,0.25)] hover:shadow-[0_6px_20px_0_rgba(6,182,212,0.35)] whitespace-nowrap cursor-pointer text-sm sm:text-base"
+        <section aria-labelledby={faqHeadingId} className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-wrap items-baseline justify-between gap-4 mb-8">
+              <h2 id={faqHeadingId} className="text-3xl sm:text-4xl font-bold text-white">{copy.faq.title}</h2>
+              <a
+                href={DOCS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-mono text-sm text-zinc-400 hover:text-cyan-300 transition-colors"
               >
-                {copy.cta.trial}
-              </Link>
+                {copy.faq.docs}
+                <i className="ri-arrow-right-up-line" aria-hidden="true"></i>
+                <span className="sr-only"> {t.common.opensInNewTab}</span>
+              </a>
+            </div>
+
+            <motion.dl
+              className="grid grid-cols-1 md:grid-cols-2 gap-x-12"
+              variants={below.container}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+            >
+              {copy.faq.items.map((item) => (
+                <motion.div key={item.question} variants={below.item} className="border-t border-zinc-800 py-6">
+                  <dt className="font-medium text-white">{item.question}</dt>
+                  <dd className="mt-2 text-sm text-zinc-400 leading-relaxed">{item.answer}</dd>
+                </motion.div>
+              ))}
+            </motion.dl>
+
+            <motion.div
+              className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-800 pt-8"
+              variants={below.item}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+            >
+              <p className="text-zinc-400">{copy.cta.note}</p>
               <Link
                 href={`/#${SCANNER_SECTION_ID}`}
-                className="px-8 py-3 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-200 font-semibold border border-white/20 hover:border-white/40 backdrop-blur-sm whitespace-nowrap cursor-pointer text-sm sm:text-base"
+                className="group inline-flex items-center gap-2 font-semibold text-white hover:text-cyan-300 transition-colors"
               >
                 {copy.cta.scanner}
+                <i className="ri-arrow-right-line transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true"></i>
               </Link>
-            </div>
+            </motion.div>
           </div>
         </section>
       </main>
