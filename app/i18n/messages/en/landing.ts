@@ -1,3 +1,5 @@
+import { pluralEn } from "@/app/i18n/plural";
+
 /**
  * The public landing page: site header and footer (shared with the pricing
  * page), hero, free scanner and the sections describing what a scan does.
@@ -29,16 +31,30 @@ const landing = {
     /** The illustration of a scan next to the scanner. */
     xray: {
       label:
-        "Illustration: the scanner X-raying an example online shop, revealing its HTTP headers, TLS certificate, cookies and DNS records.",
+        "Illustration: the scanner going over an example online shop and pinning the problems it finds to the page: exposed software versions, missing security headers, cookie flags, the certificate and the domain.",
       pause: "Pause the X-ray",
       resume: "Resume the X-ray",
       validFor: (days: number) => `valid for ${days} more days`,
       registered: "registered",
+      registeredAgo: (days: number) => `registered ${days} ${pluralEn(days, "day", "days")} ago`,
+      /** The X-ray shows a different made-up scan each time round. */
       findings: {
         server: "nginx version exposed",
         hsts: "No HSTS header",
         tls: "TLS 1.3, valid certificate",
         domain: "Domain registered in 2009",
+        cdn: "Behind Cloudflare",
+        csp: "No Content Security Policy",
+        cookieHttpOnly: "Cookie without HttpOnly",
+        apache: "Apache version exposed",
+        framing: "No framing protection",
+        oldTls: "Outdated TLS 1.0",
+        sameSite: "Cookie without SameSite",
+        certExpiry: "Certificate expires in 9 days",
+        youngDomain: "Domain only days old",
+        contentType: "No X-Content-Type-Options",
+        obfuscatedJs: "Obfuscated JavaScript",
+        sitemapAdmin: "Admin panel in sitemap.xml",
       },
     },
   },
@@ -49,7 +65,9 @@ const landing = {
     intro: {
       before: "Enter an address and see how the site does, ",
       emphasis: "no account needed",
-      after: ". The result opens right here.",
+      after: ".",
+      /** On a line of its own, below. */
+      result: "The result opens right here.",
     },
     inputLabel: "Website address to scan",
     run: "RUN",
@@ -168,6 +186,7 @@ const landing = {
   footer: {
     tagline: "Website security scanner.",
     nav: "Footer",
+    legalNav: "Legal",
     links: {
       pricing: "Pricing",
       docs: "Documentation",

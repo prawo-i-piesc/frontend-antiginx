@@ -32,7 +32,7 @@ export default function UrlScanner({ onScan, isScanning }: UrlScannerProps) {
         <label htmlFor={SCANNER_INPUT_ID} className="sr-only">
           {copy.inputLabel}
         </label>
-        <div className="bg-black/60 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.05)] hover:shadow-[0_0_40px_rgba(6,182,212,0.15)] font-mono">
+        <div className="bg-black/60 backdrop-blur-xl border border-cyan-500/30 rounded-lg p-3 sm:p-4 hover:border-cyan-400/50 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400 transition-all duration-300 font-mono">
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-cyan-400 text-sm sm:text-base select-none" aria-hidden="true">$</span>
             <span className="text-purple-400 text-sm sm:text-base select-none" aria-hidden="true">scan</span>

@@ -8,6 +8,9 @@ const meta: Messages["meta"] = {
 
   titles: {
     pricing: "Cennik",
+    terms: "Regulamin",
+    privacy: "Polityka prywatności",
+    security: "Bezpieczeństwo",
     login: "Logowanie",
     mfa: "Weryfikacja dwuetapowa",
     linkAccount: "Połącz konto",

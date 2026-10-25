@@ -58,7 +58,7 @@ function FreeArt({ delay, reduced }: ArtProps) {
             </span>
             <span className="font-mono text-[11px] text-zinc-200">{scan.host}</span>
             <span className="text-[10px] text-zinc-500">{scan.when}</span>
-            <span className={`ml-auto rounded-full border px-1.5 font-mono text-[10px] ${levelClass(scan.level)}`}>{scan.level}%</span>
+            <span className={`ml-auto font-mono text-[11px] ${levelClass(scan.level)}`}>{scan.level}%</span>
           </motion.li>
         ))}
       </ul>

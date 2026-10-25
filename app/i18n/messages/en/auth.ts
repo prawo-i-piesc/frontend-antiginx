@@ -44,7 +44,10 @@ const auth = {
     namePlaceholder: "Jan Kowalski",
     confirmPassword: "Confirm password",
     confirmPlaceholder: "Repeat your password",
-    terms: "I accept the terms of service and the privacy policy.",
+    /** The two documents are links to their pages. */
+    terms: { before: "I accept the ", terms: "terms of service", middle: " and the ", privacy: "privacy policy", after: "." },
+    /** Under the Google and GitHub buttons, which create an account without the checkbox. */
+    oauthTerms: { before: "Signing up with Google or GitHub, you accept the ", terms: "terms of service", middle: " and the ", privacy: "privacy policy", after: "." },
     termsRequired: "Accept the terms to create an account.",
     submit: "Create account",
     submitting: "Creating account…",

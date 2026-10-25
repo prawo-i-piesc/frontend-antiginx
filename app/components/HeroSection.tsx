@@ -61,8 +61,9 @@ export default function HeroSection({ isScanning }: { isScanning: boolean }) {
   const copy = t.landing.hero;
 
   return (
-    // From lg, fills the first screen together with the site header above it (5.5rem). On a
-    // phone it is as tall as its content, so the illustration still shows on the first screen.
+    // From lg, fills the first screen together with the site header above it (5.5rem), so
+    // the scanner below starts under the fold. On a phone it is as tall as its content, so
+    // the illustration still shows on the first screen.
     <section className="relative lg:min-h-[calc(100vh-5.5rem)] flex flex-col">
       <HeroBackdrop />
 
@@ -73,7 +74,7 @@ export default function HeroSection({ isScanning }: { isScanning: boolean }) {
             {...fadeUp(0)}
           >
             {copy.title.lead}{' '}
-            <span className="bg-linear-to-r from-cyan-300 via-cyan-400 to-cyan-600 bg-clip-text text-transparent">
+            <span className="text-cyan-400">
               {copy.title.highlight}
             </span>
           </motion.h1>

@@ -7,6 +7,9 @@ const meta = {
 
   titles: {
     pricing: "Pricing",
+    terms: "Terms of service",
+    privacy: "Privacy policy",
+    security: "Security",
     login: "Sign in",
     mfa: "Two-step verification",
     linkAccount: "Connect your account",

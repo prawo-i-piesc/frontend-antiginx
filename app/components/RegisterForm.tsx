@@ -26,6 +26,31 @@ const MIN_NAME_LENGTH = 6;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+type TermsSentence = { before: string; terms: string; middle: string; privacy: string; after: string };
+
+/**
+ * "I accept the terms and the privacy policy", with both documents linked.
+ * They open in a new tab, so the half-filled form stays where it is.
+ */
+function AcceptTerms({ parts }: { parts: TermsSentence }) {
+  const { t } = useI18n();
+  const link = (href: string, text: string) => (
+    <Link href={href} target="_blank" className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300">
+      {text}
+      <span className="sr-only"> {t.common.opensInNewTab}</span>
+    </Link>
+  );
+  return (
+    <>
+      {parts.before}
+      {link("/terms", parts.terms)}
+      {parts.middle}
+      {link("/privacy", parts.privacy)}
+      {parts.after}
+    </>
+  );
+}
+
 export default function RegisterForm() {
   const router = useRouter();
   const toast = useToast();
@@ -191,7 +216,7 @@ export default function RegisterForm() {
           checked={accepted}
           onChange={(event) => setAccepted(event.target.checked)}
           disabled={loading}
-          label={t.auth.register.terms}
+          label={<AcceptTerms parts={t.auth.register.terms} />}
           error={fieldErrors.terms}
         />
 
@@ -202,6 +227,9 @@ export default function RegisterForm() {
         <Divider label={t.common.or} />
 
         <OAuthButtons disabled={loading} />
+        <p className="mt-3 text-center text-xs text-zinc-500">
+          <AcceptTerms parts={t.auth.register.oauthTerms} />
+        </p>
       </form>
     </AuthShell>
   );
