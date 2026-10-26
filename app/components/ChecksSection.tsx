@@ -174,11 +174,6 @@ export default function ChecksSection() {
 
   return (
     <section id={FEATURES_SECTION_ID} className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
-      {/* Background glow */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-[700px] h-[700px] bg-[radial-gradient(closest-side,rgba(6,182,212,0.35),rgba(6,182,212,0.12),transparent_50%)] rounded-full blur-4xl opacity-25" />
-      </div>
-
       <div className="max-w-5xl mx-auto relative z-10">
         <div className="max-w-2xl mb-8 sm:mb-10">
           <h2
@@ -198,16 +193,15 @@ export default function ChecksSection() {
             return (
               <li
                 key={group.key}
-                className={`group flex flex-col overflow-hidden rounded-2xl border border-zinc-800/60 backdrop-blur-xl transition-colors duration-300 hover:border-cyan-500/30 ${group.span}`}
+                className={`flex flex-col overflow-hidden rounded-2xl border border-zinc-800/60 backdrop-blur-xl transition-colors duration-300 hover:border-cyan-500/30 ${group.span}`}
                 style={{ backgroundColor: 'rgba(9, 9, 11, 0.6)' }}
               >
-                {/* On hover a scan line crosses the picture, like the beam in the hero */}
+                {/* What the area looks like in a scan */}
                 <div
                   aria-hidden="true"
                   className="relative h-36 sm:h-44 overflow-hidden border-b border-zinc-800/60 bg-[linear-gradient(rgba(34,211,238,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.05)_1px,transparent_1px)] bg-size-[22px_22px]"
                 >
                   <Art />
-                  <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-linear-to-r from-transparent via-cyan-300/15 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-[400%] motion-reduce:hidden" />
                 </div>
 
                 <div className="flex flex-1 flex-col p-5 sm:p-6">

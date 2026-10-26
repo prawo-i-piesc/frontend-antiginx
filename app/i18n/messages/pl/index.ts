@@ -8,6 +8,7 @@ import common from "./common";
 import dashboard from "./dashboard";
 import errors from "./errors";
 import landing from "./landing";
+import legal from "./legal";
 import meta from "./meta";
 import notFound from "./notFound";
 import password from "./password";
@@ -25,6 +26,7 @@ const pl: Messages = {
   scan,
   landing,
   pricing,
+  legal,
   notFound,
   auth,
   errors,

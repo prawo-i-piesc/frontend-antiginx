@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Google_Sans } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { getLocale, getMessages } from "./i18n/server";
@@ -8,9 +8,10 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 import { AuthProvider } from "./providers/AuthProvider";
 import { ToastProvider } from "./providers/ToastProvider";
 import SkipLink from "./components/ui/SkipLink";
+import { siteOrigin } from "./lib/siteOrigin";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const googleSans = Google_Sans({
+  variable: "--font-google-sans",
   subsets: ["latin", "latin-ext"],
 });
 
@@ -26,11 +27,20 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
 
   return {
+    // Link previews need absolute URLs; see siteOrigin for why it is not configured.
+    metadataBase: new URL(await siteOrigin()),
     title: {
       default: t.meta.defaultTitle,
       template: t.meta.titleTemplate,
     },
     description: t.meta.description,
+    openGraph: {
+      siteName: "Antiginx",
+      title: t.meta.defaultTitle,
+      description: t.meta.description,
+      type: "website",
+    },
+    twitter: { card: "summary_large_image" },
     icons: {
       icon: '/favicon.ico',
     },
@@ -54,8 +64,13 @@ export default async function RootLayout({
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
+      {/*
+        The font variables live on <body>: the theme bootstrap above rewrites
+        <html>'s class. Tailwind sets the default font on <html>, where those
+        variables do not exist, so <body> sets the sans font itself.
+      */}
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${googleSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <I18nProvider locale={locale}>
           <SkipLink />

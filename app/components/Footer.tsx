@@ -4,10 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { DOCS_URL, GITHUB_URL } from '@/app/config/constants';
+import { CONTACT_EMAIL, DOCS_URL, GITHUB_URL } from '@/app/config/constants';
 import { useI18n } from '@/app/i18n/I18nProvider';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-zinc-400 hover:text-cyan-400 transition-colors text-sm';
+const legalLinkClass = 'text-zinc-500 hover:text-cyan-400 transition-colors';
 
 export default function Footer() {
   const { t } = useI18n();
@@ -17,6 +18,11 @@ export default function Footer() {
   const links = [
     { href: DOCS_URL, label: copy.links.docs, icon: 'ri-book-open-line' },
     { href: GITHUB_URL, label: copy.links.github, icon: 'ri-github-line' },
+  ];
+  const legalLinks = [
+    { href: '/terms', label: t.legal.links.terms },
+    { href: '/privacy', label: t.legal.links.privacy },
+    { href: '/security', label: t.legal.links.security },
   ];
 
   return (
@@ -66,6 +72,24 @@ export default function Footer() {
           <p className="text-zinc-400 text-xs" suppressHydrationWarning>
             {copy.copyright(new Date().getFullYear())} · {copy.license}
           </p>
+          <ul aria-label={copy.legalNav} className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:justify-end">
+            {legalLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  aria-current={pathname === link.href ? 'page' : undefined}
+                  className={legalLinkClass}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <a href={`mailto:${CONTACT_EMAIL}`} className={legalLinkClass}>
+                {t.legal.links.contact}
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </footer>

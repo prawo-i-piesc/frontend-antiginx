@@ -1,4 +1,5 @@
 import type { Messages } from "@/app/i18n/messages/en";
+import { pluralPl } from "@/app/i18n/plural";
 
 const landing: Messages["landing"] = {
   header: {
@@ -21,16 +22,29 @@ const landing: Messages["landing"] = {
     learnMore: "Jak to działa",
     xray: {
       label:
-        "Ilustracja: skaner prześwietla przykładowy sklep internetowy i odsłania jego nagłówki HTTP, certyfikat TLS, ciasteczka i rekordy DNS.",
+        "Ilustracja: skaner przechodzi po przykładowym sklepie internetowym i przypina do strony znalezione problemy: ujawnione wersje oprogramowania, brakujące nagłówki bezpieczeństwa, flagi ciasteczek, certyfikat i domenę.",
       pause: "Zatrzymaj prześwietlanie",
       resume: "Wznów prześwietlanie",
       validFor: (days) => `ważny jeszcze ${days} dni`,
       registered: "rejestracja",
+      registeredAgo: (days) => `rejestracja ${days} ${pluralPl(days, "dzień", "dni", "dni")} temu`,
       findings: {
         server: "Ujawniona wersja nginx",
         hsts: "Brak nagłówka HSTS",
         tls: "TLS 1.3, ważny certyfikat",
         domain: "Domena z 2009 roku",
+        cdn: "Strona za Cloudflare",
+        csp: "Brak Content Security Policy",
+        cookieHttpOnly: "Ciasteczko bez HttpOnly",
+        apache: "Ujawniona wersja Apache",
+        framing: "Brak ochrony przed ramkami",
+        oldTls: "Przestarzały TLS 1.0",
+        sameSite: "Ciasteczko bez SameSite",
+        certExpiry: "Certyfikat wygasa za 9 dni",
+        youngDomain: "Domena sprzed kilku dni",
+        contentType: "Brak X-Content-Type-Options",
+        obfuscatedJs: "Zaciemniony JavaScript",
+        sitemapAdmin: "Panel admina w sitemap.xml",
       },
     },
   },
@@ -40,7 +54,8 @@ const landing: Messages["landing"] = {
     intro: {
       before: "Wpisz adres i zobacz, jak wypada strona, ",
       emphasis: "bez zakładania konta",
-      after: ". Wynik otworzy się tutaj.",
+      after: ".",
+      result: "Wynik otworzy się tutaj.",
     },
     inputLabel: "Adres strony do przeskanowania",
     run: "URUCHOM",
@@ -152,6 +167,7 @@ const landing: Messages["landing"] = {
   footer: {
     tagline: "Skaner bezpieczeństwa stron internetowych.",
     nav: "Stopka",
+    legalNav: "Informacje prawne",
     links: {
       pricing: "Cennik",
       docs: "Dokumentacja",

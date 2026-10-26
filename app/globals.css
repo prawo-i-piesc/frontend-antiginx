@@ -3,7 +3,7 @@
 /* Tailwind CSS v4 directives - warnings are expected in IDE */
 /* @ts-ignore */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-google-sans);
   --font-mono: var(--font-geist-mono);
 }
 
