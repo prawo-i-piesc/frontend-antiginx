@@ -8,7 +8,7 @@ import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout, SheetSkeleton } from "@/app/components/admin/Sheet";
 import { Flag, IdCell, LoadFailure, Stamp, Tag } from "@/app/components/ui/table";
 import { BUTTON_DANGER, BUTTON_PRIMARY, BUTTON_QUIET } from "@/app/components/profile/ui";
-import useAdminQuery from "@/app/hooks/useAdminQuery";
+import useApiQuery from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import { deleteUser, getUser, logoutUser, setUserRole, type AdminUser } from "@/app/lib/adminApi";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -58,7 +58,7 @@ function Inspector({
   const { user: me } = useAuth();
   const [action, setAction] = useState<Action | null>(null);
 
-  const { data, loading, error, reload } = useAdminQuery(`user:${userId}`, (signal) => getUser(userId, signal));
+  const { data, loading, error, reload } = useApiQuery(`user:${userId}`, (signal) => getUser(userId, signal));
   // Keyed by account, so the data on hand is always this account's: after an
   // action it stays on screen while the fresh copy loads.
   const details = data;

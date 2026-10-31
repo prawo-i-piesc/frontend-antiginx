@@ -18,7 +18,7 @@ import {
   Tag,
 } from "@/app/components/ui/table";
 import { BUTTON_DANGER } from "@/app/components/profile/ui";
-import useAdminQuery from "@/app/hooks/useAdminQuery";
+import useApiQuery from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import { deleteScan, getScan, type AdminScanResult } from "@/app/lib/adminApi";
 import { useToast } from "@/app/providers/ToastProvider";
@@ -103,7 +103,7 @@ function Inspector({
   const toast = useToast();
   const [confirming, setConfirming] = useState(false);
 
-  const { data: scan, loading, error, reload } = useAdminQuery(`scan:${scanId}`, (signal) => getScan(scanId, signal));
+  const { data: scan, loading, error, reload } = useApiQuery(`scan:${scanId}`, (signal) => getScan(scanId, signal));
 
   const results = scan ? sortResults(scan.results) : [];
   const failed = results.filter((result) => !result.passed).length;

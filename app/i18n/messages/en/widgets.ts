@@ -1,5 +1,3 @@
-import { pluralEn } from "@/app/i18n/plural";
-
 /** The widget board shared by the dashboard and admin overviews, and the widgets on it. */
 const widgets = {
   /** Keyed by widget type: the card's label, and the name the board's controls use. */
@@ -9,15 +7,16 @@ const widgets = {
     threats: "Detected threats",
     scheduled: "Scheduled tests",
     recentScans: "Recent scans",
-    topThreats: "Top threats",
+    topThreats: "Most failed checks",
+    riskTrend: "Risk over time",
+    severity: "Failed checks by severity",
     totalUsers: "Total users",
     activeScans: "All-time scans",
     newRegistrations: "New registrations",
-    topCountries: "Top countries",
+    failedChecks: "Most failed checks",
   },
 
   noData: "No data",
-  sample: "Sample data",
   viewAll: "View all",
   trend: {
     up: "Increase",
@@ -59,24 +58,15 @@ const widgets = {
     error: "Could not load recent scans.",
   },
 
-  topThreats: {
-    categories: {
-      malware: "Malware",
-      phishing: "Phishing",
-      spam: "Spam",
-      exploit: "Exploit",
-      suspicious: "Suspicious",
-    },
+  newRegistrations: {
+    window: "in the last 7 days",
   },
 
-  topCountries: {
-    /** The widget is a work in progress and says so. */
-    title: "Top countries (WIP)",
-    rank: (rank: number) => `#${rank}`,
-    users: (count: number) => pluralEn(count, "user", "users"),
+  failedChecks: {
+    /** The admin widget counts every account's scans, free ones included. */
+    scope: "All scans, 30 days",
   },
 
-  /** Status badges of a scanned site. */
   scanStatus: {
     safe: "Safe",
     suspicious: "Suspicious",

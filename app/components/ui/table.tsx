@@ -7,7 +7,7 @@ import Dropdown from "@/app/components/ui/Dropdown";
 import Pagination from "@/app/components/ui/Pagination";
 import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import { SURFACE } from "@/app/components/ui/surface";
-import type { LoadError } from "@/app/hooks/useAdminQuery";
+import type { LoadError } from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import { PAGE_SIZES, type PageSize } from "@/app/lib/paging";
 import type { ScanStatus } from "@/app/lib/api";

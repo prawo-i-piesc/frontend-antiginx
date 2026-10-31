@@ -1,5 +1,6 @@
 "use client";
 
+import ChartsSkeleton from "@/app/components/charts/ChartsSkeleton";
 import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import { SURFACE } from "@/app/components/ui/surface";
 
@@ -75,16 +76,7 @@ function Content({ layout }: { layout: PendingLayout }) {
     );
   }
 
-  if (layout === "chart") {
-    return (
-      <div className={`${SURFACE} p-4 sm:p-5`}>
-        <Bone className="mb-2 h-3 w-36" />
-        <Bone className="mb-5 h-12 w-full max-w-md rounded-xl" />
-        <Bone className="mb-4 h-4 w-48" />
-        <Bone className="h-72 w-full rounded-lg" />
-      </div>
-    );
-  }
+  if (layout === "chart") return <ChartsSkeleton filters />;
 
   if (layout === "stack") {
     return (

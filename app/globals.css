@@ -50,6 +50,43 @@ body {
 }
 
 /*
+ * Chart colours, read by app/components/charts/tokens.ts. Each theme has its
+ * own steps, checked against its card with the dataviz palette validator
+ * rather than flipped from the other theme:
+ *   - accent: the one hue of a single-series chart;
+ *   - severity: one rose ramp, ordered INFO to CRITICAL. On white the worst
+ *     is the darkest, on the dark card the lightest: the further a step is
+ *     from the surface, the more it matters;
+ *   - grid, axis, ring: recessive structure, and the gap a marker keeps from
+ *     the line it sits on.
+ */
+:root {
+  --viz-accent: #0891b2;
+  --viz-severity-info: #fb7185;
+  --viz-severity-low: #f43f5e;
+  --viz-severity-medium: #be123c;
+  --viz-severity-high: #881337;
+  --viz-severity-critical: #4c0519;
+  --viz-grid: #e4e4e7;
+  --viz-axis: #52525b;
+  --viz-track: #f4f4f5;
+  --viz-ring: #ffffff;
+}
+
+.dark {
+  --viz-accent: #0ea5c6;
+  --viz-severity-info: #9f1239;
+  --viz-severity-low: #e11d48;
+  --viz-severity-medium: #fb7185;
+  --viz-severity-high: #fda4af;
+  --viz-severity-critical: #fecdd3;
+  --viz-grid: #27272a;
+  --viz-axis: #a1a1aa;
+  --viz-track: #27272a;
+  --viz-ring: #18181b;
+}
+
+/*
  * A visible focus indicator for anything that can take keyboard focus and
  * does not draw its own (WCAG 2.4.7). :where() keeps the specificity at zero,
  * so a component's own focus-visible ring still wins over this default.

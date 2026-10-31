@@ -1,5 +1,4 @@
 import type { Messages } from "@/app/i18n/messages/en";
-import { pluralPl } from "@/app/i18n/plural";
 
 const widgets: Messages["widgets"] = {
   names: {
@@ -8,15 +7,16 @@ const widgets: Messages["widgets"] = {
     threats: "Wykryte zagrożenia",
     scheduled: "Zaplanowane testy",
     recentScans: "Ostatnie skany",
-    topThreats: "Najczęstsze zagrożenia",
+    topThreats: "Najczęściej nieudane testy",
+    riskTrend: "Ryzyko w czasie",
+    severity: "Nieudane testy według wagi",
     totalUsers: "Łączna liczba użytkowników",
     activeScans: "Wszystkie skany",
     newRegistrations: "Nowe rejestracje",
-    topCountries: "Najpopularniejsze kraje",
+    failedChecks: "Najczęściej nieudane testy",
   },
 
   noData: "Brak danych",
-  sample: "Dane przykładowe",
   viewAll: "Pokaż wszystkie",
   trend: {
     up: "Wzrost",
@@ -51,20 +51,12 @@ const widgets: Messages["widgets"] = {
     error: "Nie udało się wczytać ostatnich skanów.",
   },
 
-  topThreats: {
-    categories: {
-      malware: "Złośliwe oprogramowanie",
-      phishing: "Phishing",
-      spam: "Spam",
-      exploit: "Exploity",
-      suspicious: "Podejrzane",
-    },
+  newRegistrations: {
+    window: "w ostatnich 7 dniach",
   },
 
-  topCountries: {
-    title: "Najpopularniejsze kraje (w budowie)",
-    rank: (rank) => `#${rank}`,
-    users: (count) => pluralPl(count, "użytkownik", "użytkownicy", "użytkowników"),
+  failedChecks: {
+    scope: "Wszystkie skany, 30 dni",
   },
 
   scanStatus: {
