@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { TONES } from "@/app/components/ui/surface";
+import WidgetCard from "@/app/components/widgets/WidgetCard";
 import { INTL_LOCALES } from "@/app/i18n/config";
 import { useI18n } from "@/app/i18n/I18nProvider";
 
@@ -48,20 +50,8 @@ export default function UserLocationMapWidget() {
   const maxUsers = Math.max(...locations.map((l) => l.count), 1);
 
   return (
-    <div className="rounded-xl bg-white/85 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-300 dark:border-zinc-800/30 p-6 h-full flex flex-col">
-      <div className="mb-6 flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{copy.title}</h2>
-        {/* There is no page with every country yet. */}
-        <button
-          type="button"
-          disabled
-          title={t.common.comingSoon}
-          className="inline-flex min-h-6 items-center text-sm text-zinc-600 dark:text-zinc-400 font-medium opacity-50 cursor-not-allowed"
-        >
-          {t.widgets.viewAll}
-          <span className="sr-only"> ({t.common.comingSoon})</span>
-        </button>
-      </div>
+    // Sample data until the API reports where users are; the card says so.
+    <WidgetCard title={copy.title} sample>
 
       {loading ? (
         <div className="flex items-center justify-center flex-1" role="status">
@@ -106,14 +96,14 @@ export default function UserLocationMapWidget() {
                     {/* The count and share are printed next to it; the bar only pictures them. */}
                     <div className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden" aria-hidden="true">
                       <div
-                        className="h-full bg-linear-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-blue-500/50"
+                        className={`h-full rounded-full ${TONES.sky.bar}`}
                         style={{ width: `${share * 100}%` }}
                       />
                     </div>
                   </div>
 
                   <div className="text-right shrink-0 ml-3 w-12">
-                    <div className="font-bold text-blue-600 dark:text-blue-400">
+                    <div className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
                       {format.number(location.count)}
                       <span className="sr-only"> {copy.users(location.count)}</span>
                     </div>
@@ -125,6 +115,6 @@ export default function UserLocationMapWidget() {
           </ol>
         </div>
       )}
-    </div>
+    </WidgetCard>
   );
 }

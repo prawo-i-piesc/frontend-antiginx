@@ -6,6 +6,7 @@ import AdminFrame, { NoAccess } from "@/app/components/admin/AdminFrame";
 import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import ScanInspector from "@/app/components/admin/ScanInspector";
 import UserInspector from "@/app/components/admin/UserInspector";
+import Dropdown from "@/app/components/ui/Dropdown";
 import {
   CONTROL,
   ICON_BUTTON,
@@ -15,7 +16,6 @@ import {
   PANEL,
   ROW,
   SCROLL_REGION,
-  Select,
   Stamp,
   StatusLabel,
   TABLE,
@@ -30,13 +30,12 @@ import {
   pagingFrom,
   shortId,
   useClampPage,
-} from "@/app/components/admin/table";
+} from "@/app/components/ui/table";
 import useAdminQuery from "@/app/hooks/useAdminQuery";
 import useQueryParams from "@/app/hooks/useQueryParams";
 import useSearchDraft from "@/app/hooks/useSearchDraft";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import {
-  PAGE_SIZES,
   SCAN_STATUSES,
   SCAN_TYPES,
   deleteScan,
@@ -44,6 +43,7 @@ import {
   type AdminScan,
   type ScanType,
 } from "@/app/lib/adminApi";
+import { PAGE_SIZES } from "@/app/lib/paging";
 import { useToast } from "@/app/providers/ToastProvider";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -148,18 +148,15 @@ function ScansView() {
             ))}
           </div>
 
-          <Select
+          <Dropdown
+            label={copy.statusFilter}
             value={status ?? ""}
-            onChange={(event) => update({ status: event.target.value || null, page: null })}
-            aria-label={copy.statusFilter}
-          >
-            <option value="">{copy.allStatuses}</option>
-            {SCAN_STATUSES.map((option) => (
-              <option key={option} value={option}>
-                {t.scan.status[option]}
-              </option>
-            ))}
-          </Select>
+            options={[
+              { value: "", label: copy.allStatuses },
+              ...SCAN_STATUSES.map((option) => ({ value: option, label: t.scan.status[option] })),
+            ]}
+            onChange={(next) => update({ status: next || null, page: null })}
+          />
 
           {ownerLabel ? (
             <span className="inline-flex h-9 max-w-full items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 pl-2.5 pr-1 text-sm text-violet-800 dark:text-violet-300">
@@ -178,14 +175,14 @@ function ScansView() {
           ) : null}
 
           <p role="status" className={`${DATA} ml-auto text-xs text-zinc-600 dark:text-zinc-400`}>
-            {data ? t.admin.records(data.total, format.number(data.total)) : null}
+            {data ? t.table.records(data.total, format.number(data.total)) : null}
           </p>
         </div>
 
         {error ? (
           <LoadFailure error={error} title={t.admin.loadError} onRetry={reload} />
         ) : !data ? (
-          <TableLoading />
+          <TableLoading columns={7} />
         ) : scans.length === 0 ? (
           <TableMessage>
             {filtered ? (

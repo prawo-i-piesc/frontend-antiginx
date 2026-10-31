@@ -14,6 +14,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { buttonClass } from "@/app/components/ui/buttonStyles";
+import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL } from "@/app/components/layout/PageHeader";
 import { moveItem, useWidgetLayout, type WidgetConfig, type WidgetSize } from "@/app/hooks/useWidgetLayout";
 import { useI18n } from "@/app/i18n/I18nProvider";
 
@@ -328,28 +330,23 @@ export default function WidgetBoard<T extends string>({
   }
 
   return (
-    <div className={`p-6 ${customizing ? "select-none" : ""}`}>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="mb-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100">{title}</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">{description}</p>
-        </div>
-        <button
-          ref={toggleRef}
-          type="button"
-          onClick={toggleCustomizing}
-          aria-pressed={customizing}
-          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 font-medium transition-all ${
-            customizing
-              ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-400"
-              : "border-zinc-300 bg-white/85 text-zinc-600 hover:text-zinc-700 dark:border-zinc-500/30 dark:bg-zinc-900/20 dark:text-zinc-400 dark:hover:text-zinc-300"
-          }`}
-        >
-          <i className={`text-lg ${customizing ? "ri-check-line" : "ri-edit-line"}`} aria-hidden="true"></i>
-          {/* Only the icon shows on small screens; the name stays. */}
-          <span className="sr-only sm:not-sr-only">{customizing ? t.common.done : copy.customize}</span>
-        </button>
-      </div>
+    <div className={`p-4 sm:p-6 ${customizing ? "select-none" : ""}`}>
+      <PageHeader
+        title={title}
+        description={description}
+        actions={
+          <button
+            ref={toggleRef}
+            type="button"
+            onClick={toggleCustomizing}
+            aria-pressed={customizing}
+            className={`${buttonClass(customizing ? "primary" : "secondary")} ${PAGE_ACTION}`}
+          >
+            <i className={customizing ? "ri-check-line" : "ri-edit-line"} aria-hidden="true"></i>
+            <span className={PAGE_ACTION_LABEL}>{customizing ? t.common.done : copy.customize}</span>
+          </button>
+        }
+      />
 
       {customizing ? (
         <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
@@ -382,7 +379,7 @@ export default function WidgetBoard<T extends string>({
       </div>
 
       {displayed.length > 0 ? (
-        <ul ref={listRef} role="list" className="relative mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <ul ref={listRef} role="list" className="relative mb-4 grid grid-cols-2 gap-3 sm:gap-4 @4xl:grid-cols-4">
           {displayed.map((widget, index) => {
             const name = widgetName(widget.type);
             const isGrabbed = grabbed?.id === widget.id;
@@ -512,7 +509,7 @@ export default function WidgetBoard<T extends string>({
             </div>
           </div>
 
-          <ul role="list" className="grid auto-rows-fr grid-cols-2 gap-4 lg:grid-cols-4">
+          <ul role="list" className="grid auto-rows-fr grid-cols-2 gap-3 sm:gap-4 @4xl:grid-cols-4">
             {available.map((widget) => (
               <li
                 key={widget.type}

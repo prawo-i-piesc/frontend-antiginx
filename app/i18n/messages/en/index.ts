@@ -15,6 +15,7 @@ import profile from "./profile";
 import scan from "./scan";
 import scanner from "./scanner";
 import shell from "./shell";
+import table from "./table";
 import widgets from "./widgets";
 
 /**
@@ -40,6 +41,7 @@ const en = {
   scanner,
   charts,
   admin,
+  table,
   profile,
 };
 

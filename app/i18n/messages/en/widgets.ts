@@ -17,6 +17,7 @@ const widgets = {
   },
 
   noData: "No data",
+  sample: "Sample data",
   viewAll: "View all",
   trend: {
     up: "Increase",

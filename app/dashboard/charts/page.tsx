@@ -4,6 +4,12 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import DashboardShell from "@/app/components/layout/DashboardShell";
+import PageHeader from "@/app/components/layout/PageHeader";
+import Dropdown from "@/app/components/ui/Dropdown";
+import PagePending from "@/app/components/layout/PagePending";
+import { SURFACE } from "@/app/components/ui/surface";
+import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
+import { LoadFailure, TableMessage } from "@/app/components/ui/table";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { INTL_LOCALES } from "@/app/i18n/config";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -97,8 +103,7 @@ export default function DashboardChartsPage() {
     [locale],
   );
 
-  if (!initialized) return null;
-  if (!authenticated) return null;
+  if (!initialized || !authenticated) return <PagePending layout="chart" />;
 
   const formatThreat = (level: number) => percent.format(level / 100);
 
@@ -132,41 +137,33 @@ export default function DashboardChartsPage() {
 
   return (
     <DashboardShell area="dashboard" activePage="charts">
-      <div className="p-6">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{t.charts.title}</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{t.charts.subtitle}</p>
+      <div className="p-4 sm:p-6">
+        <PageHeader title={t.charts.title} description={t.charts.subtitle} />
+
+        {isLoading ? (
+          // The chart card as it will be: the address picker, the heading, the plot.
+          <SkeletonRegion className={`${SURFACE} p-4 sm:p-5`}>
+            <Bone className="mb-2 h-3 w-36" />
+            <Bone className="mb-5 h-12 w-full max-w-md rounded-xl" />
+            <Bone className="mb-4 h-4 w-48" />
+            <Bone className="h-72 w-full rounded-lg" />
+          </SkeletonRegion>
+        ) : loadError ? (
+          <div className={SURFACE}>
+            <LoadFailure
+              error={loadError === "network" ? { kind: "network" } : { kind: "failed", message: t.common.genericError }}
+              title={t.charts.loadError}
+              onRetry={() => setRequest((previous) => previous + 1)}
+            />
           </div>
-        </div>
-
-        <div role="status">
-          {isLoading && <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.charts.loading}</p>}
-          {!isLoading && !loadError && points.length === 0 && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">{t.charts.empty}</p>
-          )}
-        </div>
-
-        <div role="alert">
-          {loadError && (
-            <p className="text-sm text-rose-700 dark:text-rose-400">
-              {t.charts.loadError} {loadError === "network" ? t.common.networkError : t.common.genericError}
-            </p>
-          )}
-        </div>
-        {loadError && (
-          <button
-            type="button"
-            onClick={() => setRequest((previous) => previous + 1)}
-            className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white/85 dark:bg-zinc-900/40 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-          >
-            <i className="ri-refresh-line" aria-hidden="true"></i>
-            {t.common.retry}
-          </button>
-        )}
+        ) : points.length === 0 ? (
+          <div className={SURFACE}>
+            <TableMessage>{t.charts.empty}</TableMessage>
+          </div>
+        ) : null}
 
         {hasData && (
-          <div className="bg-white/85 dark:bg-zinc-900/20 backdrop-blur-xl rounded-2xl border border-zinc-300 dark:border-zinc-500/30 p-6 shadow-sm">
+          <div className={`${SURFACE} p-4 sm:p-5`}>
             <div className="mb-5 max-w-md">
               <label
                 htmlFor={selectId}
@@ -174,28 +171,15 @@ export default function DashboardChartsPage() {
               >
                 {t.charts.domainFilter}
               </label>
-              <div className="relative">
-                <i
-                  className="ri-global-line absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 pointer-events-none"
-                  aria-hidden="true"
-                ></i>
-                <select
-                  id={selectId}
-                  value={currentUrl}
-                  onChange={(event) => setSelectedUrl(event.target.value)}
-                  className="w-full h-12 pl-12 pr-10 bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-700/60 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-cyan-500/50 transition-all cursor-pointer appearance-none"
-                >
-                  {uniqueUrls.map((url) => (
-                    <option key={url} value={url} className="bg-white dark:bg-zinc-950">
-                      {url}
-                    </option>
-                  ))}
-                </select>
-                <i
-                  className="ri-arrow-down-s-line absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 pointer-events-none"
-                  aria-hidden="true"
-                ></i>
-              </div>
+              <Dropdown
+                id={selectId}
+                size="lg"
+                icon="ri-global-line"
+                className="w-full"
+                value={currentUrl}
+                options={uniqueUrls.map((url) => ({ value: url, label: url }))}
+                onChange={setSelectedUrl}
+              />
             </div>
 
             <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">{t.charts.heading}</h2>
@@ -255,23 +239,26 @@ export default function DashboardChartsPage() {
                   </ResponsiveContainer>
                 </div>
 
-                <table className="sr-only">
-                  <caption>{t.charts.tableCaption(currentUrl)}</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">{t.charts.scanDate}</th>
-                      <th scope="col">{t.charts.threatLevel}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {urlHistory.map((point, index) => (
-                      <tr key={`${point.createdAt}-${index}`}>
-                        <td>{format.dateTime(point.createdAt)}</td>
-                        <td>{formatThreat(point.threat)}</td>
+                {/* A table ignores width: 1px, so the wrapper does the hiding. */}
+                <div className="sr-only">
+                  <table>
+                    <caption>{t.charts.tableCaption(currentUrl)}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{t.charts.scanDate}</th>
+                        <th scope="col">{t.charts.threatLevel}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {urlHistory.map((point, index) => (
+                        <tr key={`${point.createdAt}-${index}`}>
+                          <td>{format.dateTime(point.createdAt)}</td>
+                          <td>{formatThreat(point.threat)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </figure>
             )}
           </div>

@@ -44,7 +44,7 @@ function Overview() {
 
   if (error?.kind === "forbidden") {
     return (
-      <div className="p-3 sm:p-6">
+      <div className="p-4 sm:p-6">
         <NoAccess />
       </div>
     );
@@ -61,8 +61,7 @@ function Overview() {
         return (
           <StatsCard
             icon="ri-group-line"
-            iconColor="text-purple-400"
-            iconBgColor="bg-purple-500/10"
+            tone="violet"
             value={count(data?.total_users)}
             loading={loading}
             label={label}
@@ -72,8 +71,7 @@ function Overview() {
         return (
           <StatsCard
             icon="ri-scan-line"
-            iconColor="text-cyan-400"
-            iconBgColor="bg-cyan-500/10"
+            tone="cyan"
             value={count(data?.all_time_scans)}
             loading={loading}
             label={label}
@@ -83,8 +81,7 @@ function Overview() {
         return (
           <StatsCard
             icon="ri-alert-line"
-            iconColor="text-red-400"
-            iconBgColor="bg-red-500/10"
+            tone="rose"
             value={count(data?.detected_threats)}
             loading={loading}
             label={label}
@@ -95,8 +92,7 @@ function Overview() {
         return (
           <StatsCard
             icon="ri-user-add-line"
-            iconColor="text-emerald-400"
-            iconBgColor="bg-emerald-500/10"
+            tone="emerald"
             value={null}
             label={label}
           />
@@ -108,6 +104,7 @@ function Overview() {
             isLoading={loading}
             error={error !== null}
             viewAllHref="/admin/scans"
+            scanHref={(scan) => `/admin/scans?scan=${encodeURIComponent(scan.id)}`}
           />
         );
       case "topCountries":

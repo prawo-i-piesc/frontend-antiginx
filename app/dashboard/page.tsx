@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import StatsCard from "@/app/components/interface/StatsCard";
 import DashboardShell from "@/app/components/layout/DashboardShell";
+import PagePending from "@/app/components/layout/PagePending";
 import RecentScansWidget from "@/app/components/widgets/RecentScansWidget";
 import TopThreatsWidget from "@/app/components/widgets/TopThreatsWidget";
 import WidgetBoard from "@/app/components/widgets/WidgetBoard";
@@ -73,8 +74,7 @@ export default function DashboardPage() {
     };
   }, [authenticated, attempt]);
 
-  if (!initialized) return null;
-  if (!authenticated) return null;
+  if (!initialized || !authenticated) return <PagePending layout="widgets" />;
 
   const loading = status === "loading";
   // A failed load shows "no data", not a misleading zero.
@@ -93,8 +93,7 @@ export default function DashboardPage() {
         return (
           <StatsCard
             icon="ri-search-line"
-            iconColor="text-cyan-400"
-            iconBgColor="bg-cyan-500/10"
+            tone="cyan"
             value={count(data?.total_scans)}
             loading={loading}
             label={label}
@@ -104,8 +103,7 @@ export default function DashboardPage() {
         return (
           <StatsCard
             icon="ri-shield-check-line"
-            iconColor="text-green-400"
-            iconBgColor="bg-green-500/10"
+            tone="emerald"
             value={count(data?.safe_sites)}
             loading={loading}
             label={label}
@@ -115,8 +113,7 @@ export default function DashboardPage() {
         return (
           <StatsCard
             icon="ri-alert-line"
-            iconColor="text-red-400"
-            iconBgColor="bg-red-500/10"
+            tone="rose"
             value={count(data?.detected_threats)}
             loading={loading}
             label={label}
@@ -127,8 +124,7 @@ export default function DashboardPage() {
         return (
           <StatsCard
             icon="ri-calendar-line"
-            iconColor="text-purple-400"
-            iconBgColor="bg-purple-500/10"
+            tone="violet"
             value={null}
             label={label}
           />
@@ -140,6 +136,10 @@ export default function DashboardPage() {
             isLoading={loading}
             error={status === "error"}
             viewAllHref="/dashboard/scanner"
+            // The scanner lists finished scans only, so only those link there.
+            scanHref={(scan) =>
+              scan.status === "COMPLETED" ? `/dashboard/scanner?scan=${encodeURIComponent(scan.id)}` : undefined
+            }
           />
         );
       case "topThreats":

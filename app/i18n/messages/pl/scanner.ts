@@ -11,11 +11,15 @@ const scanner: Messages["scanner"] = {
     urlPlaceholder: "https://example.com",
     urlRequired: "Wpisz adres strony do przeskanowania.",
     scope: "Zakres testów",
-    testsLoading: "Ładowanie dostępnych testów…",
     testsLoadError: "Nie udało się wczytać listy testów.",
     selectCategory: (category) => `Zaznacz wszystkie testy: ${category}`,
     selectedCount: (selected, total) => `Zaznaczono ${selected} z ${total}`,
-    noTestsSelected: "Zaznacz co najmniej jeden test, aby uruchomić skan.",
+    noTestsSelected: "Nie wybrano żadnego testu",
+    allSelected: (total) => `Wszystkie testy: ${total}`,
+    categoryAll: "Zaznacz wszystkie",
+    categoryNone: "Odznacz wszystkie",
+    // "z" takes the genitive: z 1 testu, z 2 testów, z 5 testów.
+    totalSelected: (selected, total) => `Zaznaczono ${selected} z ${total} ${total === 1 ? "testu" : "testów"}`,
     authorization:
       "Potwierdzam, że mam uprawnienia do testowania tej domeny skanerem antybotowym Antiginx oraz wszystkie zgody potrzebne do przeprowadzenia testów bezpieczeństwa strony docelowej.",
     submit: "Uruchom skan",
@@ -41,6 +45,8 @@ const scanner: Messages["scanner"] = {
     },
     loading: "Ładowanie skanów…",
     loadError: "Nie udało się wczytać skanów.",
+    clearFilters: "Wyczyść filtry",
+    allStatuses: "Wszystkie statusy",
     empty: "Brak skanów na tym koncie.",
     noMatches: "Żaden skan nie pasuje do wyszukiwania ani filtra.",
     columns: {

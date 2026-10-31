@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { BUTTON_QUIET } from "@/app/components/profile/ui";
+import Dropdown from "@/app/components/ui/Dropdown";
 import Pagination from "@/app/components/ui/Pagination";
+import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
+import { SURFACE } from "@/app/components/ui/surface";
 import type { LoadError } from "@/app/hooks/useAdminQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
-import { PAGE_SIZES, type PageSize } from "@/app/lib/adminApi";
+import { PAGE_SIZES, type PageSize } from "@/app/lib/paging";
 import type { ScanStatus } from "@/app/lib/api";
 import { useToast } from "@/app/providers/ToastProvider";
 
@@ -17,8 +20,7 @@ import { useToast } from "@/app/providers/ToastProvider";
  * in monospace.
  */
 
-export const PANEL =
-  "scroll-mt-4 overflow-hidden rounded-xl border border-zinc-300 bg-white/85 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/30";
+export const PANEL = `scroll-mt-4 overflow-hidden ${SURFACE}`;
 export const TOOLBAR =
   "flex flex-wrap items-center gap-3 border-b border-zinc-200 px-3 py-3 sm:px-4 dark:border-zinc-800";
 /**
@@ -40,35 +42,15 @@ export const CODE = "font-code text-xs";
 /** No size of its own: add h-8 w-8 or similar where it is used. */
 export const ICON_BUTTON =
   "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
-const CONTROL_SKIN =
-  "rounded-lg border border-zinc-300 bg-zinc-50 text-zinc-900 transition-colors dark:border-zinc-700/70 dark:bg-zinc-950/50 dark:text-zinc-100";
-export const CONTROL = `h-9 text-sm ${CONTROL_SKIN}`;
-
 /**
- * A select with its own chevron. The native one sits wherever the browser
- * puts it, which in a control this small is right against the border.
+ * Text fields show focus by their border alone. A field takes :focus-visible
+ * on a mouse click too, so the app-wide outline ring would light up every
+ * time someone clicks in to type; the border change is quieter and still
+ * plainly visible.
  */
-export function Select({
-  compact = false,
-  className = "",
-  children,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & { compact?: boolean }) {
-  return (
-    <span className={`relative inline-flex ${className}`}>
-      <select
-        {...props}
-        className={`${compact ? "h-8 text-xs" : "h-9 text-sm"} ${CONTROL_SKIN} w-full cursor-pointer appearance-none pl-3 pr-8`}
-      >
-        {children}
-      </select>
-      <i
-        className="ri-arrow-down-s-line pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-base leading-none text-zinc-500 dark:text-zinc-400"
-        aria-hidden="true"
-      />
-    </span>
-  );
-}
+const CONTROL_SKIN =
+  "rounded-lg border border-zinc-300 bg-zinc-50 text-zinc-900 transition-colors quiet-focus focus:border-zinc-500 dark:border-zinc-700/70 dark:bg-zinc-950/50 dark:text-zinc-100 dark:focus:border-zinc-400";
+export const CONTROL = `h-9 text-sm ${CONTROL_SKIN}`;
 
 /** Page and page size from the address; anything unparseable falls back to the first page of 25. */
 export function pagingFrom(params: URLSearchParams): { page: number; size: PageSize; offset: number } {
@@ -128,9 +110,9 @@ export function IdCell({ id }: { id: string }) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(id);
-      toast.success(t.admin.copied);
+      toast.success(t.table.copied);
     } catch {
-      toast.error(t.admin.copyFailed);
+      toast.error(t.table.copyFailed);
     }
   }
 
@@ -142,8 +124,8 @@ export function IdCell({ id }: { id: string }) {
       <button
         type="button"
         onClick={() => void copy()}
-        aria-label={t.admin.copyId(id)}
-        title={t.admin.copyId(id)}
+        aria-label={t.table.copyId(id)}
+        title={t.table.copyId(id)}
         className={`${ICON_BUTTON} h-7 w-7`}
       >
         <i className="ri-file-copy-line text-[13px]" aria-hidden="true" />
@@ -203,13 +185,34 @@ export function TableMessage({ children }: { children: React.ReactNode }) {
   return <div className="px-4 py-14 text-center text-sm text-zinc-600 dark:text-zinc-400">{children}</div>;
 }
 
-export function TableLoading() {
-  const { t } = useI18n();
+/**
+ * Rows of placeholders where the table will be: a header strip, then rows
+ * as tall as the real ones, so nothing moves when the data arrives.
+ */
+export function TableLoading({ rows = 6, columns = 5 }: { rows?: number; columns?: number }) {
+  const rest = Array.from({ length: Math.max(columns - 1, 0) }, (_, index) => index);
   return (
-    <TableMessage>
-      <i className="ri-loader-4-line animate-spin text-2xl text-cyan-700 dark:text-cyan-400" aria-hidden="true" />
-      <p className="mt-2">{t.common.loading}</p>
-    </TableMessage>
+    <SkeletonRegion>
+      <div className={`${THEAD} flex h-9 items-center gap-6 px-3`}>
+        <Bone className="h-2.5 w-20" />
+        {rest.map((column) => (
+          <Bone key={column} className="hidden h-2.5 w-14 sm:block" />
+        ))}
+      </div>
+      {Array.from({ length: rows }, (_, row) => (
+        <div
+          key={row}
+          className="flex h-11 items-center gap-6 border-b border-zinc-100 px-3 last:border-0 dark:border-zinc-800/60"
+        >
+          <span className="min-w-0 flex-1">
+            <Bone className={`h-3 max-w-full ${ROW_WIDTHS[row % ROW_WIDTHS.length]}`} />
+          </span>
+          {rest.map((column) => (
+            <Bone key={column} className="hidden h-3 w-16 sm:block" />
+          ))}
+        </div>
+      ))}
+    </SkeletonRegion>
   );
 }
 
@@ -217,7 +220,7 @@ export function TableLoading() {
 export function LoadFailure({ error, title, onRetry }: { error: LoadError; title: string; onRetry: () => void }) {
   const { t } = useI18n();
   const reason =
-    error.kind === "network" ? t.common.networkError : error.kind === "failed" ? error.message : t.admin.noAccess.title;
+    error.kind === "network" ? t.common.networkError : error.kind === "failed" ? error.message : t.errors.status.forbidden;
 
   return (
     <div className="px-4 py-12 text-center">
@@ -247,6 +250,7 @@ export function TableFooter({
 }) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
+  const sizeLabelId = useId();
   const page = Math.floor(offset / size) + 1;
   const totalPages = Math.max(1, Math.ceil(total / size));
 
@@ -264,20 +268,16 @@ export function TableFooter({
         {t.common.pagination.range(Math.min(offset + 1, total), Math.min(offset + size, total), total)}
       </p>
       <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-          {t.admin.pageSize}
-          <Select
-            compact
-            value={size}
-            onChange={(event) => onSizeChange(Number(event.target.value) as PageSize)}
-          >
-            {PAGE_SIZES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
-        </label>
+        <span className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          <span id={sizeLabelId}>{t.table.pageSize}</span>
+          <Dropdown
+            size="sm"
+            labelledBy={sizeLabelId}
+            value={String(size)}
+            options={PAGE_SIZES.map((option) => ({ value: String(option), label: String(option) }))}
+            onChange={(next) => onSizeChange(Number(next) as PageSize)}
+          />
+        </span>
         {totalPages > 1 ? <Pagination page={page} totalPages={totalPages} onPageChange={changePage} /> : null}
       </div>
     </div>

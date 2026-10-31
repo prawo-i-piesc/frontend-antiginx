@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import { Bone } from "@/app/components/ui/Skeleton";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import type { Messages } from "@/app/i18n/messages";
 import { ApiError } from "@/app/lib/authErrors";
@@ -275,13 +276,28 @@ export default function Passkeys() {
                   <p
                     role="status"
                     className={
-                      credentials === null || credentials.length === 0
+                      credentials !== null && credentials.length === 0
                         ? "py-3 text-sm text-zinc-600 dark:text-zinc-400"
                         : "sr-only"
                     }
                   >
                     {credentials === null ? t.common.loading : credentials.length === 0 ? copy.empty : null}
                   </p>
+
+                  {/* Two rows in the shape of a passkey, until the list arrives. */}
+                  {credentials === null ? (
+                    <div aria-hidden="true" className="divide-y divide-zinc-200 dark:divide-zinc-700/50">
+                      {["w-40", "w-28"].map((width) => (
+                        <div key={width} className="flex items-center gap-4 py-3">
+                          <Bone className="h-5 w-5 shrink-0 rounded-full" />
+                          <span className="min-w-0 flex-1 space-y-1.5">
+                            <Bone className={`h-3.5 ${width}`} />
+                            <Bone className="h-2.5 w-52 max-w-full" />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
 
                   {credentials && credentials.length > 0 ? (
                     <ul

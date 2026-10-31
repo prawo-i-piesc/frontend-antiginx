@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 
+import ScanItem from "@/app/components/interface/ScanItem";
+import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
+import WidgetCard from "@/app/components/widgets/WidgetCard";
 import { useI18n } from "@/app/i18n/I18nProvider";
+import type { ScanStatus } from "@/app/lib/api";
 
-/** The widget only needs the address and an id to key it by. */
+/** The widget needs the address and an id; status and date are shown when the API sends them. */
 export interface ApiScanData {
   id: string;
   target_url: string;
+  status?: string;
+  created_at?: string;
 }
 
 interface RecentScansWidgetProps {
@@ -15,64 +21,71 @@ interface RecentScansWidgetProps {
   isLoading?: boolean;
   /** Where "View all" leads; without it the link is left out. */
   viewAllHref?: string;
+  /** Where one scan's details open; undefined leaves that row without a link. */
+  scanHref?: (scan: ApiScanData) => string | undefined;
   /** The scans could not be loaded. */
   error?: boolean;
 }
+
+const SCAN_STATUSES = new Set(["PENDING", "RUNNING", "COMPLETED", "FAILED"]);
 
 export default function RecentScansWidget({
   scans = [],
   isLoading = false,
   viewAllHref,
+  scanHref,
   error = false,
 }: RecentScansWidgetProps) {
   const { t } = useI18n();
   const copy = t.widgets.recentScans;
-  const messageClass = "flex items-center justify-center h-full text-sm text-zinc-600 dark:text-zinc-400";
+  const messageClass = "flex flex-1 items-center justify-center text-sm text-zinc-600 dark:text-zinc-400";
 
   return (
-    <div className="rounded-xl bg-white/85 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-300 dark:border-zinc-800/30 p-6 h-full flex flex-col">
-      <div className="mb-6 flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{t.widgets.names.recentScans}</h2>
-        {viewAllHref ? (
+    <WidgetCard
+      title={t.widgets.names.recentScans}
+      action={
+        viewAllHref ? (
           <Link
             href={viewAllHref}
-            className="inline-flex min-h-6 items-center text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium"
+            className="inline-flex min-h-6 shrink-0 items-center text-sm font-medium text-cyan-700 hover:underline dark:text-cyan-400"
           >
             {t.widgets.viewAll}
             <span className="sr-only"> {copy.viewAllContext}</span>
           </Link>
-        ) : null}
-      </div>
-
-      <div className="overflow-y-auto flex-1 pr-2 scrollbar-theme">
-        {isLoading ? (
-          <p className={messageClass}>{copy.loading}</p>
-        ) : error ? (
-          <p className={messageClass}>{copy.error}</p>
-        ) : scans.length === 0 ? (
-          <p className={messageClass}>{copy.empty}</p>
-        ) : (
-          <ul className="space-y-2">
-            {scans.map((scan) => (
-              <li
-                key={scan.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/40"
-              >
-                <div
-                  className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0"
-                  aria-hidden="true"
-                >
-                  <i className="ri-global-line text-cyan-500 dark:text-cyan-400 text-sm" aria-hidden="true"></i>
-                </div>
-                {/* Truncated on screen only; the whole address stays in the text. */}
-                <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate" title={scan.target_url}>
-                  {scan.target_url}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+        ) : null
+      }
+    >
+      {isLoading ? (
+        <SkeletonRegion className="-mx-2 flex-1 divide-y divide-zinc-200 dark:divide-zinc-800/70">
+          {ROW_WIDTHS.slice(0, 4).map((width) => (
+            <div key={width} className="flex items-center gap-3 px-2 py-3">
+              <Bone className="h-4 w-4 shrink-0 rounded-full" />
+              <span className="min-w-0 flex-1 space-y-1.5">
+                <Bone className={`h-3 max-w-full ${width}`} />
+                <Bone className="h-2.5 w-24" />
+              </span>
+              <Bone className="h-3 w-16 shrink-0" />
+            </div>
+          ))}
+        </SkeletonRegion>
+      ) : error ? (
+        <p className={messageClass}>{copy.error}</p>
+      ) : scans.length === 0 ? (
+        <p className={messageClass}>{copy.empty}</p>
+      ) : (
+        <ul className="-mx-2 flex-1 divide-y divide-zinc-200 overflow-y-auto scrollbar-theme dark:divide-zinc-800/70">
+          {scans.map((scan) => (
+            <li key={scan.id} className="py-0.5">
+              <ScanItem
+                url={scan.target_url}
+                status={scan.status && SCAN_STATUSES.has(scan.status) ? (scan.status as ScanStatus) : undefined}
+                createdAt={scan.created_at}
+                href={scanHref?.(scan)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </WidgetCard>
   );
 }

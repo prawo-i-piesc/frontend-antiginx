@@ -16,9 +16,6 @@ export type ScanType = "free" | "premium";
 export const SCAN_STATUSES: readonly ScanStatus[] = ["PENDING", "RUNNING", "COMPLETED", "FAILED"];
 export const SCAN_TYPES: readonly ScanType[] = ["free", "premium"];
 
-/** The backend accepts 1–100 and defaults to 25. */
-export const PAGE_SIZES = [25, 50, 100] as const;
-export type PageSize = (typeof PAGE_SIZES)[number];
 
 export interface AdminUser {
   id: string;

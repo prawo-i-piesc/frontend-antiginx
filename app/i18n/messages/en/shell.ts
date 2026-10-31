@@ -1,7 +1,5 @@
 /** The dashboard and admin chrome: sidebar, top bar, mobile drawer. */
 const shell = {
-  dashboardBadge: "Dashboard",
-  adminBadge: "Admin",
   dashboardNav: "Dashboard navigation",
   adminNav: "Admin navigation",
 
@@ -9,7 +7,6 @@ const shell = {
     menu: "Menu",
     other: "Other",
     management: "Management",
-    system: "System",
   },
 
   links: {
@@ -29,12 +26,13 @@ const shell = {
   defaultAdminName: "Admin",
   logout: "Log out",
 
+  areaSwitch: "Switch area",
+  areas: { dashboard: "Dashboard", admin: "Admin" },
+  collapseSidebar: "Collapse menu",
+  expandSidebar: "Expand menu",
   menu: "Menu",
   closeMenu: "Close menu",
   darkMode: "Dark mode",
-  searchPlaceholder: "Search for scans, threats, or reports…",
-  adminSearchPlaceholder: "Search users, scans, reports…",
-  searchUnavailable: "Search is not available yet",
   notifications: "Notifications — coming soon",
 };
 

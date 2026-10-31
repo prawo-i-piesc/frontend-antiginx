@@ -1,6 +1,7 @@
 "use client";
 
 import Dialog from "@/app/components/ui/Dialog";
+import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import { useI18n } from "@/app/i18n/I18nProvider";
 
 /**
@@ -119,7 +120,28 @@ export function Empty() {
   return (
     <>
       <span aria-hidden="true">—</span>
-      <span className="sr-only">{t.admin.noValue}</span>
+      <span className="sr-only">{t.table.noValue}</span>
     </>
+  );
+}
+
+/** Sections of label–value rows, the shape of an inspector before its data arrives. */
+export function SheetSkeleton({ sections = [5, 7, 2] }: { sections?: number[] }) {
+  return (
+    <SkeletonRegion className="space-y-6">
+      {sections.map((rows, section) => (
+        <div key={section}>
+          <Bone className="h-3.5 w-28" />
+          <div className="mt-2 divide-y divide-zinc-100 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {Array.from({ length: rows }, (_, row) => (
+              <div key={row} className="flex min-h-10 items-center justify-between gap-4 px-3 py-1.5">
+                <Bone className="h-3 w-24" />
+                <Bone className={`h-3 ${row % 2 ? "w-20" : "w-32"}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </SkeletonRegion>
   );
 }

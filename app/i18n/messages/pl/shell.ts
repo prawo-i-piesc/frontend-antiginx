@@ -1,8 +1,6 @@
 import type { Messages } from "@/app/i18n/messages/en";
 
 const shell: Messages["shell"] = {
-  dashboardBadge: "Pulpit",
-  adminBadge: "Admin",
   dashboardNav: "Nawigacja pulpitu",
   adminNav: "Nawigacja panelu administratora",
 
@@ -10,7 +8,6 @@ const shell: Messages["shell"] = {
     menu: "Menu",
     other: "Inne",
     management: "Zarządzanie",
-    system: "System",
   },
 
   links: {
@@ -30,12 +27,13 @@ const shell: Messages["shell"] = {
   defaultAdminName: "Administrator",
   logout: "Wyloguj się",
 
+  areaSwitch: "Przełącz obszar",
+  areas: { dashboard: "Pulpit", admin: "Panel admina" },
+  collapseSidebar: "Zwiń menu",
+  expandSidebar: "Rozwiń menu",
   menu: "Menu",
   closeMenu: "Zamknij menu",
   darkMode: "Tryb ciemny",
-  searchPlaceholder: "Szukaj skanów, zagrożeń lub raportów…",
-  adminSearchPlaceholder: "Szukaj użytkowników, skanów, raportów…",
-  searchUnavailable: "Wyszukiwanie nie jest jeszcze dostępne",
   notifications: "Powiadomienia – wkrótce",
 };
 
