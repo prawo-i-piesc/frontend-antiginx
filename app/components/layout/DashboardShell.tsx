@@ -38,7 +38,7 @@ type DashboardShellProps = {
 export default function DashboardShell({ area, activePage, mainClassName = "", children }: DashboardShellProps) {
   const { t } = useI18n();
   const { logout } = useAuth();
-  const { profileName } = useProfile();
+  const { profileName, profilePlan } = useProfile();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
@@ -110,6 +110,7 @@ export default function DashboardShell({ area, activePage, mainClassName = "", c
         onClose={closeDrawer}
         closeButtonRef={closeButtonRef}
         profileName={profileName}
+        profilePlan={profilePlan}
         onLogout={() => void logout()}
       />
 

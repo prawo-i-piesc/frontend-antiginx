@@ -3,8 +3,9 @@
  *
  * Plans describe what each tier includes as the product is planned: the free
  * account has today's features, Pro adds the scheduled scans, higher limits
- * and every test, Enterprise a private instance. No payment provider is wired
- * up yet, so nothing here promises payment methods, trials or billing terms.
+ * and every test, Enterprise a private instance. Payment happens on Stripe's
+ * Checkout page, so nothing here promises payment methods, trials or billing
+ * terms.
  */
 const pricing = {
   title: "Pricing",
@@ -12,6 +13,8 @@ const pricing = {
     "Scanning a site needs no account. A free account keeps your scans in one place; Pro gives you every test, premium ones included, and scans your domains on a schedule.",
 
   plansHeading: "Plans",
+  /** On the Pro card, for someone who already pays. */
+  yourPlan: "Your plan",
   perMonth: "/month",
   /** Shown over the extra features of the higher plans. */
   plus: (plan: string) => `Everything in ${plan}, plus:`,

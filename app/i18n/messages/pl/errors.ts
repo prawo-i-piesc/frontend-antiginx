@@ -35,6 +35,10 @@ const errors: Messages["errors"] = {
     CREDENTIAL_NOT_FOUND: "Nie znaleźliśmy tego klucza dostępu.",
     PASSKEY_PASSWORD_REQUIRED:
       "Na tym koncie najpierw logujesz się hasłem, a potem potwierdzasz kluczem dostępu.",
+    BILLING_DISABLED: "Płatności nie są jeszcze dostępne.",
+    BILLING_UNAVAILABLE: "Nie udało się połączyć z operatorem płatności. Spróbuj ponownie za chwilę.",
+    ALREADY_SUBSCRIBED: "Masz już aktywny plan Pro.",
+    NO_BILLING_ACCOUNT: "Na tym koncie nie było jeszcze żadnych płatności.",
     RATE_LIMITED: "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
     FORBIDDEN: "Nie masz do tego dostępu.",
     INTERNAL: "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",

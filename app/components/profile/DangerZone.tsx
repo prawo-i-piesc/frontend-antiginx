@@ -170,7 +170,10 @@ export default function DangerZone() {
             <>
               <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-700 dark:text-rose-400">
                 <i className="ri-alert-line mt-0.5 text-lg" aria-hidden="true" />
-                <p>{copy.warning}</p>
+                <p>
+                  {copy.warning}
+                  {user?.plan === "pro" ? ` ${copy.endsSubscription}` : null}
+                </p>
               </div>
 
               {/* The phrase sits here rather than in the label, which is

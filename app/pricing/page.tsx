@@ -1,7 +1,8 @@
 "use client";
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import Footer from '../components/Footer';
@@ -14,7 +15,10 @@ import { entrance } from '../components/ui/entrance';
 import { CONTACT_EMAIL, DOCS_URL } from '../config/constants';
 import { levelClass } from '../components/AccountSection';
 import { useI18n } from '../i18n/I18nProvider';
+import { ApiError } from '../lib/authErrors';
+import { checkoutUrl } from '../lib/billingApi';
 import { useAuth } from '../providers/AuthProvider';
+import { useToast } from '../providers/ToastProvider';
 
 const PLANS = ['free', 'pro', 'enterprise'] as const;
 type Plan = (typeof PLANS)[number];
@@ -152,6 +156,27 @@ export default function PricingPage() {
   const copy = t.pricing;
   const auth = useAuth();
   const signedIn = Boolean(auth?.initialized && auth?.authenticated);
+  const onPro = signedIn && auth?.user?.plan === 'pro';
+  const router = useRouter();
+  const toast = useToast();
+  const [upgrading, setUpgrading] = useState(false);
+
+  // Signed in, Pro goes straight to Stripe; the plan section in the profile is
+  // only where someone who already pays ends up.
+  const upgrade = async () => {
+    if (upgrading) return;
+    setUpgrading(true);
+    try {
+      window.location.href = await checkoutUrl();
+    } catch (error) {
+      setUpgrading(false);
+      if (error instanceof ApiError && error.code === 'ALREADY_SUBSCRIBED') {
+        router.push('/dashboard/profile#plan');
+        return;
+      }
+      toast.error(error instanceof ApiError ? error.message : t.common.networkError);
+    }
+  };
   const plansHeadingId = useId();
   const faqHeadingId = useId();
   // The same entrance as the sign-in card: the title and intro, then the plans,
@@ -234,6 +259,20 @@ export default function PricingPage() {
                           <i className="ri-mail-line" aria-hidden="true"></i>
                           {plan.cta}
                         </a>
+                      ) : pro && onPro ? (
+                        <Link href="/dashboard/profile#plan" className={actionClass}>
+                          {copy.yourPlan}
+                        </Link>
+                      ) : pro && signedIn ? (
+                        <button
+                          type="button"
+                          onClick={() => void upgrade()}
+                          aria-disabled={upgrading || undefined}
+                          className={`${actionClass} aria-disabled:cursor-wait`}
+                        >
+                          {upgrading && <i className="ri-loader-4-line animate-spin" aria-hidden="true"></i>}
+                          {plan.cta}
+                        </button>
                       ) : (
                         <Link href={planKey === 'free' && signedIn ? '/dashboard' : '/register'} className={actionClass}>
                           {planKey === 'free' && signedIn ? t.landing.account.dashboard : plan.cta}

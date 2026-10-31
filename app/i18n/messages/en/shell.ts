@@ -21,7 +21,7 @@ const shell = {
     userDashboard: "User dashboard",
   },
 
-  plan: "Premium",
+  plans: { free: "Free", pro: "Pro" },
   administrator: "Administrator",
   defaultUserName: "User",
   defaultAdminName: "Admin",
