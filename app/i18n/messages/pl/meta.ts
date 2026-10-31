@@ -25,7 +25,8 @@ const meta: Messages["meta"] = {
     charts: "Wykresy",
     profile: "Ustawienia profilu",
     admin: "Panel administratora",
-    adminDatabase: "Baza danych",
+    adminUsers: "Użytkownicy",
+    adminScans: "Skany",
   },
 };
 

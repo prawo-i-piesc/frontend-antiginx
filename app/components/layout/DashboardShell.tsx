@@ -37,7 +37,7 @@ type DashboardShellProps = {
  */
 export default function DashboardShell({ area, activePage, mainClassName = "", children }: DashboardShellProps) {
   const { t } = useI18n();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { profileName, profilePlan } = useProfile();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -111,6 +111,7 @@ export default function DashboardShell({ area, activePage, mainClassName = "", c
         closeButtonRef={closeButtonRef}
         profileName={profileName}
         profilePlan={profilePlan}
+        canAdminister={user?.role === "admin"}
         onLogout={() => void logout()}
       />
 

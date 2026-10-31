@@ -5,6 +5,9 @@
 @theme inline {
   --font-sans: var(--font-google-sans);
   --font-mono: var(--font-geist-mono);
+  /* Identifiers in the admin tables: the system's own monospace, the way
+     GitHub shows a commit hash, rather than a display face. */
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 /* @ts-ignore */
@@ -218,6 +221,34 @@ body,
 
 @media (prefers-reduced-motion: reduce) {
   .animate-toast-in {
+    animation: none;
+  }
+}
+
+/* The admin inspectors slide in from the right edge over a fading backdrop. */
+@keyframes sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.animate-sheet-in {
+  animation: sheet-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-sheet-in::backdrop {
+  animation: backdrop-in 240ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-in,
+  .animate-sheet-in::backdrop {
     animation: none;
   }
 }

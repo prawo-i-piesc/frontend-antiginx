@@ -24,7 +24,8 @@ const meta = {
     charts: "Charts",
     profile: "Profile settings",
     admin: "Admin panel",
-    adminDatabase: "Database",
+    adminUsers: "Users",
+    adminScans: "Scans",
   },
 };
 

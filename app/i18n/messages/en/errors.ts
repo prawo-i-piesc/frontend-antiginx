@@ -43,6 +43,11 @@ const errors = {
     BILLING_UNAVAILABLE: "We could not reach the payment provider. Try again in a moment.",
     ALREADY_SUBSCRIBED: "You are already on the Pro plan.",
     NO_BILLING_ACCOUNT: "This account has no payments yet.",
+    USER_NOT_FOUND: "This account no longer exists.",
+    SCAN_NOT_FOUND: "This scan no longer exists.",
+    ADMIN_SELF_ACTION:
+      "You cannot change your own role or delete your own account here. Use your profile instead.",
+    LAST_ADMIN: "This is the last administrator. Make someone else an administrator first.",
     RATE_LIMITED: "Too many attempts. Wait a moment before trying again.",
     FORBIDDEN: "You do not have access to that.",
     INTERNAL: "Something went wrong on our side. Try again in a moment.",

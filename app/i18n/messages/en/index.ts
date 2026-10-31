@@ -1,4 +1,4 @@
-import adminDatabase from "./adminDatabase";
+import admin from "./admin";
 import adminOverview from "./adminOverview";
 import auth from "./auth";
 import charts from "./charts";
@@ -39,7 +39,7 @@ const en = {
   adminOverview,
   scanner,
   charts,
-  adminDatabase,
+  admin,
   profile,
 };
 

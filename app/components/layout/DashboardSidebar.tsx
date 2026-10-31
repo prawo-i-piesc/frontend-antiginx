@@ -10,7 +10,7 @@ import type { Plan } from "@/app/lib/billingApi";
 
 export type DashboardArea = "dashboard" | "admin";
 export type DashboardPage = "overview" | "scanner" | "charts" | "profile";
-export type AdminPage = "overview" | "database" | "profile";
+export type AdminPage = "overview" | "users" | "scans" | "profile";
 
 type LinkKey = keyof Messages["shell"]["links"];
 type SectionKey = keyof Messages["shell"]["sections"];
@@ -40,7 +40,8 @@ const NAVIGATION: Record<DashboardArea, NavSection[]> = {
       label: "management",
       links: [
         { href: "/admin", icon: "ri-shield-star-line", label: "overview", page: "overview" },
-        { href: "/admin/database", icon: "ri-database-2-line", label: "database", page: "database" },
+        { href: "/admin/users", icon: "ri-group-line", label: "users", page: "users" },
+        { href: "/admin/scans", icon: "ri-radar-line", label: "scans", page: "scans" },
       ],
     },
     {
@@ -53,6 +54,24 @@ const NAVIGATION: Record<DashboardArea, NavSection[]> = {
     },
   ],
 };
+
+/**
+ * The way back the other way: the admin area links to the user dashboard
+ * under "System", and for an administrator the user dashboard links to the
+ * admin panel in the same place. Navigation only; /admin checks the role
+ * again, and every /api/admin route checks it on the server.
+ */
+const ADMIN_PANEL_SECTION: NavSection = {
+  label: "system",
+  links: [{ href: "/admin", icon: "ri-shield-star-line", label: "adminPanel" }],
+};
+
+function navigationFor(area: DashboardArea, canAdminister: boolean): NavSection[] {
+  const sections = NAVIGATION[area];
+  if (area !== "dashboard" || !canAdminister) return sections;
+  // Before "Other", where "System" sits in the admin area too.
+  return [...sections.slice(0, -1), ADMIN_PANEL_SECTION, ...sections.slice(-1)];
+}
 
 function shortName(profileName: string | null | undefined, fallback: string) {
   if (!profileName) return fallback;
@@ -73,6 +92,8 @@ type DashboardSidebarProps = {
   closeButtonRef?: React.Ref<HTMLButtonElement>;
   profileName?: string | null;
   profilePlan?: Plan;
+  /** The signed-in account has the admin role. */
+  canAdminister?: boolean;
   onLogout: () => void;
 };
 
@@ -86,6 +107,7 @@ export default function DashboardSidebar({
   closeButtonRef,
   profileName,
   profilePlan = "free",
+  canAdminister = false,
   onLogout,
 }: DashboardSidebarProps) {
   const { t } = useI18n();
@@ -138,7 +160,7 @@ export default function DashboardSidebar({
         aria-label={isAdmin ? t.shell.adminNav : t.shell.dashboardNav}
         className="flex-1 px-4 py-6 overflow-y-auto bg-white/90 dark:bg-zinc-950/80 backdrop-blur-2xl scrollbar-theme"
       >
-        {NAVIGATION[area].map((section, index) => {
+        {navigationFor(area, canAdminister).map((section, index) => {
           const labelId = `${labelPrefix}-${section.label}`;
           return (
             <div key={section.label} className={index > 0 ? "mt-8" : undefined}>

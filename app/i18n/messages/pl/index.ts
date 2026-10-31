@@ -1,6 +1,6 @@
 import type { Messages } from "@/app/i18n/messages/en";
 
-import adminDatabase from "./adminDatabase";
+import admin from "./admin";
 import adminOverview from "./adminOverview";
 import auth from "./auth";
 import charts from "./charts";
@@ -36,7 +36,7 @@ const pl: Messages = {
   adminOverview,
   scanner,
   charts,
-  adminDatabase,
+  admin,
   profile,
 };
 
