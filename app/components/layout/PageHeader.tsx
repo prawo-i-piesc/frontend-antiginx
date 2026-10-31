@@ -41,3 +41,9 @@ export default function PageHeader({
  */
 export const PAGE_ACTION = "max-sm:w-9 max-sm:px-0";
 export const PAGE_ACTION_LABEL = "max-sm:sr-only";
+
+/**
+ * The padding of every signed-in page. With no top bar from lg up, the page
+ * starts at the window's edge, so it gets a little more room above the title.
+ */
+export const PAGE_PADDING = "p-4 sm:p-6 lg:pt-8";

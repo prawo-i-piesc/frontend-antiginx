@@ -26,7 +26,7 @@ import {
   pagingFrom,
   useClampPage,
 } from "@/app/components/ui/table";
-import useAdminQuery from "@/app/hooks/useAdminQuery";
+import useApiQuery from "@/app/hooks/useApiQuery";
 import useQueryParams from "@/app/hooks/useQueryParams";
 import useSearchDraft from "@/app/hooks/useSearchDraft";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -56,7 +56,7 @@ function UsersView() {
 
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
 
-  const { data, loading, error, reload } = useAdminQuery(`users:${q}:${size}:${offset}`, (signal) =>
+  const { data, loading, error, reload } = useApiQuery(`users:${q}:${size}:${offset}`, (signal) =>
     listUsers({ q: q || undefined, limit: size, offset }, signal),
   );
 

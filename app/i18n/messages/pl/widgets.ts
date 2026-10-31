@@ -1,22 +1,32 @@
 import type { Messages } from "@/app/i18n/messages/en";
-import { pluralPl } from "@/app/i18n/plural";
 
 const widgets: Messages["widgets"] = {
   names: {
-    totalScans: "Łączna liczba skanów",
+    totalScans: "Wszystkie skany",
     safeSites: "Bezpieczne strony",
     threats: "Wykryte zagrożenia",
-    scheduled: "Zaplanowane testy",
     recentScans: "Ostatnie skany",
-    topThreats: "Najczęstsze zagrożenia",
+    topThreats: "Najczęściej nieudane testy",
+    riskTrend: "Ryzyko w czasie",
+    averageRisk: "Średnie ryzyko",
+    domains: "Domeny",
+    failedTests: "Nieudane testy",
+    domainRisk: "Ryzyko domen",
+    severity: "Nieudane testy według wagi",
     totalUsers: "Łączna liczba użytkowników",
     activeScans: "Wszystkie skany",
     newRegistrations: "Nowe rejestracje",
-    topCountries: "Najpopularniejsze kraje",
+    failedChecks: "Najczęściej nieudane testy",
+  },
+
+  kpi: {
+    inProgress: (count) => `${count} w toku`,
+    noneInProgress: "Nic w toku",
+    window: "W ostatnich 30 dniach",
+    failedOf: (run) => `Z ${run} w ostatnich 30 dniach`,
   },
 
   noData: "Brak danych",
-  sample: "Dane przykładowe",
   viewAll: "Pokaż wszystkie",
   trend: {
     up: "Wzrost",
@@ -33,6 +43,7 @@ const widgets: Messages["widgets"] = {
     remove: (name) => `Usuń widżet: ${name}`,
     add: (name) => `Dodaj widżet: ${name}`,
     available: "Dostępne widżety",
+    reset: "Przywróć domyślne",
     announce: {
       grabbed: (name, position, total) => `Podniesiono widżet „${name}”. Pozycja ${position} z ${total}.`,
       moved: (name, position, total) => `Przeniesiono widżet „${name}” na pozycję ${position} z ${total}.`,
@@ -40,6 +51,7 @@ const widgets: Messages["widgets"] = {
       cancelled: (name, position, total) =>
         `Anulowano przenoszenie. Widżet „${name}” wrócił na pozycję ${position} z ${total}.`,
       removed: (name) => `Usunięto widżet „${name}”.`,
+      reset: "Przywrócono domyślny układ.",
       added: (name, position, total) => `Dodano widżet „${name}” na pozycji ${position} z ${total}.`,
     },
   },
@@ -51,20 +63,12 @@ const widgets: Messages["widgets"] = {
     error: "Nie udało się wczytać ostatnich skanów.",
   },
 
-  topThreats: {
-    categories: {
-      malware: "Złośliwe oprogramowanie",
-      phishing: "Phishing",
-      spam: "Spam",
-      exploit: "Exploity",
-      suspicious: "Podejrzane",
-    },
+  newRegistrations: {
+    window: "w ostatnich 7 dniach",
   },
 
-  topCountries: {
-    title: "Najpopularniejsze kraje (w budowie)",
-    rank: (rank) => `#${rank}`,
-    users: (count) => pluralPl(count, "użytkownik", "użytkownicy", "użytkowników"),
+  failedChecks: {
+    scope: "Wszystkie skany, 30 dni",
   },
 
   scanStatus: {

@@ -1,5 +1,3 @@
-import { pluralEn } from "@/app/i18n/plural";
-
 /** The widget board shared by the dashboard and admin overviews, and the widgets on it. */
 const widgets = {
   /** Keyed by widget type: the card's label, and the name the board's controls use. */
@@ -7,17 +5,29 @@ const widgets = {
     totalScans: "Total scans",
     safeSites: "Safe sites",
     threats: "Detected threats",
-    scheduled: "Scheduled tests",
     recentScans: "Recent scans",
-    topThreats: "Top threats",
+    topThreats: "Most failed checks",
+    riskTrend: "Risk over time",
+    averageRisk: "Average risk",
+    domains: "Domains",
+    failedTests: "Failed checks",
+    domainRisk: "Risk by domain",
+    severity: "Failed checks by severity",
     totalUsers: "Total users",
     activeScans: "All-time scans",
     newRegistrations: "New registrations",
-    topCountries: "Top countries",
+    failedChecks: "Most failed checks",
+  },
+
+  /** Lines under the overview's figures. */
+  kpi: {
+    inProgress: (count: number) => `${count} in progress`,
+    noneInProgress: "None in progress",
+    window: "In the last 30 days",
+    failedOf: (run: string) => `Of ${run} in the last 30 days`,
   },
 
   noData: "No data",
-  sample: "Sample data",
   viewAll: "View all",
   trend: {
     up: "Increase",
@@ -35,6 +45,7 @@ const widgets = {
     remove: (name: string) => `Remove widget: ${name}`,
     add: (name: string) => `Add widget: ${name}`,
     available: "Available widgets",
+    reset: "Restore defaults",
     /** Read out by screen readers as the board changes. */
     announce: {
       grabbed: (name: string, position: number, total: number) =>
@@ -46,6 +57,7 @@ const widgets = {
       cancelled: (name: string, position: number, total: number) =>
         `Move cancelled. ${name} is back at position ${position} of ${total}.`,
       removed: (name: string) => `Removed ${name}.`,
+      reset: "Restored the default layout.",
       added: (name: string, position: number, total: number) =>
         `Added ${name} at position ${position} of ${total}.`,
     },
@@ -59,24 +71,15 @@ const widgets = {
     error: "Could not load recent scans.",
   },
 
-  topThreats: {
-    categories: {
-      malware: "Malware",
-      phishing: "Phishing",
-      spam: "Spam",
-      exploit: "Exploit",
-      suspicious: "Suspicious",
-    },
+  newRegistrations: {
+    window: "in the last 7 days",
   },
 
-  topCountries: {
-    /** The widget is a work in progress and says so. */
-    title: "Top countries (WIP)",
-    rank: (rank: number) => `#${rank}`,
-    users: (count: number) => pluralEn(count, "user", "users"),
+  failedChecks: {
+    /** The admin widget counts every account's scans, free ones included. */
+    scope: "All scans, 30 days",
   },
 
-  /** Status badges of a scanned site. */
   scanStatus: {
     safe: "Safe",
     suspicious: "Suspicious",

@@ -31,7 +31,7 @@ import {
   shortId,
   useClampPage,
 } from "@/app/components/ui/table";
-import useAdminQuery from "@/app/hooks/useAdminQuery";
+import useApiQuery from "@/app/hooks/useApiQuery";
 import useQueryParams from "@/app/hooks/useQueryParams";
 import useSearchDraft from "@/app/hooks/useSearchDraft";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -77,7 +77,7 @@ function ScansView() {
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
   const [doomed, setDoomed] = useState<AdminScan | null>(null);
 
-  const { data, loading, error, reload } = useAdminQuery(
+  const { data, loading, error, reload } = useApiQuery(
     `scans:${type}:${status}:${owner}:${q}:${size}:${offset}`,
     (signal) => listScans({ type, status, user_id: owner, q: q || undefined, limit: size, offset }, signal),
   );

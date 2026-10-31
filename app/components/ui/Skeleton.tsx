@@ -8,14 +8,13 @@ import { useI18n } from "@/app/i18n/I18nProvider";
  * region around them is announced once as "Loading…".
  */
 
-/** One grey bar. Size and shape come from the caller. */
+/**
+ * One grey bar. Size and shape come from the caller. It shows only once the
+ * wait is long enough to notice (see .bone in globals.css), so a fast load
+ * goes straight from the empty frame to the content.
+ */
 export function Bone({ className = "" }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`block animate-pulse rounded-md bg-zinc-200 motion-reduce:animate-none dark:bg-zinc-800/80 ${className}`}
-    />
-  );
+  return <span aria-hidden="true" className={`bone block rounded-md bg-zinc-200 dark:bg-zinc-800/80 ${className}`} />;
 }
 
 export function SkeletonRegion({ className = "", children }: { className?: string; children: React.ReactNode }) {

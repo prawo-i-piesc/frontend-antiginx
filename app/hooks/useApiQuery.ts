@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 
 import { ApiError, messageForCode } from "@/app/lib/authErrors";
 
-/** What a screen can tell the admin about a load that failed. */
+/** What a screen can tell the person about a load that failed. */
 export type LoadError =
   | { kind: "forbidden" }
   | { kind: "network" }
@@ -36,7 +36,7 @@ interface Answer<T> {
  * collapsing to a spinner on every page change. A request overtaken by a newer
  * one is aborted and its answer dropped.
  */
-export default function useAdminQuery<T>(key: string | null, load: (signal: AbortSignal) => Promise<T>) {
+export default function useApiQuery<T>(key: string | null, load: (signal: AbortSignal) => Promise<T>) {
   const [reloads, setReloads] = useState(0);
   const [answer, setAnswer] = useState<Answer<T> | null>(null);
   const request = key === null ? null : `${key}#${reloads}`;
@@ -53,7 +53,7 @@ export default function useAdminQuery<T>(key: string | null, load: (signal: Abor
       },
       (error: unknown) => {
         if (controller.signal.aborted) return;
-        console.error("Admin request failed:", error);
+        console.error("Request failed:", error);
         setAnswer({ request, error: loadErrorOf(error) });
       },
     );

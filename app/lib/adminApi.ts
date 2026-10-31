@@ -7,8 +7,8 @@
  */
 
 import type { ScanStatus } from "@/app/lib/api";
-import { apiErrorFromResponse } from "@/app/lib/authErrors";
-import { authorizedFetch } from "@/app/lib/session";
+import { query, request } from "@/app/lib/request";
+import type { TestFailures } from "@/app/lib/statsApi";
 
 export type Role = "user" | "admin";
 export type ScanType = "free" | "premium";
@@ -84,23 +84,9 @@ export interface AdminWidgets {
   total_users: number;
   all_time_scans: number;
   detected_threats: number;
+  /** Accounts created in the last 7 days. */
+  new_users: number;
   recent_scans: { id: string; target_url: string; status: string; created_at: string; type: ScanType }[];
-}
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await authorizedFetch(path, init);
-  if (!response.ok) throw await apiErrorFromResponse(response);
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
-}
-
-function query(params: Record<string, string | number | undefined>): string {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") search.set(key, String(value));
-  }
-  const encoded = search.toString();
-  return encoded ? `?${encoded}` : "";
 }
 
 export function getWidgets(signal?: AbortSignal): Promise<AdminWidgets> {
@@ -161,4 +147,13 @@ export function getScan(id: string, signal?: AbortSignal): Promise<AdminScanDeta
 /** Deletes the scan together with its results. */
 export function deleteScan(id: string): Promise<void> {
   return request<void>(`/api/admin/scans/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/** The most failed tests across free and premium scans in the last `days`, most failures first. */
+export async function getFailedTests(
+  params: { days: number; limit?: number },
+  signal?: AbortSignal,
+): Promise<TestFailures[]> {
+  const body = await request<{ tests: TestFailures[] }>(`/api/admin/stats/tests${query(params)}`, { signal });
+  return body.tests;
 }

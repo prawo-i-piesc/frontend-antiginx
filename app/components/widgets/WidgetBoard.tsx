@@ -15,9 +15,11 @@ import {
 } from "react";
 
 import { buttonClass } from "@/app/components/ui/buttonStyles";
-import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL } from "@/app/components/layout/PageHeader";
+import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/components/layout/PageHeader";
+import { layoutOf, widgetTypes, type WidgetRegistry } from "@/app/components/widgets/contract";
 import { moveItem, useWidgetLayout, type WidgetConfig, type WidgetSize } from "@/app/hooks/useWidgetLayout";
 import { useI18n } from "@/app/i18n/I18nProvider";
+import type { PreferenceKey } from "@/app/lib/statsApi";
 
 const SIZE_CLASSES: Record<WidgetSize, string> = {
   "1x1": "",
@@ -35,18 +37,15 @@ const CORNER_BUTTON =
 const NEUTRAL_BUTTON = "bg-zinc-700/90 hover:bg-zinc-700 dark:bg-zinc-600/90 dark:hover:bg-zinc-600";
 
 interface WidgetBoardProps<T extends string> {
-  /** localStorage key the layout is saved under. */
-  storageKey: string;
+  /** The account preference the layout is saved under. */
+  storageKey: PreferenceKey;
   /** Every widget the board offers; those not on it are listed in customize mode. */
-  library: readonly WidgetConfig<T>[];
+  registry: WidgetRegistry<T>;
   /** The layout of a first visit. */
-  defaults: readonly WidgetConfig<T>[];
+  defaults: readonly T[];
   /** The page heading. */
   title: string;
   description: string;
-  /** Localized name of a widget type, used by the controls and announcements. */
-  widgetName: (type: T) => string;
-  renderWidget: (widget: WidgetConfig<T>) => ReactNode;
   /** Shown above the widgets when their data could not be loaded. */
   error?: string | null;
   onRetry?: () => void;
@@ -76,7 +75,7 @@ function swallowNextClick() {
 
 /**
  * A page heading and a grid of widgets the user can rearrange, remove and add
- * to; the layout is saved in the browser.
+ * to; the layout is saved to the account (see useWidgetLayout).
  *
  * In customize mode every widget has a move handle. A mouse drags the card
  * from anywhere, touch only from the handle so the page still scrolls. The
@@ -87,19 +86,25 @@ function swallowNextClick() {
  */
 export default function WidgetBoard<T extends string>({
   storageKey,
-  library,
+  registry,
   defaults,
   title,
   description,
-  widgetName,
-  renderWidget,
   error = null,
   onRetry,
 }: WidgetBoardProps<T>) {
   const { t } = useI18n();
   const copy = t.widgets.board;
 
-  const layout = useWidgetLayout(storageKey, library, defaults);
+  const library = useMemo(() => layoutOf(registry, widgetTypes(registry)), [registry]);
+  const defaultLayout = useMemo(() => layoutOf(registry, defaults), [registry, defaults]);
+  const layout = useWidgetLayout(storageKey, library, defaultLayout);
+
+  const widgetName = (type: T) => registry[type].name(t);
+  function renderWidget(widget: WidgetConfig<T>): ReactNode {
+    const { Component } = registry[widget.type];
+    return <Component />;
+  }
   const { widgets, available } = layout;
   const total = widgets.length;
 
@@ -330,21 +335,36 @@ export default function WidgetBoard<T extends string>({
   }
 
   return (
-    <div className={`p-4 sm:p-6 ${customizing ? "select-none" : ""}`}>
+    <div className={`${PAGE_PADDING} ${customizing ? "select-none" : ""}`}>
       <PageHeader
         title={title}
         description={description}
         actions={
-          <button
-            ref={toggleRef}
-            type="button"
-            onClick={toggleCustomizing}
-            aria-pressed={customizing}
-            className={`${buttonClass(customizing ? "primary" : "secondary")} ${PAGE_ACTION}`}
-          >
-            <i className={customizing ? "ri-check-line" : "ri-edit-line"} aria-hidden="true"></i>
-            <span className={PAGE_ACTION_LABEL}>{customizing ? t.common.done : copy.customize}</span>
-          </button>
+          <>
+            {customizing && !layout.isDefault ? (
+              <button
+                type="button"
+                onClick={() => {
+                  layout.reset();
+                  announce(copy.announce.reset);
+                }}
+                className={`${buttonClass("secondary")} ${PAGE_ACTION}`}
+              >
+                <i className="ri-arrow-go-back-line" aria-hidden="true"></i>
+                <span className={PAGE_ACTION_LABEL}>{copy.reset}</span>
+              </button>
+            ) : null}
+            <button
+              ref={toggleRef}
+              type="button"
+              onClick={toggleCustomizing}
+              aria-pressed={customizing}
+              className={`${buttonClass(customizing ? "primary" : "secondary")} ${PAGE_ACTION}`}
+            >
+              <i className={customizing ? "ri-check-line" : "ri-edit-line"} aria-hidden="true"></i>
+              <span className={PAGE_ACTION_LABEL}>{customizing ? t.common.done : copy.customize}</span>
+            </button>
+          </>
         }
       />
 
