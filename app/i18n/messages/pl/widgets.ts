@@ -16,6 +16,7 @@ const widgets: Messages["widgets"] = {
   },
 
   noData: "Brak danych",
+  sample: "Dane przykładowe",
   viewAll: "Pokaż wszystkie",
   trend: {
     up: "Wzrost",

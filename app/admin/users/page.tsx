@@ -25,12 +25,13 @@ import {
   Tag,
   pagingFrom,
   useClampPage,
-} from "@/app/components/admin/table";
+} from "@/app/components/ui/table";
 import useAdminQuery from "@/app/hooks/useAdminQuery";
 import useQueryParams from "@/app/hooks/useQueryParams";
 import useSearchDraft from "@/app/hooks/useSearchDraft";
 import { useI18n } from "@/app/i18n/I18nProvider";
-import { PAGE_SIZES, listUsers } from "@/app/lib/adminApi";
+import { listUsers } from "@/app/lib/adminApi";
+import { PAGE_SIZES } from "@/app/lib/paging";
 import { useAuth } from "@/app/providers/AuthProvider";
 
 export default function AdminUsersPage() {
@@ -85,14 +86,14 @@ function UsersView() {
             />
           </div>
           <p role="status" className={`${DATA} ml-auto text-xs text-zinc-600 dark:text-zinc-400`}>
-            {data ? t.admin.records(data.total, format.number(data.total)) : null}
+            {data ? t.table.records(data.total, format.number(data.total)) : null}
           </p>
         </div>
 
         {error ? (
           <LoadFailure error={error} title={t.admin.loadError} onRetry={reload} />
         ) : !data ? (
-          <TableLoading />
+          <TableLoading columns={8} />
         ) : users.length === 0 ? (
           <TableMessage>
             {q ? (

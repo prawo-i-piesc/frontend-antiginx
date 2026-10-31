@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 
 import { NoAccess } from "@/app/components/admin/AdminFrame";
 import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
-import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout } from "@/app/components/admin/Sheet";
+import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout, SheetSkeleton } from "@/app/components/admin/Sheet";
 import {
   CODE,
   DATA,
@@ -15,9 +15,8 @@ import {
   TABLE,
   TH,
   THEAD,
-  TableLoading,
   Tag,
-} from "@/app/components/admin/table";
+} from "@/app/components/ui/table";
 import { BUTTON_DANGER } from "@/app/components/profile/ui";
 import useAdminQuery from "@/app/hooks/useAdminQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -128,7 +127,7 @@ function Inspector({
       busy={loading}
       onClose={onClose}
     >
-      {loading && !scan ? <TableLoading /> : null}
+      {loading && !scan ? <SheetSkeleton sections={[9]} /> : null}
       {error?.kind === "forbidden" ? <NoAccess /> : null}
       {error && error.kind !== "forbidden" ? (
         <LoadFailure error={error} title={copy.loadError} onRetry={reload} />

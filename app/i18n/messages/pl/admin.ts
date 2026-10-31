@@ -10,12 +10,6 @@ const admin: Messages["admin"] = {
   },
 
   loadError: "Nie udało się wczytać tej listy.",
-  records: (count, shown) => `${shown} ${pluralPl(count, "rekord", "rekordy", "rekordów")}`,
-  pageSize: "Wierszy na stronę",
-  copyId: (id) => `Kopiuj ID ${id}`,
-  copied: "Skopiowano ID",
-  copyFailed: "Nie udało się skopiować. Zaznacz ID i skopiuj je ręcznie.",
-  noValue: "Brak wartości",
   you: "ty",
 
   roles: { admin: "admin", user: "użytkownik" },

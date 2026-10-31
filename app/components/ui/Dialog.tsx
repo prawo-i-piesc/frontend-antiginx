@@ -95,6 +95,10 @@ export default function Dialog({
     // The native close event does not bubble, but React passes it up its own
     // tree anyway: closing a dialog nested in this one would close this too.
     if (event.target !== event.currentTarget) return;
+    // The event is queued, so it can arrive after the dialog was shown again —
+    // React's development mode closes and reopens it on mount. A dismissal
+    // always finds it closed.
+    if (event.currentTarget.open) return;
     if (!openRef.current) return;
     onClose();
   };

@@ -6,18 +6,10 @@ import { Suspense } from "react";
 
 import { BUTTON_QUIET } from "@/app/components/profile/ui";
 import DashboardShell, { type AdminPage } from "@/app/components/layout/DashboardShell";
+import PagePending from "@/app/components/layout/PagePending";
+import PageHeader from "@/app/components/layout/PageHeader";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { useI18n } from "@/app/i18n/I18nProvider";
-
-function Pending() {
-  const { t } = useI18n();
-  return (
-    <div role="status" className="flex h-screen items-center justify-center bg-zinc-100 dark:bg-zinc-950">
-      <i className="ri-loader-4-line animate-spin text-2xl text-cyan-700 dark:text-cyan-400" aria-hidden="true" />
-      <span className="sr-only">{t.common.loading}</span>
-    </div>
-  );
-}
 
 /**
  * Sign-in and role gate, shell and page heading for every admin view.
@@ -39,16 +31,13 @@ export default function AdminFrame({
 }) {
   const { authenticated, initialized, auth } = useRequireAuth();
 
-  if (!initialized || !authenticated || !auth.user) return <Pending />;
+  if (!initialized || !authenticated || !auth.user) return <PagePending layout={heading ? "table" : "widgets"} />;
   if (auth.user.role !== "admin") notFound();
 
   return (
-    <DashboardShell area="admin" activePage={activePage} mainClassName={heading ? "p-3 sm:p-6" : ""}>
+    <DashboardShell area="admin" activePage={activePage} mainClassName={heading ? "p-4 sm:p-6" : ""}>
       {heading ? (
-        <header className="mb-5">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{heading.title}</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{heading.description}</p>
-        </header>
+        <PageHeader title={heading.title} description={heading.description} />
       ) : null}
       {/* The views keep their filters in the address, which needs a boundary. */}
       <Suspense fallback={null}>{children}</Suspense>

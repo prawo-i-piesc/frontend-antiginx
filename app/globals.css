@@ -60,6 +60,17 @@ body {
 }
 
 /*
+ * Text fields that show focus by their border instead (CONTROL in
+ * app/components/ui/table.tsx). A field takes :focus-visible on a mouse
+ * click too, so the ring above would light up every time someone clicks in
+ * to type. Unlayered like the rule above, or it would lose to it; forced
+ * colours below still draw the outline.
+ */
+.quiet-focus:focus-visible {
+  outline: none;
+}
+
+/*
  * Windows High Contrast and other forced-colour modes drop box-shadow, which
  * is what Tailwind's ring utilities are made of — without this, every
  * "focus:outline-none focus-visible:ring-2" control loses its focus indicator.
@@ -246,9 +257,38 @@ body,
   animation: backdrop-in 240ms ease-out;
 }
 
+/*
+ * The sidebar of the loading skeleton, as wide as the real one will be: the
+ * rail below xl and the full sidebar from xl, unless the person chose, which
+ * the bootstrap script in the root layout copies onto <html>.
+ */
+.shell-skeleton-sidebar {
+  width: 4rem;
+}
+
+@media (min-width: 1280px) {
+  .shell-skeleton-sidebar {
+    width: 16rem;
+  }
+}
+
+:root[data-sidebar="collapsed"] .shell-skeleton-sidebar {
+  width: 4rem;
+}
+
+:root[data-sidebar="expanded"] .shell-skeleton-sidebar {
+  width: 16rem;
+}
+
+/* The backdrop behind the navigation drawer. */
+.animate-fade-in {
+  animation: backdrop-in 200ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-sheet-in,
-  .animate-sheet-in::backdrop {
+  .animate-sheet-in::backdrop,
+  .animate-fade-in {
     animation: none;
   }
 }

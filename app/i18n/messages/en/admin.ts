@@ -13,13 +13,6 @@ const admin = {
   },
 
   loadError: "We could not load this list.",
-  /** `shown` is the count formatted for the locale. */
-  records: (count: number, shown: string) => pluralEn(count, `${shown} record`, `${shown} records`),
-  pageSize: "Rows per page",
-  copyId: (id: string) => `Copy ID ${id}`,
-  copied: "ID copied",
-  copyFailed: "Could not copy. Select the ID and copy it by hand.",
-  noValue: "No value",
   you: "you",
 
   roles: { admin: "admin", user: "user" },

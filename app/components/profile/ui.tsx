@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { BUTTON_BASE, BUTTON_VARIANTS, buttonClass } from "@/app/components/ui/buttonStyles";
+import { SURFACE } from "@/app/components/ui/surface";
 import { useI18n } from "@/app/i18n/I18nProvider";
 
 /**
@@ -28,7 +30,7 @@ export function ProfileCard({
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-2xl border border-zinc-300 bg-white/85 p-6 shadow-sm backdrop-blur-xl dark:border-zinc-500/30 dark:bg-zinc-900/20"
+      className={`${SURFACE} p-4 sm:p-6`}
     >
       {/* No wrapping: the status belongs in the corner, so the heading column
           shrinks instead of pushing it onto its own line. */}
@@ -186,33 +188,23 @@ export function ActionLabel({ label, context }: { label: string; context?: strin
   );
 }
 
-const BUTTON_SHAPE =
-  "rounded-xl text-sm transition-all whitespace-nowrap cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 dark:focus-visible:ring-cyan-400";
-
-const BUTTON_SIZE = "h-10 px-4";
-
 /**
  * Row actions shrink to the icon on a phone, where a column of full-width
  * labelled buttons crowds out what the rows actually say. The label goes to
  * sr-only rather than hidden, so the button keeps its name for a screen reader.
  */
 const ROW_SIZE =
-  "h-11 w-11 px-0 sm:h-10 sm:w-auto sm:px-4 [&>span]:sr-only sm:[&>span]:not-sr-only";
+  "h-11 w-11 px-0 text-sm sm:h-9 sm:w-auto sm:px-3.5 [&>span]:sr-only sm:[&>span]:not-sr-only";
 
-const PRIMARY_SKIN =
-  "border border-cyan-500/50 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-500/60";
-const QUIET_SKIN =
-  "border border-zinc-300 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800/50";
-const DANGER_SKIN =
-  "border border-rose-500/50 bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-500/15";
+// The app's shared button styles, so the profile matches every other view.
+export const BUTTON_PRIMARY = buttonClass("primary");
+export const BUTTON_QUIET = buttonClass("secondary");
+export const BUTTON_DANGER = buttonClass("danger");
 
-export const BUTTON_PRIMARY = `${BUTTON_SHAPE} ${BUTTON_SIZE} ${PRIMARY_SKIN}`;
-export const BUTTON_QUIET = `${BUTTON_SHAPE} ${BUTTON_SIZE} ${QUIET_SKIN}`;
-export const BUTTON_DANGER = `${BUTTON_SHAPE} ${BUTTON_SIZE} ${DANGER_SKIN}`;
-
-export const ROW_BUTTON_PRIMARY = `${BUTTON_SHAPE} ${ROW_SIZE} ${PRIMARY_SKIN}`;
-export const ROW_BUTTON_QUIET = `${BUTTON_SHAPE} ${ROW_SIZE} ${QUIET_SKIN}`;
-export const ROW_BUTTON_DANGER = `${BUTTON_SHAPE} ${ROW_SIZE} ${DANGER_SKIN}`;
+// A row action changes one thing among many, so even the main one is not solid.
+export const ROW_BUTTON_PRIMARY = `${BUTTON_BASE} ${ROW_SIZE} ${BUTTON_VARIANTS.secondary}`;
+export const ROW_BUTTON_QUIET = `${BUTTON_BASE} ${ROW_SIZE} ${BUTTON_VARIANTS.secondary}`;
+export const ROW_BUTTON_DANGER = `${BUTTON_BASE} ${ROW_SIZE} ${BUTTON_VARIANTS.danger}`;
 
 export function SubmitRow({
   busy,

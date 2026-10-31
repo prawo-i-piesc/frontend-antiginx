@@ -1,3 +1,5 @@
+import { pluralEn } from "@/app/i18n/plural";
+
 /**
  * The dashboard scanner: the list of scans, the new-scan form and the results
  * view. Test names, categories, severities and the results copy shared with
@@ -14,11 +16,15 @@ const scanner = {
     urlPlaceholder: "https://example.com",
     urlRequired: "Enter the address of the website to scan.",
     scope: "Test scope",
-    testsLoading: "Loading available tests…",
     testsLoadError: "We could not load the list of tests.",
     selectCategory: (category: string) => `Select all tests: ${category}`,
     selectedCount: (selected: number, total: number) => `${selected} of ${total} selected`,
-    noTestsSelected: "Select at least one test to start a scan.",
+    noTestsSelected: "No tests selected",
+    allSelected: (total: number) => `All ${total} tests`,
+    categoryAll: "Select all",
+    categoryNone: "Select none",
+    totalSelected: (selected: number, total: number) =>
+      `${selected} of ${total} ${pluralEn(total, "test", "tests")} selected`,
     authorization:
       "I confirm that I am authorized to test this domain with the Antiginx anti-bot scanner and that I have obtained all permissions needed to run security tests on the target website.",
     submit: "Start scan",
@@ -45,6 +51,8 @@ const scanner = {
     },
     loading: "Loading scans…",
     loadError: "We could not load your scans.",
+    clearFilters: "Clear filters",
+    allStatuses: "All statuses",
     empty: "No scans found for this account.",
     noMatches: "No scans match your search or filter.",
     columns: {

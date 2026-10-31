@@ -20,8 +20,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin", "latin-ext"],
 });
 
+// Also copies the sidebar choice onto <html>, so the loading skeleton draws
+// the sidebar at its real width from the first frame (see useSidebarPreference).
 const THEME_BOOTSTRAP =
-  "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.className=t}catch(e){}";
+  "try{var d=document.documentElement,t=localStorage.getItem('theme'),s=localStorage.getItem('sidebar.collapsed');if(t==='light'||t==='dark')d.className=t;if(s==='1'||s==='0')d.dataset.sidebar=s==='1'?'collapsed':'expanded'}catch(e){}";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
