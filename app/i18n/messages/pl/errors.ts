@@ -39,6 +39,11 @@ const errors: Messages["errors"] = {
     BILLING_UNAVAILABLE: "Nie udało się połączyć z operatorem płatności. Spróbuj ponownie za chwilę.",
     ALREADY_SUBSCRIBED: "Masz już aktywny plan Pro.",
     NO_BILLING_ACCOUNT: "Na tym koncie nie było jeszcze żadnych płatności.",
+    USER_NOT_FOUND: "To konto już nie istnieje.",
+    SCAN_NOT_FOUND: "Ten skan już nie istnieje.",
+    ADMIN_SELF_ACTION:
+      "Własnej roli ani konta nie zmienisz w panelu administratora. Zrób to w swoim profilu.",
+    LAST_ADMIN: "To ostatni administrator. Najpierw nadaj tę rolę komuś innemu.",
     RATE_LIMITED: "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
     FORBIDDEN: "Nie masz do tego dostępu.",
     INTERNAL: "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",

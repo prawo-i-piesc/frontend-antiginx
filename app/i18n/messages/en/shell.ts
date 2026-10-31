@@ -17,8 +17,10 @@ const shell = {
     scanner: "Scanner",
     charts: "Charts",
     profile: "Profile",
-    database: "Database",
+    users: "Users",
+    scans: "Scans",
     userDashboard: "User dashboard",
+    adminPanel: "Admin panel",
   },
 
   plans: { free: "Free", pro: "Pro" },

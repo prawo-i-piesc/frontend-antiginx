@@ -1,33 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { notFound } from "next/navigation";
-
+import AdminFrame, { NoAccess } from "@/app/components/admin/AdminFrame";
 import StatsCard from "@/app/components/interface/StatsCard";
-import DashboardShell from "@/app/components/layout/DashboardShell";
 import RecentScansWidget from "@/app/components/widgets/RecentScansWidget";
 import UserLocationMapWidget from "@/app/components/widgets/UserLocationMapWidget";
 import WidgetBoard from "@/app/components/widgets/WidgetBoard";
-import useRequireAuth from "@/app/hooks/useRequireAuth";
+import useAdminQuery from "@/app/hooks/useAdminQuery";
 import type { WidgetConfig } from "@/app/hooks/useWidgetLayout";
 import { useI18n } from "@/app/i18n/I18nProvider";
-import { authorizedFetch } from "@/app/lib/session";
-
-/** GET /api/admin/widgets */
-interface ApiScanData {
-  id: string;
-  target_url: string;
-  status: string;
-  created_at: string;
-  type: string;
-}
-
-interface ApiWidgetsResponse {
-  all_time_scans: number;
-  detected_threats: number;
-  recent_scans: ApiScanData[];
-  total_users: number;
-}
+import { getWidgets } from "@/app/lib/adminApi";
 
 type WidgetType = "totalUsers" | "activeScans" | "threats" | "newRegistrations" | "recentScans" | "topCountries";
 
@@ -50,52 +31,27 @@ const DEFAULT_WIDGETS: readonly WidgetConfig<WidgetType>[] = [
 ];
 
 export default function AdminPage() {
+  return (
+    <AdminFrame activePage="overview">
+      <Overview />
+    </AdminFrame>
+  );
+}
+
+function Overview() {
   const { t } = useI18n();
-  const { authenticated, initialized, auth } = useRequireAuth();
+  const { data, loading, error, reload } = useAdminQuery("widgets", getWidgets);
 
-  const [data, setData] = useState<ApiWidgetsResponse | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    if (!authenticated) return;
-
-    let active = true;
-    const fetchWidgetsData = async () => {
-      try {
-        const response = await authorizedFetch("/api/admin/widgets", {
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const json: ApiWidgetsResponse = await response.json();
-        if (!active) return;
-        setData(json);
-        setStatus("ready");
-      } catch (error) {
-        console.error("Error fetching admin widgets data:", error);
-        if (active) setStatus("error");
-      }
-    };
-
-    void fetchWidgetsData();
-    return () => {
-      active = false;
-    };
-  }, [authenticated, attempt]);
-
-  if (!initialized) return null;
-  if (!authenticated) return null;
-  if (!auth.user) return null;
-  if (auth.user.role !== "admin") notFound();
-
-  const loading = status === "loading";
-  // A failed load shows "no data", not a misleading zero.
-  const count = (value: number | undefined) => (status === "error" ? null : value ?? 0);
-
-  function retry() {
-    setStatus("loading");
-    setAttempt((current) => current + 1);
+  if (error?.kind === "forbidden") {
+    return (
+      <div className="p-3 sm:p-6">
+        <NoAccess />
+      </div>
+    );
   }
+
+  // A failed load shows "no data", not a misleading zero.
+  const count = (value: number | undefined) => (error ? null : value ?? 0);
 
   function renderWidget(widget: WidgetConfig<WidgetType>) {
     const label = t.widgets.names[widget.type];
@@ -150,8 +106,8 @@ export default function AdminPage() {
           <RecentScansWidget
             scans={data?.recent_scans ?? []}
             isLoading={loading}
-            error={status === "error"}
-            viewAllHref="/admin/database"
+            error={error !== null}
+            viewAllHref="/admin/scans"
           />
         );
       case "topCountries":
@@ -163,18 +119,16 @@ export default function AdminPage() {
   }
 
   return (
-    <DashboardShell area="admin" activePage="overview">
-      <WidgetBoard
-        storageKey="admin.widgets"
-        library={WIDGET_LIBRARY}
-        defaults={DEFAULT_WIDGETS}
-        title={t.adminOverview.title}
-        description={t.adminOverview.description}
-        widgetName={(type) => t.widgets.names[type]}
-        renderWidget={renderWidget}
-        error={status === "error" ? t.adminOverview.loadError : null}
-        onRetry={retry}
-      />
-    </DashboardShell>
+    <WidgetBoard
+      storageKey="admin.widgets"
+      library={WIDGET_LIBRARY}
+      defaults={DEFAULT_WIDGETS}
+      title={t.adminOverview.title}
+      description={t.adminOverview.description}
+      widgetName={(type) => t.widgets.names[type]}
+      renderWidget={renderWidget}
+      error={error ? t.adminOverview.loadError : null}
+      onRetry={reload}
+    />
   );
 }

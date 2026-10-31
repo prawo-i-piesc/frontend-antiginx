@@ -18,8 +18,10 @@ const shell: Messages["shell"] = {
     scanner: "Skaner",
     charts: "Wykresy",
     profile: "Profil",
-    database: "Baza danych",
+    users: "Użytkownicy",
+    scans: "Skany",
     userDashboard: "Pulpit użytkownika",
+    adminPanel: "Panel administratora",
   },
 
   plans: { free: "Free", pro: "Pro" },

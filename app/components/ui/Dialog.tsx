@@ -91,7 +91,10 @@ export default function Dialog({
     return () => removeTopLayerHost(host);
   }, [open]);
 
-  const handleClose = () => {
+  const handleClose = (event: React.SyntheticEvent<HTMLDialogElement>) => {
+    // The native close event does not bubble, but React passes it up its own
+    // tree anyway: closing a dialog nested in this one would close this too.
+    if (event.target !== event.currentTarget) return;
     if (!openRef.current) return;
     onClose();
   };
