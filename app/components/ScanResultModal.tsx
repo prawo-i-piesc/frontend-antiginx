@@ -1,11 +1,11 @@
 "use client";
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 
 import Dialog from '@/app/components/ui/Dialog';
 import { useI18n } from '@/app/i18n/I18nProvider';
 import { getCompletedScanResults, type ScanResponse, type ScanStatus } from '@/app/lib/api';
-import { downloadScanReport } from '@/app/lib/report';
+import ReportDialog from './ReportDialog';
 import { closeEnclosingDialog } from './ScanErrorModal';
 import ScanResultItem from './ScanResultItem';
 
@@ -27,6 +27,7 @@ const STATUS_STYLES: Record<ScanStatus, { badge: string; icon?: string }> = {
 export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanResultModalProps) {
   const { t, locale } = useI18n();
   const titleId = useId();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const completedResults = getCompletedScanResults(scanResult.results || []);
 
@@ -128,10 +129,11 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
           )}
         </div>
         <div className="flex items-center gap-2.5 ml-auto">
-          {sortedResults.length > 0 && (
+          {sortedResults.length > 0 && !inProgress && (
             <button
               type="button"
-              onClick={() => downloadScanReport(scanResult)}
+              onClick={() => setReportOpen(true)}
+              aria-haspopup="dialog"
               className="px-3.5 py-1.5 bg-cyan-600/20 text-cyan-300 rounded-lg hover:bg-cyan-600/30 transition-all font-medium text-xs border border-cyan-500/30 cursor-pointer flex items-center gap-1.5"
             >
               <i className="ri-download-line text-sm" aria-hidden="true"></i>
@@ -147,6 +149,18 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
           </button>
         </div>
       </div>
+
+      {/* Opened on top of this modal, so closing it returns focus to the export button. */}
+      {reportOpen && (
+        <ReportDialog
+          open
+          onClose={() => setReportOpen(false)}
+          scanId={scanResult.id}
+          targetUrl={scanResult.target_url}
+          mode="free"
+          variant="modal"
+        />
+      )}
     </Dialog>
   );
 }
