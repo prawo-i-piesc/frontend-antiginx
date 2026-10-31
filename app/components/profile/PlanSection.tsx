@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -114,9 +115,6 @@ export default function PlanSection() {
     }
   };
 
-  // Nothing to say on a server that sells nothing, to someone who never paid.
-  if (status && !status.enabled && status.status === "none") return null;
-
   const plan = status?.plan ?? user?.plan ?? "free";
   const { detail, tone } = status
     ? describe(status, copy, format)
@@ -149,21 +147,24 @@ export default function PlanSection() {
           title={copy.names[plan]}
           detail={detail}
           action={
-            canUpgrade || canManage ? (
-              <div className="flex flex-wrap gap-2">
-                {canManage
-                  ? button(
-                      "portal",
-                      canUpgrade || tone !== "warn" ? BUTTON_QUIET : BUTTON_PRIMARY,
-                      "ri-external-link-line",
-                      copy.manage,
-                    )
-                  : null}
-                {/* Full labels, unlike the icon-only row buttons elsewhere: on a
-                    phone a bare diamond would not say what it buys. */}
-                {canUpgrade ? button("checkout", BUTTON_PRIMARY, "ri-vip-diamond-line", copy.upgrade) : null}
-              </div>
-            ) : null
+            <div className="flex flex-wrap gap-2">
+              {/* What each plan includes, even where this server sells none of them. */}
+              <Link href="/pricing" className={BUTTON_QUIET}>
+                <i className="ri-price-tag-3-line" aria-hidden="true" />
+                <ActionLabel label={copy.comparePlans} />
+              </Link>
+              {canManage
+                ? button(
+                    "portal",
+                    canUpgrade || tone !== "warn" ? BUTTON_QUIET : BUTTON_PRIMARY,
+                    "ri-external-link-line",
+                    copy.manage,
+                  )
+                : null}
+              {/* Full labels, unlike the icon-only row buttons elsewhere: on a
+                  phone a bare diamond would not say what it buys. */}
+              {canUpgrade ? button("checkout", BUTTON_PRIMARY, "ri-vip-diamond-line", copy.upgrade) : null}
+            </div>
           }
         />
         {canManage ? <p className="mt-4 text-xs text-zinc-600 dark:text-zinc-400">{copy.manageHint}</p> : null}

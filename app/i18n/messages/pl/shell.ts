@@ -32,6 +32,7 @@ const shell: Messages["shell"] = {
   collapseSidebar: "Zwiń menu",
   expandSidebar: "Rozwiń menu",
   menu: "Menu",
+  seePlans: "Zobacz plany",
   closeMenu: "Zamknij menu",
   lightTheme: "Włącz jasny motyw",
   darkTheme: "Włącz ciemny motyw",

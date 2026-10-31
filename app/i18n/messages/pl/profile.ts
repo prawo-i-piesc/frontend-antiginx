@@ -74,6 +74,7 @@ const profile: Messages["profile"] = {
     loadError: "Nie udało się wczytać planu. Odśwież stronę, żeby spróbować ponownie.",
     upgrade: "Przejdź na Pro",
     manage: "Zarządzaj subskrypcją",
+    comparePlans: "Porównaj plany",
     manageHint: "Anulowanie, zmianę karty i faktury obsługuje Stripe.",
     welcome: "Witaj w Pro",
     welcomeHint: "Subskrypcja jest aktywna.",

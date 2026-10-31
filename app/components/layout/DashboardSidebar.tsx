@@ -269,7 +269,18 @@ export default function DashboardSidebar({
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{name}</p>
-              <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{role}</p>
+              {isAdmin ? (
+                <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{role}</p>
+              ) : (
+                // The plan leads to the plans, to compare or move up.
+                <Link
+                  href="/pricing"
+                  className="block truncate text-xs text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                  {role}
+                  <span className="sr-only">. {t.shell.seePlans}</span>
+                </Link>
+              )}
             </div>
             <div className="flex shrink-0 items-center">
               <AccountControls side="top" onLogout={onLogout} />
