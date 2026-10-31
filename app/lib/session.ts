@@ -11,12 +11,15 @@
  */
 
 import { apiErrorFromResponse } from "@/app/lib/authErrors";
+import type { Plan } from "@/app/lib/billingApi";
 
 export interface SessionUser {
   id: string;
   email: string;
   full_name: string;
   role: "admin" | "user";
+  /** For what the interface shows only; the backend checks the plan itself. */
+  plan?: Plan;
   created_at?: string;
   auth?: {
     password_set: boolean;

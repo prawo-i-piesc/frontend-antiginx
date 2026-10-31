@@ -1,6 +1,6 @@
 import { pluralEn } from "@/app/i18n/plural";
 
-/** The profile page: account details, sign-in methods, password, two-factor, passkeys, deletion. */
+/** The profile page: account details, plan, sign-in methods, password, two-factor, passkeys, deletion. */
 const profile = {
   page: {
     description: "Manage your personal information and account security",
@@ -58,6 +58,31 @@ const profile = {
       checkAddress: (email: string) => `Check ${email}.`,
       checkInbox: "Check your inbox.",
     },
+  },
+
+  plan: {
+    title: "Plan",
+    description: "Your subscription and payments.",
+    names: { free: "Free", pro: "Pro" },
+    freeDetail: "You are on the free plan.",
+    active: "Your Pro subscription is active.",
+    renews: (date: string) => `Renews on ${date}.`,
+    endsOn: (date: string) => `Cancelled. Pro stays on until ${date}.`,
+    pastDue: "The last payment did not go through. Update your card to keep Pro.",
+    unpaid: "The subscription is unpaid. Pay the open invoice to get Pro back.",
+    paused: "The subscription is paused.",
+    ended: "Your Pro subscription has ended.",
+    unavailable: "Payments are not available on this server.",
+    loadError: "Could not load your plan. Reload the page to try again.",
+    upgrade: "Upgrade to Pro",
+    manage: "Manage subscription",
+    manageHint: "Cancelling, changing your card and invoices are handled on Stripe.",
+    welcome: "Welcome to Pro",
+    welcomeHint: "Your subscription is active.",
+    processing: "Payment sent",
+    processingHint: "Pro turns on as soon as Stripe confirms the payment.",
+    cancelled: "Payment cancelled",
+    cancelledHint: "Nothing was charged.",
   },
 
   connected: {
@@ -239,6 +264,7 @@ const profile = {
     },
     warning:
       "Deleting removes your scans and their results, your recovery codes and every connected account. Nothing here can be restored afterwards.",
+    endsSubscription: "Your Pro subscription ends at once, and you will not be charged again.",
     typePhrase: "To confirm, type",
     /** Typed by hand to confirm, in the language of the interface. */
     phrase: "I want to delete my account",

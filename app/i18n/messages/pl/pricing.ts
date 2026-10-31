@@ -6,6 +6,7 @@ const pricing: Messages["pricing"] = {
     "Do skanu strony nie potrzebujesz konta. Darmowe konto trzyma Twoje skany w jednym miejscu, a Pro daje dostęp do wszystkich testów, w tym premium, i skanuje Twoje domeny według harmonogramu.",
 
   plansHeading: "Plany",
+  yourPlan: "Twój plan",
   perMonth: "/miesiąc",
   plus: (plan) => `Wszystko z ${plan}, a do tego:`,
 

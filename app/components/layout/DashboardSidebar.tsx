@@ -6,6 +6,7 @@ import { useId } from "react";
 import NavLink from "@/app/components/interface/NavLink";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import type { Messages } from "@/app/i18n/messages";
+import type { Plan } from "@/app/lib/billingApi";
 
 export type DashboardArea = "dashboard" | "admin";
 export type DashboardPage = "overview" | "scanner" | "charts" | "profile";
@@ -71,6 +72,7 @@ type DashboardSidebarProps = {
   onClose: () => void;
   closeButtonRef?: React.Ref<HTMLButtonElement>;
   profileName?: string | null;
+  profilePlan?: Plan;
   onLogout: () => void;
 };
 
@@ -83,6 +85,7 @@ export default function DashboardSidebar({
   onClose,
   closeButtonRef,
   profileName,
+  profilePlan = "free",
   onLogout,
 }: DashboardSidebarProps) {
   const { t } = useI18n();
@@ -175,7 +178,7 @@ export default function DashboardSidebar({
                   : "text-xs text-zinc-600 dark:text-zinc-400"
               }
             >
-              {isAdmin ? t.shell.administrator : t.shell.plan}
+              {isAdmin ? t.shell.administrator : t.shell.plans[profilePlan]}
             </p>
           </div>
           <button

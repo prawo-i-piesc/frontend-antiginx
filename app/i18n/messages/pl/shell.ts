@@ -22,7 +22,7 @@ const shell: Messages["shell"] = {
     userDashboard: "Pulpit użytkownika",
   },
 
-  plan: "Premium",
+  plans: { free: "Free", pro: "Pro" },
   administrator: "Administrator",
   defaultUserName: "Użytkownik",
   defaultAdminName: "Administrator",

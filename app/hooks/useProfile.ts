@@ -13,6 +13,7 @@ export function useProfile() {
     profileName: override ?? user?.full_name ?? null,
     profileId: user?.id ?? null,
     profileEmail: user?.email ?? null,
+    profilePlan: user?.plan ?? "free",
     setProfileName,
   };
 }

@@ -6,6 +6,7 @@ import useRequireAuth from "@/app/hooks/useRequireAuth";
 import DashboardShell from "@/app/components/layout/DashboardShell";
 import ProfileDetails from "@/app/components/profile/ProfileDetails";
 import ConnectedAccounts from "@/app/components/profile/ConnectedAccounts";
+import PlanSection from "@/app/components/profile/PlanSection";
 import PasswordSection from "@/app/components/profile/PasswordSection";
 import AccountSecurity from "@/app/components/profile/AccountSecurity";
 import DangerZone from "@/app/components/profile/DangerZone";
@@ -34,6 +35,9 @@ export default function DashboardProfilePage() {
 
           <div className="flex flex-col gap-6">
             <ProfileDetails />
+            <Suspense fallback={null}>
+              <PlanSection />
+            </Suspense>
             <Preferences />
             <Suspense fallback={null}>
               <ConnectedAccounts />

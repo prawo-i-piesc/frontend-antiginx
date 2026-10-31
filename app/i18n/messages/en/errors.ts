@@ -39,6 +39,10 @@ const errors = {
     CREDENTIAL_NOT_FOUND: "We could not find that credential.",
     PASSKEY_PASSWORD_REQUIRED:
       "This account signs in with a password first, then confirms with the passkey.",
+    BILLING_DISABLED: "Payments are not available yet.",
+    BILLING_UNAVAILABLE: "We could not reach the payment provider. Try again in a moment.",
+    ALREADY_SUBSCRIBED: "You are already on the Pro plan.",
+    NO_BILLING_ACCOUNT: "This account has no payments yet.",
     RATE_LIMITED: "Too many attempts. Wait a moment before trying again.",
     FORBIDDEN: "You do not have access to that.",
     INTERNAL: "Something went wrong on our side. Try again in a moment.",
