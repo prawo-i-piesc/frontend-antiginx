@@ -7,7 +7,7 @@ import DashboardSidebar, {
   type DashboardArea,
   type DashboardPage,
 } from "@/app/components/layout/DashboardSidebar";
-import DashboardTopBar from "@/app/components/layout/DashboardTopBar";
+import DashboardMobileBar from "@/app/components/layout/DashboardMobileBar";
 import { MAIN_CONTENT_ID } from "@/app/components/ui/SkipLink";
 import useMediaQuery from "@/app/hooks/useMediaQuery";
 import useProfile from "@/app/hooks/useProfile";
@@ -31,7 +31,8 @@ type DashboardShellProps = {
 );
 
 /**
- * Sidebar, top bar and <main> for every page behind sign-in.
+ * Sidebar and <main> for every page behind sign-in, with a bar holding the
+ * menu button on narrow screens.
  *
  * From lg up the sidebar sits beside the page, full or collapsed to a rail of
  * icons; the choice is remembered, and until it is made the rail is used
@@ -132,7 +133,7 @@ export default function DashboardShell({ area, activePage, mainClassName = "", c
       />
 
       <div className="flex h-dvh min-w-0 flex-1 flex-col" inert={drawerOpen}>
-        <DashboardTopBar
+        <DashboardMobileBar
           sidebarOpen={sidebarOpen}
           sidebarId={SIDEBAR_ID}
           onToggleSidebar={() => (sidebarOpen ? closeDrawer() : setSidebarOpen(true))}

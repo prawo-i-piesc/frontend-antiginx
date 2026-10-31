@@ -5,15 +5,26 @@ const widgets = {
     totalScans: "Total scans",
     safeSites: "Safe sites",
     threats: "Detected threats",
-    scheduled: "Scheduled tests",
     recentScans: "Recent scans",
     topThreats: "Most failed checks",
     riskTrend: "Risk over time",
+    averageRisk: "Average risk",
+    domains: "Domains",
+    failedTests: "Failed checks",
+    domainRisk: "Risk by domain",
     severity: "Failed checks by severity",
     totalUsers: "Total users",
     activeScans: "All-time scans",
     newRegistrations: "New registrations",
     failedChecks: "Most failed checks",
+  },
+
+  /** Lines under the overview's figures. */
+  kpi: {
+    inProgress: (count: number) => `${count} in progress`,
+    noneInProgress: "None in progress",
+    window: "In the last 30 days",
+    failedOf: (run: string) => `Of ${run} in the last 30 days`,
   },
 
   noData: "No data",
@@ -34,6 +45,7 @@ const widgets = {
     remove: (name: string) => `Remove widget: ${name}`,
     add: (name: string) => `Add widget: ${name}`,
     available: "Available widgets",
+    reset: "Restore defaults",
     /** Read out by screen readers as the board changes. */
     announce: {
       grabbed: (name: string, position: number, total: number) =>
@@ -45,6 +57,7 @@ const widgets = {
       cancelled: (name: string, position: number, total: number) =>
         `Move cancelled. ${name} is back at position ${position} of ${total}.`,
       removed: (name: string) => `Removed ${name}.`,
+      reset: "Restored the default layout.",
       added: (name: string, position: number, total: number) =>
         `Added ${name} at position ${position} of ${total}.`,
     },

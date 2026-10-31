@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useId } from "react";
 
 import NavLink from "@/app/components/interface/NavLink";
-import { buttonClass, iconButtonClass } from "@/app/components/ui/buttonStyles";
+import { iconButtonClass } from "@/app/components/ui/buttonStyles";
 import RailTooltip from "@/app/components/ui/RailTooltip";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import type { Messages } from "@/app/i18n/messages";
 import type { Plan } from "@/app/lib/billingApi";
+import { useTheme } from "@/app/providers/ThemeProvider";
 
 export type DashboardArea = "dashboard" | "admin";
 export type DashboardPage = "overview" | "scanner" | "charts" | "profile";
@@ -254,43 +255,79 @@ export default function DashboardSidebar({
 
       <div className={`shrink-0 border-t border-zinc-200/60 py-3 dark:border-zinc-800/40 ${collapsed ? "px-3" : "px-4"}`}>
         {collapsed ? (
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
             {/* Who is signed in: initials on screen, the name in a tooltip and for screen readers. */}
             <RailTooltip label={`${name} · ${role}`}>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+              <span className="mb-1 flex h-9 w-9 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                 <span aria-hidden="true">{initials(name)}</span>
                 <span className="sr-only">{`${name}, ${role}`}</span>
               </span>
             </RailTooltip>
-            <RailTooltip label={t.shell.logout}>
-              <button
-                type="button"
-                onClick={onLogout}
-                aria-label={t.shell.logout}
-                className={`${iconButtonClass("ghost")} hover:text-red-700 dark:hover:text-red-400`}
-              >
-                <i className="ri-logout-box-line" aria-hidden="true" />
-              </button>
-            </RailTooltip>
+            <AccountControls side="right" onLogout={onLogout} />
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{name}</p>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">{role}</p>
+              <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{role}</p>
             </div>
-            <button
-              type="button"
-              onClick={onLogout}
-              className={`${buttonClass("secondary", "sm")} hover:text-red-700 dark:hover:text-red-400`}
-            >
-              <i className="ri-logout-box-line" aria-hidden="true" />
-              {t.shell.logout}
-            </button>
+            <div className="flex shrink-0 items-center">
+              <AccountControls side="top" onLogout={onLogout} />
+            </div>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The controls that belong to the person rather than the page: theme,
+ * notifications and signing out. They live by the account at the foot of the
+ * sidebar, so there is no top bar and every page starts at the top. Icons
+ * only, named in a tooltip and for screen readers.
+ */
+function AccountControls({ side, onLogout }: { side: "right" | "top"; onLogout: () => void }) {
+  const { t } = useI18n();
+  const { theme, toggleTheme } = useTheme();
+  const themeLabel = theme === "dark" ? t.shell.lightTheme : t.shell.darkTheme;
+
+  return (
+    <>
+      <RailTooltip label={themeLabel} side={side}>
+        <button
+          type="button"
+          onClick={(event) => toggleTheme(event)}
+          aria-label={themeLabel}
+          className={iconButtonClass("ghost")}
+        >
+          {/* What a click turns on: the sun in the dark, the moon in the light. */}
+          <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"} aria-hidden="true" />
+        </button>
+      </RailTooltip>
+      {/* Not built yet. aria-disabled rather than disabled, so it still takes
+          focus and the pointer, and the tooltip can say so. */}
+      <RailTooltip label={t.shell.notifications} side={side}>
+        <button
+          type="button"
+          aria-disabled="true"
+          aria-label={t.shell.notifications}
+          className={`${iconButtonClass("ghost")} aria-disabled:hover:bg-transparent aria-disabled:hover:text-zinc-700 dark:aria-disabled:hover:text-zinc-300`}
+        >
+          <i className="ri-notification-3-line" aria-hidden="true" />
+        </button>
+      </RailTooltip>
+      <RailTooltip label={t.shell.logout} side={side}>
+        <button
+          type="button"
+          onClick={onLogout}
+          aria-label={t.shell.logout}
+          className={`${iconButtonClass("ghost")} hover:text-red-700 dark:hover:text-red-400`}
+        >
+          <i className="ri-logout-box-line" aria-hidden="true" />
+        </button>
+      </RailTooltip>
+    </>
   );
 }
 

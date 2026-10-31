@@ -239,14 +239,17 @@ export function TableFooter({
   total,
   offset,
   size,
+  sizes = PAGE_SIZES,
   onPageChange,
   onSizeChange,
 }: {
   total: number;
   offset: number;
-  size: PageSize;
+  size: number;
+  /** The page sizes on offer; the API-backed tables use PAGE_SIZES. */
+  sizes?: readonly number[];
   onPageChange: (page: number) => void;
-  onSizeChange: (size: PageSize) => void;
+  onSizeChange: (size: number) => void;
 }) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
@@ -274,8 +277,8 @@ export function TableFooter({
             size="sm"
             labelledBy={sizeLabelId}
             value={String(size)}
-            options={PAGE_SIZES.map((option) => ({ value: String(option), label: String(option) }))}
-            onChange={(next) => onSizeChange(Number(next) as PageSize)}
+            options={sizes.map((option) => ({ value: String(option), label: String(option) }))}
+            onChange={(next) => onSizeChange(Number(next))}
           />
         </span>
         {totalPages > 1 ? <Pagination page={page} totalPages={totalPages} onPageChange={changePage} /> : null}

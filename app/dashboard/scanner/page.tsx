@@ -4,7 +4,7 @@ import { Suspense, useEffect, useEffectEvent, useId, useMemo, useRef, useState }
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import DashboardShell from "@/app/components/layout/DashboardShell";
-import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL } from "@/app/components/layout/PageHeader";
+import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import PagePending from "@/app/components/layout/PagePending";
 import ReportDialog from "@/app/components/ReportDialog";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
@@ -35,7 +35,7 @@ import {
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { useScanModal } from "@/app/hooks/useScanModal";
 import { INTL_LOCALES } from "@/app/i18n/config";
-import { PAGE_SIZES, type PageSize } from "@/app/lib/paging";
+import { SCAN_LIST_SIZES } from "@/app/lib/paging";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import {
   ApiRequestError,
@@ -184,7 +184,7 @@ export default function DashboardScannerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSize>(PAGE_SIZES[0]);
+  const [pageSize, setPageSize] = useState<number>(SCAN_LIST_SIZES[0]);
   const [listRequest, setListRequest] = useState(0);
   const [scanList, setScanList] = useState<Loaded<UserScanResponse[]> | null>(null);
 
@@ -441,7 +441,7 @@ export default function DashboardScannerPage() {
 
   return (
     <DashboardShell area="dashboard" activePage="scanner">
-      <div className="p-4 sm:p-6">
+      <div className={PAGE_PADDING}>
         <p role="status" className="sr-only">
           {scanAnnouncement}
         </p>
@@ -852,6 +852,7 @@ export default function DashboardScannerPage() {
                     total={filteredScans.length}
                     offset={pageStart}
                     size={pageSize}
+                    sizes={SCAN_LIST_SIZES}
                     onPageChange={setCurrentPage}
                     onSizeChange={(next) => {
                       setPageSize(next);

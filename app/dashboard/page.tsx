@@ -2,7 +2,12 @@
 
 import DashboardShell from "@/app/components/layout/DashboardShell";
 import PagePending from "@/app/components/layout/PagePending";
-import { DASHBOARD_DEFAULTS, DASHBOARD_WIDGETS, UserWidgetsData } from "@/app/components/widgets/dashboardWidgets";
+import {
+  DASHBOARD_DEFAULTS,
+  DASHBOARD_WIDGETS,
+  DashboardData,
+  UserWidgetsData,
+} from "@/app/components/widgets/dashboardWidgets";
 import WidgetBoard from "@/app/components/widgets/WidgetBoard";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -14,9 +19,9 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell area="dashboard" activePage="overview">
-      <UserWidgetsData.Provider>
+      <DashboardData>
         <Overview />
-      </UserWidgetsData.Provider>
+      </DashboardData>
     </DashboardShell>
   );
 }

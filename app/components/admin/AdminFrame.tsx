@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { BUTTON_QUIET } from "@/app/components/profile/ui";
 import DashboardShell, { type AdminPage } from "@/app/components/layout/DashboardShell";
 import PagePending from "@/app/components/layout/PagePending";
-import PageHeader from "@/app/components/layout/PageHeader";
+import PageHeader, { PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { useI18n } from "@/app/i18n/I18nProvider";
 
@@ -35,7 +35,7 @@ export default function AdminFrame({
   if (auth.user.role !== "admin") notFound();
 
   return (
-    <DashboardShell area="admin" activePage={activePage} mainClassName={heading ? "p-4 sm:p-6" : ""}>
+    <DashboardShell area="admin" activePage={activePage} mainClassName={heading ? PAGE_PADDING : ""}>
       {heading ? (
         <PageHeader title={heading.title} description={heading.description} />
       ) : null}

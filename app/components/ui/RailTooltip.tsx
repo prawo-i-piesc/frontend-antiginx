@@ -15,11 +15,14 @@ import { createPortal } from "react-dom";
 export default function RailTooltip({
   label,
   enabled = true,
+  side = "right",
   children,
 }: {
   label: string;
   /** Off where the label is already on screen, as in the expanded sidebar. */
   enabled?: boolean;
+  /** Beside the control in the rail; above it in a row of icons, where the right is the next icon. */
+  side?: "right" | "top";
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -29,7 +32,11 @@ export default function RailTooltip({
     const target = ref.current?.firstElementChild;
     if (!enabled || !target) return;
     const rect = target.getBoundingClientRect();
-    setAnchor({ top: rect.top + rect.height / 2, left: rect.right + 10 });
+    setAnchor(
+      side === "top"
+        ? { top: rect.top - 8, left: rect.left + rect.width / 2 }
+        : { top: rect.top + rect.height / 2, left: rect.right + 10 },
+    );
   }
 
   const hide = () => setAnchor(null);
@@ -68,7 +75,7 @@ export default function RailTooltip({
             <span
               aria-hidden="true"
               style={{ top: anchor.top, left: anchor.left }}
-              className="pointer-events-none fixed z-[60] -translate-y-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900"
+              className={`pointer-events-none fixed z-[60] ${side === "top" ? "-translate-x-1/2 -translate-y-full" : "-translate-y-1/2"} whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900`}
             >
               {label}
             </span>,

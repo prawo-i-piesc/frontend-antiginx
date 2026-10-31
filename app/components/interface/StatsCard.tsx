@@ -32,7 +32,7 @@ export default function StatsCard({ icon, tone, value, label, unit, hint, trend,
   if (loading) {
     shown = (
       <>
-        <span aria-hidden="true" className="inline-block h-8 w-12 animate-pulse rounded-md bg-zinc-200 align-middle motion-reduce:animate-none dark:bg-zinc-800"></span>
+        <span aria-hidden="true" className="bone inline-block h-8 w-12 rounded-md bg-zinc-200 align-middle dark:bg-zinc-800"></span>
         <span className="sr-only">{t.common.loading}</span>
       </>
     );

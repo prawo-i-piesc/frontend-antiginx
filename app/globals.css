@@ -317,6 +317,30 @@ body,
   width: 16rem;
 }
 
+/*
+ * Skeleton bones stay invisible for their first 300ms. Most views load faster
+ * than that, and a placeholder on screen for a few frames reads as a flicker;
+ * a slower load fades them in, then they pulse. Under reduced motion the
+ * global rule above drops the fade and the pulse but keeps the delay.
+ */
+@keyframes bone-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes bone-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.bone {
+  animation:
+    bone-in 200ms ease-out 300ms both,
+    bone-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 500ms infinite;
+}
+
 /* The backdrop behind the navigation drawer. */
 .animate-fade-in {
   animation: backdrop-in 200ms ease-out;

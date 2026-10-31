@@ -199,7 +199,16 @@ export function useWidgetLayout<T extends string>(
     [save, widgets],
   );
 
-  return { widgets, available, move, remove, add };
+  const isDefault = useMemo(
+    () =>
+      widgets.length === defaults.length &&
+      widgets.every((widget, index) => widget.type === defaults[index].type && widget.size === defaults[index].size),
+    [widgets, defaults],
+  );
+
+  const reset = useCallback(() => save(defaults), [save, defaults]);
+
+  return { widgets, available, move, remove, add, isDefault, reset };
 }
 
 export default useWidgetLayout;

@@ -30,19 +30,18 @@ export default function PagePending({ layout = "table" }: { layout?: PendingLayo
             <Bone key={item} className="h-10 w-full rounded-lg" />
           ))}
         </div>
+        <div className="flex h-15 shrink-0 items-center border-t border-zinc-200/60 px-3 dark:border-zinc-800/40">
+          <Bone className="h-9 w-full rounded-lg" />
+        </div>
       </div>
 
       <div className="flex h-dvh min-w-0 flex-1 flex-col">
-        <div className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200/80 bg-white/80 px-3 sm:px-5 lg:h-20 lg:px-6 dark:border-zinc-800/50 dark:bg-zinc-950/80">
-          <Bone className="h-9 w-9 rounded-xl lg:hidden" />
-          <Bone className="h-6 w-24 lg:hidden" />
-          <span className="ml-auto flex gap-1.5">
-            <Bone className="h-9 w-9 rounded-xl" />
-            <Bone className="h-9 w-9 rounded-xl" />
-          </span>
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-zinc-200/80 bg-white/90 px-2 sm:px-4 lg:hidden dark:border-zinc-800/60 dark:bg-zinc-950/90">
+          <Bone className="h-9 w-9 rounded-lg" />
+          <Bone className="h-6 w-24" />
         </div>
 
-        <div className="@container flex-1 overflow-hidden bg-zinc-100 p-4 sm:p-6 dark:bg-zinc-950">
+        <div className="@container flex-1 overflow-hidden bg-zinc-100 p-4 sm:p-6 lg:pt-8 dark:bg-zinc-950">
           <div className="mb-6 space-y-2">
             <Bone className="h-7 w-48" />
             <Bone className="h-4 w-72 max-w-full" />

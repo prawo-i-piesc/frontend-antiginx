@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import DashboardShell from "@/app/components/layout/DashboardShell";
-import PageHeader from "@/app/components/layout/PageHeader";
+import PageHeader, { PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import PagePending from "@/app/components/layout/PagePending";
 import ProfileDetails from "@/app/components/profile/ProfileDetails";
 import ConnectedAccounts from "@/app/components/profile/ConnectedAccounts";
@@ -23,7 +23,7 @@ export default function DashboardProfilePage() {
 
   return (
     <DashboardShell area="dashboard" activePage="profile">
-      <div className="mx-auto p-4 sm:p-6">
+      <div className={`mx-auto ${PAGE_PADDING}`}>
         <div className="animate-in fade-in duration-300">
           {/* The same words as the document title, so the two never disagree. */}
           <PageHeader title={t.meta.titles.profile} description={t.profile.page.description} />

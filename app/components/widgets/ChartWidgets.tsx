@@ -1,18 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 
+import { displayUrl, RiskChange } from "@/app/components/charts/domain";
+import Sparkline from "@/app/components/charts/Sparkline";
 import { ChartMeta, FailedTestBars, RiskTrend, SeverityBars } from "@/app/components/charts/StatsCharts";
-import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
+import { domainRows } from "@/app/components/charts/trend";
+import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import WidgetCard from "@/app/components/widgets/WidgetCard";
+import { createWidgetData } from "@/app/components/widgets/WidgetData";
 import useApiQuery from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
-import { getFailedTests, getRiskTrend, getSeverity, type TestFailures } from "@/app/lib/statsApi";
+import { getFailedTests, getRiskTrend, getSeverity, type RiskPoint, type TestFailures } from "@/app/lib/statsApi";
 
 /** Chart widgets show the last 30 days across every domain; the charts page has the rest. */
 const WIDGET_DAYS = 30;
 const WIDGET_TESTS = 6;
+const WIDGET_DOMAINS = 5;
+
+/** The window's completed scans, which the risk line and the domain list both draw from. */
+export const RiskData = createWidgetData(`widget:risk:${WIDGET_DAYS}`, (signal) =>
+  getRiskTrend({ days: WIDGET_DAYS }, signal),
+);
 
 const MESSAGE = "flex flex-1 items-center justify-center py-6 text-center text-sm text-zinc-600 dark:text-zinc-400";
 
@@ -73,7 +83,7 @@ function BarsSkeleton({ rows }: { rows: number }) {
 
 export function RiskTrendWidget() {
   const { t } = useI18n();
-  const query = useApiQuery(`widget:risk:${WIDGET_DAYS}`, (signal) => getRiskTrend({ days: WIDGET_DAYS }, signal));
+  const query = RiskData.useData();
 
   return (
     <WidgetCard title={t.widgets.names.riskTrend} action={<ChartsLink />}>
@@ -87,6 +97,94 @@ export function RiskTrendWidget() {
         }
       </ChartBody>
     </WidgetCard>
+  );
+}
+
+/**
+ * The domains whose latest scan carries the most risk: where to look first.
+ * Each opens the charts page on that domain.
+ */
+export function DomainRiskWidget() {
+  const { t } = useI18n();
+  const query = RiskData.useData();
+
+  return (
+    <WidgetCard title={t.widgets.names.domainRisk} action={<ChartsLink />}>
+      <ChartBody
+        query={query}
+        skeleton={
+          <div className="space-y-4 pt-2">
+            {ROW_WIDTHS.slice(0, WIDGET_DOMAINS).map((width) => (
+              <Bone key={width} className={`h-3 max-w-full ${width}`} />
+            ))}
+          </div>
+        }
+      >
+        {(points) => <DomainRiskTable points={points} />}
+      </ChartBody>
+    </WidgetCard>
+  );
+}
+
+function DomainRiskTable({ points }: { points: readonly RiskPoint[] }) {
+  const { t } = useI18n();
+  const copy = t.charts.domains;
+  const rows = useMemo(
+    () =>
+      domainRows(points)
+        .sort((a, b) => b.latest.risk - a.latest.risk)
+        .slice(0, WIDGET_DOMAINS),
+    [points],
+  );
+
+  if (rows.length === 0) return <p className={MESSAGE}>{t.charts.noScansInPeriod}</p>;
+
+  const head = "pb-2 text-xs font-medium text-zinc-600 dark:text-zinc-400";
+  const cell = "h-10 border-t border-zinc-100 dark:border-zinc-800/70";
+
+  return (
+    <table className="w-full text-left text-[13px]">
+      <thead>
+        <tr>
+          <th scope="col" className={head}>
+            {copy.columns.domain}
+          </th>
+          <th scope="col" className={`${head} hidden px-3 sm:table-cell`}>
+            <span className="sr-only">{copy.columns.trend}</span>
+          </th>
+          <th scope="col" className={`${head} px-3 text-right`}>
+            {copy.columns.risk}
+          </th>
+          <th scope="col" className={`${head} text-right`}>
+            {copy.columns.change}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.url}>
+            <td className={`${cell} w-full max-w-0`}>
+              <Link
+                href={`/dashboard/charts?days=${WIDGET_DAYS}&domain=${encodeURIComponent(row.url)}`}
+                title={row.url}
+                className="block truncate text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+              >
+                {displayUrl(row.url)}
+              </Link>
+            </td>
+            <td className={`${cell} hidden px-3 sm:table-cell`}>
+              <Sparkline values={row.points.map((point) => point.risk)} />
+            </td>
+            <td className={`${cell} px-3 text-right font-medium text-zinc-900 tabular-nums dark:text-zinc-100`}>
+              {row.latest.risk}
+            </td>
+            <td className={`${cell} text-right whitespace-nowrap text-zinc-700 tabular-nums dark:text-zinc-300`}>
+              <RiskChange value={row.change} scans={row.points.length} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

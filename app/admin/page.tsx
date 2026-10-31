@@ -1,6 +1,7 @@
 "use client";
 
 import AdminFrame, { NoAccess } from "@/app/components/admin/AdminFrame";
+import { PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import { ADMIN_DEFAULTS, ADMIN_WIDGETS, AdminWidgetsData } from "@/app/components/widgets/adminWidgets";
 import WidgetBoard from "@/app/components/widgets/WidgetBoard";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -21,7 +22,7 @@ function Overview() {
 
   if (error?.kind === "forbidden") {
     return (
-      <div className="p-4 sm:p-6">
+      <div className={PAGE_PADDING}>
         <NoAccess />
       </div>
     );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useMemo } from "react";
 
 import ChartsSkeleton, { CHARTS_GRID, KPI_GRID } from "@/app/components/charts/ChartsSkeleton";
+import { displayUrl, RiskChange } from "@/app/components/charts/domain";
 import Sparkline from "@/app/components/charts/Sparkline";
 import {
   ChartMeta,
@@ -16,7 +17,7 @@ import {
 import { domainRows, granularityFor } from "@/app/components/charts/trend";
 import StatsCard from "@/app/components/interface/StatsCard";
 import DashboardShell from "@/app/components/layout/DashboardShell";
-import PageHeader from "@/app/components/layout/PageHeader";
+import PageHeader, { PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import PagePending from "@/app/components/layout/PagePending";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import Dropdown from "@/app/components/ui/Dropdown";
@@ -78,7 +79,7 @@ export default function DashboardChartsPage() {
 
   return (
     <DashboardShell area="dashboard" activePage="charts">
-      <div className="p-4 sm:p-6">
+      <div className={PAGE_PADDING}>
         <PageHeader title={t.charts.title} description={t.charts.subtitle} />
         {/* The filters live in the address, read through useSearchParams. */}
         <Suspense
@@ -290,40 +291,6 @@ function TableCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-/** Latest risk against the first in the window; a single scan has nothing to compare. */
-function Change({ value, scans }: { value: number; scans: number }) {
-  const { t } = useI18n();
-  const copy = t.charts.domains;
-  if (scans < 2) {
-    return (
-      <span className="text-zinc-500 dark:text-zinc-400">
-        <span aria-hidden="true">—</span>
-        <span className="sr-only">{t.widgets.noData}</span>
-      </span>
-    );
-  }
-  if (value === 0) {
-    return (
-      <span className="text-zinc-500 dark:text-zinc-400">
-        <span aria-hidden="true">0</span>
-        <span className="sr-only">{copy.same}</span>
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      <i className={value > 0 ? "ri-arrow-up-line" : "ri-arrow-down-line"} aria-hidden="true" />
-      <span aria-hidden="true">{Math.abs(value)}</span>
-      <span className="sr-only">{value > 0 ? copy.up(value) : copy.down(-value)}</span>
-    </span>
-  );
-}
-
-/** HTTPS is the norm and only takes room; a plain-HTTP target keeps its scheme, which matters. */
-function displayUrl(url: string): string {
-  return url.startsWith("https://") ? url.slice("https://".length) : url;
-}
-
 /** Each domain's risk in the window; choosing one filters the page to it. */
 function DomainsTable({ points, onSelect }: { points: readonly RiskPoint[]; onSelect: (url: string) => void }) {
   const { t } = useI18n();
@@ -376,7 +343,7 @@ function DomainsTable({ points, onSelect }: { points: readonly RiskPoint[]; onSe
                 </td>
                 <td className={`${TD} ${DATA} text-right font-medium`}>{row.latest.risk}</td>
                 <td className={`${TD} ${DATA} pr-5 text-right text-zinc-700 @6xl:pr-3 dark:text-zinc-300`}>
-                  <Change value={row.change} scans={row.points.length} />
+                  <RiskChange value={row.change} scans={row.points.length} />
                 </td>
                 <td className={`${TD} hidden pr-5 @6xl:table-cell`}>
                   <Sparkline values={row.points.map((point) => point.risk)} />

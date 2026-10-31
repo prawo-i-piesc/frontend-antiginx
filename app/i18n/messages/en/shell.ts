@@ -32,7 +32,8 @@ const shell = {
   expandSidebar: "Expand menu",
   menu: "Menu",
   closeMenu: "Close menu",
-  darkMode: "Dark mode",
+  lightTheme: "Switch to light theme",
+  darkTheme: "Switch to dark theme",
   notifications: "Notifications — coming soon",
 };
 

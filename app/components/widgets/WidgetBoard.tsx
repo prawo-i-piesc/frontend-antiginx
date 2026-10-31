@@ -15,7 +15,7 @@ import {
 } from "react";
 
 import { buttonClass } from "@/app/components/ui/buttonStyles";
-import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL } from "@/app/components/layout/PageHeader";
+import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import { layoutOf, widgetTypes, type WidgetRegistry } from "@/app/components/widgets/contract";
 import { moveItem, useWidgetLayout, type WidgetConfig, type WidgetSize } from "@/app/hooks/useWidgetLayout";
 import { useI18n } from "@/app/i18n/I18nProvider";
@@ -335,21 +335,36 @@ export default function WidgetBoard<T extends string>({
   }
 
   return (
-    <div className={`p-4 sm:p-6 ${customizing ? "select-none" : ""}`}>
+    <div className={`${PAGE_PADDING} ${customizing ? "select-none" : ""}`}>
       <PageHeader
         title={title}
         description={description}
         actions={
-          <button
-            ref={toggleRef}
-            type="button"
-            onClick={toggleCustomizing}
-            aria-pressed={customizing}
-            className={`${buttonClass(customizing ? "primary" : "secondary")} ${PAGE_ACTION}`}
-          >
-            <i className={customizing ? "ri-check-line" : "ri-edit-line"} aria-hidden="true"></i>
-            <span className={PAGE_ACTION_LABEL}>{customizing ? t.common.done : copy.customize}</span>
-          </button>
+          <>
+            {customizing && !layout.isDefault ? (
+              <button
+                type="button"
+                onClick={() => {
+                  layout.reset();
+                  announce(copy.announce.reset);
+                }}
+                className={`${buttonClass("secondary")} ${PAGE_ACTION}`}
+              >
+                <i className="ri-arrow-go-back-line" aria-hidden="true"></i>
+                <span className={PAGE_ACTION_LABEL}>{copy.reset}</span>
+              </button>
+            ) : null}
+            <button
+              ref={toggleRef}
+              type="button"
+              onClick={toggleCustomizing}
+              aria-pressed={customizing}
+              className={`${buttonClass(customizing ? "primary" : "secondary")} ${PAGE_ACTION}`}
+            >
+              <i className={customizing ? "ri-check-line" : "ri-edit-line"} aria-hidden="true"></i>
+              <span className={PAGE_ACTION_LABEL}>{customizing ? t.common.done : copy.customize}</span>
+            </button>
+          </>
         }
       />
 

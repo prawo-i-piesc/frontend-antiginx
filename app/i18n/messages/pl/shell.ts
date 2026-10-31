@@ -33,7 +33,8 @@ const shell: Messages["shell"] = {
   expandSidebar: "Rozwiń menu",
   menu: "Menu",
   closeMenu: "Zamknij menu",
-  darkMode: "Tryb ciemny",
+  lightTheme: "Włącz jasny motyw",
+  darkTheme: "Włącz ciemny motyw",
   notifications: "Powiadomienia – wkrótce",
 };
 
