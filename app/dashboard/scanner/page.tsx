@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import DashboardShell from "@/app/components/layout/DashboardShell";
+import ReportDialog from "@/app/components/ReportDialog";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
 // Renamed so it does not clash with the API type of the same name.
 import ScanResultItemComponent from "@/app/components/ScanResultItem";
@@ -21,7 +22,6 @@ import {
   type TestCategory,
   type UserScanResponse,
 } from "@/app/lib/api";
-import { downloadScanReport } from "@/app/lib/report";
 
 type RowStatus = "safe" | "warning" | "danger";
 type StatusFilter = "all" | RowStatus;
@@ -160,6 +160,8 @@ export default function DashboardScannerPage() {
   const [scanStartedFor, setScanStartedFor] = useState<string | null>(null);
   /** A running scan the person left for the list; finishing must not pull them back. */
   const [leftScanId, setLeftScanId] = useState<string | null>(null);
+  /** The scan whose report dialog is open. */
+  const [reportScan, setReportScan] = useState<{ id: string; url: string } | null>(null);
 
   const baseId = useId();
   const formId = `${baseId}-form`;
@@ -390,16 +392,8 @@ export default function DashboardScannerPage() {
     setActiveView("detail");
   }
 
-  function downloadScan(scanId: string) {
-    const selectedScan = userScans.find((scan) => scan.id === scanId);
-
-    if (!selectedScan) {
-      setScanError(t.scan.errors.detailsUnavailable);
-      setIsModalOpen(true);
-      return;
-    }
-
-    downloadScanReport(selectedScan);
+  function openReport(scanId: string, url: string) {
+    setReportScan({ id: scanId, url });
   }
 
   function backToList() {
@@ -878,7 +872,8 @@ export default function DashboardScannerPage() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => downloadScan(row.id)}
+                                      onClick={() => openReport(row.id, row.url)}
+                                      aria-haspopup="dialog"
                                       aria-label={t.scanner.list.downloadReport(row.url)}
                                       title={t.scanner.list.downloadReport(row.url)}
                                       className={`${ROW_ACTION_CLASS} hover:bg-zinc-100 dark:hover:bg-zinc-800/60 cursor-pointer`}
@@ -969,8 +964,10 @@ export default function DashboardScannerPage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => scanResult && downloadScanReport(scanResult)}
-                  disabled={!scanResult || sortedResults.length === 0}
+                  onClick={() => scanResult && openReport(scanResult.id, scanResult.target_url)}
+                  aria-haspopup="dialog"
+                  // The backend reports on finished scans only, failed ones included.
+                  disabled={!scanResult || scanInProgress}
                   className="px-3 py-2 bg-white/85 dark:bg-zinc-900/20 text-zinc-700 dark:text-zinc-300 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all font-medium text-sm border border-zinc-300 dark:border-zinc-700 shadow-sm cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <i className="ri-download-line text-sm" aria-hidden="true"></i>
@@ -1019,6 +1016,18 @@ export default function DashboardScannerPage() {
       </div>
 
       {isModalOpen && scanError && <ScanErrorModal isOpen={isModalOpen} onClose={closeModal} error={scanError} />}
+
+      {reportScan && (
+        <ReportDialog
+          key={reportScan.id}
+          open
+          onClose={() => setReportScan(null)}
+          scanId={reportScan.id}
+          targetUrl={reportScan.url}
+          mode="premium"
+          variant="page"
+        />
+      )}
     </DashboardShell>
   );
 }
