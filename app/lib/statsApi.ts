@@ -109,13 +109,24 @@ export async function getPreference(key: PreferenceKey, signal?: AbortSignal): P
   return body.value ?? null;
 }
 
-/** Replaces the saved value; at most 16 KiB of JSON. */
-export async function putPreference(key: PreferenceKey, value: unknown): Promise<void> {
+/** How a preference write is sent; `keepalive` lets it finish after the page is closed. */
+export interface PreferenceWrite {
+  keepalive?: boolean;
+}
+
+/** Replaces the saved value, a JSON array of at most 16 KiB. */
+export async function putPreference(key: PreferenceKey, value: unknown, options: PreferenceWrite = {}): Promise<void> {
   await request(`/api/users/preferences/${key}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ value }),
+    keepalive: options.keepalive,
   });
+}
+
+/** Forgets the saved value, so the account follows the defaults again, including later changes to them. */
+export async function deletePreference(key: PreferenceKey, options: PreferenceWrite = {}): Promise<void> {
+  await request(`/api/users/preferences/${key}`, { method: "DELETE", keepalive: options.keepalive });
 }
 
 /** The overview's counters and latest scans: GET /api/users/widgets. */

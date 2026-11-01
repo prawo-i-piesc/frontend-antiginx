@@ -62,6 +62,8 @@ body {
  */
 :root {
   --viz-accent: #0891b2;
+  /* The second series beside the accent; checked with it for colour-blind separation. */
+  --viz-series-2: #c2410c;
   --viz-severity-info: #fb7185;
   --viz-severity-low: #f43f5e;
   --viz-severity-medium: #be123c;
@@ -75,6 +77,7 @@ body {
 
 .dark {
   --viz-accent: #0ea5c6;
+  --viz-series-2: #ea580c;
   --viz-severity-info: #9f1239;
   --viz-severity-low: #e11d48;
   --viz-severity-medium: #fb7185;
@@ -339,6 +342,95 @@ body,
   animation:
     bone-in 200ms ease-out 300ms both,
     bone-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 500ms infinite;
+}
+
+/* Skeletons that follow others already on screen appear at once (ui/Skeleton.tsx). */
+:root[data-bones="shown"] .bone {
+  animation: bone-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/*
+ * Motion in the signed-in app: quick and small, so a page feels like it
+ * arrives without anyone waiting for it.
+ *   - page-in: a page fades in as it mounts, so moving between views is soft;
+ *   - stagger: the cards of a grid rise a few pixels, one after another, all
+ *     within a quarter of a second;
+ *   - bar-grow: a bar grows from its baseline the first time it is drawn.
+ * They run once, on mount; a data refresh re-renders the same elements and
+ * replays nothing. Fill is `backwards` only: once finished no transform is
+ * left behind to become the containing block of a fixed-position menu.
+ * "Reduce motion" turns all three off.
+ */
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.page-in {
+  animation: page-in 180ms ease-out backwards;
+}
+
+.stagger > * {
+  animation: rise-in 260ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.stagger > :nth-child(2) {
+  animation-delay: 30ms;
+}
+
+.stagger > :nth-child(3) {
+  animation-delay: 60ms;
+}
+
+.stagger > :nth-child(4) {
+  animation-delay: 90ms;
+}
+
+.stagger > :nth-child(5) {
+  animation-delay: 120ms;
+}
+
+.stagger > :nth-child(6) {
+  animation-delay: 150ms;
+}
+
+.stagger > :nth-child(7) {
+  animation-delay: 180ms;
+}
+
+.stagger > :nth-child(8) {
+  animation-delay: 210ms;
+}
+
+.stagger > :nth-child(n + 9) {
+  animation-delay: 240ms;
+}
+
+.bar-grow {
+  transform-origin: left;
+  animation: bar-grow 450ms cubic-bezier(0.22, 1, 0.36, 1) 80ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in,
+  .stagger > *,
+  .bar-grow {
+    animation: none;
+  }
 }
 
 /* The backdrop behind the navigation drawer. */

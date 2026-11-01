@@ -49,7 +49,6 @@ export interface DomainRow {
   /** The domain's scans in the window, oldest first. */
   points: RiskPoint[];
   latest: RiskPoint;
-  average: number;
   /** Latest risk minus the first in the window; 0 with a single scan. */
   change: number;
 }
@@ -62,7 +61,7 @@ export function domainRows(points: readonly RiskPoint[]): DomainRow[] {
   return [...byUrl.entries()]
     .map(([url, list]) => {
       const latest = list[list.length - 1];
-      return { url, points: list, latest, average: average(list.map((point) => point.risk)), change: latest.risk - list[0].risk };
+      return { url, points: list, latest, change: latest.risk - list[0].risk };
     })
     .sort((a, b) => Date.parse(b.latest.created_at) - Date.parse(a.latest.created_at));
 }

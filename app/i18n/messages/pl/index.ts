@@ -17,6 +17,7 @@ import profile from "./profile";
 import scan from "./scan";
 import scanner from "./scanner";
 import shell from "./shell";
+import system from "./system";
 import table from "./table";
 import widgets from "./widgets";
 
@@ -38,6 +39,7 @@ const pl: Messages = {
   scanner,
   charts,
   admin,
+  system,
   table,
   profile,
 };

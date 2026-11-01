@@ -10,6 +10,10 @@ const charts: Messages["charts"] = {
   newScan: "Nowy skan",
   keyboardHint: "Przechodź między punktami strzałkami w lewo i w prawo.",
 
+  metric: {
+    summary: (label, now, peak) => `${label}: teraz ${now}, maksymalnie ${peak}.`,
+  },
+
   filters: {
     domain: "Domena",
     allDomains: "Wszystkie domeny",
@@ -43,7 +47,7 @@ const charts: Messages["charts"] = {
     bucketDetail: (count) => `Średnia z ${count} ${pluralPl(count, "skanu", "skanów", "skanów")}`,
     week: (date) => `Tydzień od ${date}`,
     footnote:
-      "Ryzyko to średnia waga nieudanych testów skanu: 0, gdy wszystkie przechodzą, 100, gdy każdy nieudany jest krytyczny.",
+      "Ryzyko od 0 do 100. Najgorszy nieudany test wyznacza pasmo (niskie od 1, średnie od 25, wysokie od 50, krytyczne od 75), a każdy kolejny je podnosi.",
     date: "Data",
   },
 

@@ -103,9 +103,10 @@ function mapScanToRow(scan: UserScanResponse): ScanRow {
     status = "danger";
   } else if (scan.status === "RUNNING" || scan.status === "PENDING") {
     status = "warning";
-  } else if (threat >= 80) {
+  } else if (threat >= 50) {
+    // High and critical bands (lib/risk.ts).
     status = "danger";
-  } else if (threat >= 40) {
+  } else if (threat >= 25) {
     status = "warning";
   }
 
@@ -130,15 +131,16 @@ function categoryKey(category: TestCategory, index: number): string {
   return category.category || `other-${index}`;
 }
 
+/** Colours by risk band (lib/risk.ts): high and critical red, medium orange, below that green. */
 function threatBarColor(level: number) {
-  if (level >= 80) return "bg-red-500";
-  if (level >= 40) return "bg-orange-500";
+  if (level >= 50) return "bg-red-500";
+  if (level >= 25) return "bg-orange-500";
   return "bg-green-500";
 }
 
 function threatTextColor(level: number) {
-  if (level >= 80) return "text-red-700 dark:text-red-400";
-  if (level >= 40) return "text-orange-700 dark:text-orange-400";
+  if (level >= 50) return "text-red-700 dark:text-red-400";
+  if (level >= 25) return "text-orange-700 dark:text-orange-400";
   return "text-green-700 dark:text-green-400";
 }
 
@@ -450,7 +452,7 @@ export default function DashboardScannerPage() {
         </Suspense>
 
         {activeView === "list" ? (
-          <div className="animate-in fade-in duration-300">
+          <div className="page-in">
             <PageHeader
               title={t.scanner.title}
               description={t.scanner.subtitle}
@@ -476,7 +478,7 @@ export default function DashboardScannerPage() {
                 onSubmit={onSubmit}
                 noValidate
                 aria-labelledby={formHeadingId}
-                className={`${SURFACE} mb-6 overflow-hidden animate-in fade-in duration-300`}
+                className={`${SURFACE} page-in mb-6 overflow-hidden`}
               >
                 <div className={TOOLBAR}>
                   <h2 id={formHeadingId} className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
@@ -864,7 +866,7 @@ export default function DashboardScannerPage() {
             )}
           </div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="page-in">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:pr-14">
               <div className="flex items-center gap-4 min-w-0">
                 <button

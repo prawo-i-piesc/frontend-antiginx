@@ -17,6 +17,7 @@ const shell: Messages["shell"] = {
     profile: "Profil",
     users: "Użytkownicy",
     scans: "Skany",
+    system: "System",
     userDashboard: "Pulpit użytkownika",
     adminPanel: "Panel administratora",
   },

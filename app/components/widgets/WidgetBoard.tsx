@@ -17,6 +17,7 @@ import {
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import { layoutOf, widgetTypes, type WidgetRegistry } from "@/app/components/widgets/contract";
+import useEntrance from "@/app/hooks/useEntrance";
 import { moveItem, useWidgetLayout, type WidgetConfig, type WidgetSize } from "@/app/hooks/useWidgetLayout";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import type { PreferenceKey } from "@/app/lib/statsApi";
@@ -109,6 +110,7 @@ export default function WidgetBoard<T extends string>({
   const total = widgets.length;
 
   const [customizing, setCustomizing] = useState(false);
+  const entering = useEntrance();
   // Picked up with the keyboard or a click; Escape returns it to `origin`.
   const [grabbed, setGrabbed] = useState<{ id: string; origin: number } | null>(null);
   const [drag, setDrag] = useState<PointerDrag | null>(null);
@@ -345,6 +347,8 @@ export default function WidgetBoard<T extends string>({
               <button
                 type="button"
                 onClick={() => {
+                  // The button disappears once the board is back to the defaults: keep focus on Done.
+                  focusRequest.current = "toggle";
                   layout.reset();
                   announce(copy.announce.reset);
                 }}
@@ -399,7 +403,11 @@ export default function WidgetBoard<T extends string>({
       </div>
 
       {displayed.length > 0 ? (
-        <ul ref={listRef} role="list" className="relative mb-4 grid grid-cols-2 gap-3 sm:gap-4 @4xl:grid-cols-4">
+        <ul
+          ref={listRef}
+          role="list"
+          className={`relative mb-4 grid grid-cols-2 gap-3 sm:gap-4 @4xl:grid-cols-4 ${entering ? "stagger" : ""}`}
+        >
           {displayed.map((widget, index) => {
             const name = widgetName(widget.type);
             const isGrabbed = grabbed?.id === widget.id;

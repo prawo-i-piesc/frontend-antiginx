@@ -13,7 +13,7 @@ import { useTheme } from "@/app/providers/ThemeProvider";
 
 export type DashboardArea = "dashboard" | "admin";
 export type DashboardPage = "overview" | "scanner" | "charts" | "profile";
-export type AdminPage = "overview" | "users" | "scans" | "profile";
+export type AdminPage = "overview" | "users" | "scans" | "system" | "profile";
 
 type LinkKey = keyof Messages["shell"]["links"];
 type SectionKey = keyof Messages["shell"]["sections"];
@@ -45,6 +45,7 @@ const NAVIGATION: Record<DashboardArea, NavSection[]> = {
         { href: "/admin", icon: "ri-shield-star-line", label: "overview", page: "overview" },
         { href: "/admin/users", icon: "ri-group-line", label: "users", page: "users" },
         { href: "/admin/scans", icon: "ri-radar-line", label: "scans", page: "scans" },
+        { href: "/admin/system", icon: "ri-pulse-line", label: "system", page: "system" },
       ],
     },
     {

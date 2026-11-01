@@ -16,7 +16,8 @@ import { CONTACT_EMAIL, DOCS_URL } from '../config/constants';
 import { levelClass } from '../components/AccountSection';
 import { useI18n } from '../i18n/I18nProvider';
 import { ApiError } from '../lib/authErrors';
-import { checkoutUrl } from '../lib/billingApi';
+import { checkoutUrl, getBilling } from '../lib/billingApi';
+import useApiQuery from '../hooks/useApiQuery';
 import { useAuth } from '../providers/AuthProvider';
 import { useToast } from '../providers/ToastProvider';
 
@@ -160,6 +161,10 @@ export default function PricingPage() {
   const router = useRouter();
   const toast = useToast();
   const [upgrading, setUpgrading] = useState(false);
+  // A server that sells nothing (no Stripe keys) says so here rather than
+  // after a click, in an error toast.
+  const billing = useApiQuery(signedIn && !onPro ? 'pricing:billing' : null, () => getBilling());
+  const billingDisabled = billing.data?.enabled === false;
 
   // Signed in, Pro goes straight to Stripe; the plan section in the profile is
   // only where someone who already pays ends up.
@@ -263,6 +268,8 @@ export default function PricingPage() {
                         <Link href="/dashboard/profile#plan" className={actionClass}>
                           {copy.yourPlan}
                         </Link>
+                      ) : pro && signedIn && billingDisabled ? (
+                        <p className={`${actionClass} cursor-default opacity-60`}>{copy.unavailable}</p>
                       ) : pro && signedIn ? (
                         <button
                           type="button"

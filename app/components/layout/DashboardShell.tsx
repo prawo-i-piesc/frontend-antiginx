@@ -143,7 +143,8 @@ export default function DashboardShell({ area, activePage, mainClassName = "", c
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
-          className={`@container flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme focus:outline-none ${mainClassName}`}
+          // Every page mounts its own shell, so page-in plays on each move between views.
+          className={`page-in @container flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme focus:outline-none ${mainClassName}`}
         >
           {children}
         </main>

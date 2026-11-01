@@ -1,4 +1,5 @@
 import { authorizedFetch } from "@/app/lib/session";
+import { riskScore } from "@/app/lib/risk";
 
 // API configuration and types based on backend specification
 
@@ -14,6 +15,8 @@ export interface ScanResultItem {
   category: string;
   severity: SeverityLevel;
   passed: boolean;
+  /** An engine notice (a test aborted or blocked), not an outcome. */
+  notice?: boolean;
   message: string;
   reference: string;
   remediation: string;
@@ -409,30 +412,12 @@ export function getSeverityBgColor(severity: SeverityLevel): string {
   }
 }
 
+/** The scan's risk, 0–100, by the model in lib/risk.ts that the charts share. */
 export function calculateThreatLevel(results: ScanResultItem[]): number {
-  const completedResults = getCompletedScanResults(results);
-  if (completedResults.length === 0) return 0;
-
-  const severityWeights: Record<SeverityLevel, number> = {
-    CRITICAL: 100,
-    HIGH: 75,
-    MEDIUM: 50,
-    LOW: 25,
-    INFO: 5,
-  };
-
-  const failedTests = completedResults.filter((r) => r.passed === false);
-  if (failedTests.length === 0) return 0;
-
-  const totalWeight = failedTests.reduce((sum, result) => {
-    const normalized = normalizeSeverity(result.severity);
-    if (!normalized) return sum;
-    return sum + severityWeights[normalized];
-  }, 0);
-
-  // Calculate weighted average and cap at 100
-  const avgWeight = totalWeight / failedTests.length;
-  return Math.min(Math.round(avgWeight), 100);
+  const findings = getCompletedScanResults(results)
+    .filter((result) => result.passed === false && !result.notice)
+    .map((result) => ({ test: result.test_name, severity: result.severity }));
+  return Math.round(riskScore(findings));
 }
 
 export function getStatusColor(status: ScanStatus): string {

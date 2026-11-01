@@ -15,6 +15,8 @@ const pricing = {
   plansHeading: "Plans",
   /** On the Pro card, for someone who already pays. */
   yourPlan: "Your plan",
+  /** In place of the upgrade button on a server that takes no payments. */
+  unavailable: "Payments are not available yet",
   perMonth: "/month",
   /** Shown over the extra features of the higher plans. */
   plus: (plan: string) => `Everything in ${plan}, plus:`,
