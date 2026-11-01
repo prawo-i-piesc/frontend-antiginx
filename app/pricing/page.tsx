@@ -12,7 +12,7 @@ import SiteHeader from '../components/SiteHeader';
 import { MAIN_CONTENT_ID } from '../components/ui/SkipLink';
 import { PRIMARY_BUTTON } from '../components/ui/buttonStyles';
 import { entrance } from '../components/ui/entrance';
-import { CONTACT_EMAIL, DOCS_URL } from '../config/constants';
+import { CONTACT_EMAIL, DOCS } from '../config/constants';
 import { levelClass } from '../components/AccountSection';
 import { useI18n } from '../i18n/I18nProvider';
 import { ApiError } from '../lib/authErrors';
@@ -310,7 +310,7 @@ export default function PricingPage() {
             <div className="flex flex-wrap items-baseline justify-between gap-4 mb-8">
               <h2 id={faqHeadingId} className="text-3xl sm:text-4xl font-bold text-white">{copy.faq.title}</h2>
               <a
-                href={DOCS_URL}
+                href={DOCS.engine}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 font-mono text-sm text-zinc-400 hover:text-cyan-300 transition-colors"

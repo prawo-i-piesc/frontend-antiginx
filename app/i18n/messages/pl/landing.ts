@@ -6,6 +6,11 @@ const landing: Messages["landing"] = {
     nav: "Menu główne",
     features: "Funkcje",
     docs: "Dokumentacja",
+    docsParts: {
+      engine: { name: "Silnik", description: "Testy bezpieczeństwa i ich wyniki" },
+      backend: { name: "Backend", description: "API, konfiguracja i wdrożenie" },
+      daemon: { name: "Daemon", description: "Kolejka skanów i uruchamianie silnika" },
+    },
     pricing: "Cennik",
     signIn: "Zaloguj się",
     dashboard: "Pulpit",

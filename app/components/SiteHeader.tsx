@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 
+import DocsMenu from '@/app/components/DocsMenu';
 import LanguageSwitcher from '@/app/components/ui/LanguageSwitcher';
-import { DOCS_URL } from '@/app/config/constants';
 import { prefersReducedMotion } from '@/app/hooks/useMediaQuery';
 import { useI18n } from '@/app/i18n/I18nProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -97,11 +97,7 @@ export default function SiteHeader() {
                   </Link>
                 </li>
                 <li>
-                  <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                    {t.landing.header.docs}
-                    <i className="ri-external-link-line ml-1 text-xs" aria-hidden="true" />
-                    <span className="sr-only"> {t.common.opensInNewTab}</span>
-                  </a>
+                  <DocsMenu linkClass={linkClass} />
                 </li>
                 <li>
                   <Link

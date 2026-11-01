@@ -24,8 +24,20 @@ export const SCAN_CONFIG = {
  * would force one image build per environment.
  */
 
-/** Engine documentation: what every test checks and how it reaches a verdict. */
-export const DOCS_URL = 'https://prawo-i-piesc.github.io/engine-antiginx/';
+/** Each part of the project has its own documentation on GitHub Pages. */
+export const DOCS = {
+  /** The engine: what every test checks and how it reaches a verdict. */
+  engine: 'https://prawo-i-piesc.github.io/engine-antiginx/',
+  /** The backend: the API, its configuration and deployment. */
+  backend: 'https://prawo-i-piesc.github.io/backend-antiginx/',
+  /** The daemon: the worker that takes scans off the queue and runs the engine. */
+  daemon: 'https://prawo-i-piesc.github.io/daemon-antiginx/',
+} as const;
+
+export type DocsPart = keyof typeof DOCS;
+
+/** In the order the menus list them: the scanner first, then what runs it. */
+export const DOCS_PARTS: readonly DocsPart[] = ['engine', 'backend', 'daemon'];
 
 /** The GitHub organization with all of the project's repositories. */
 export const GITHUB_URL = 'https://github.com/prawo-i-piesc';

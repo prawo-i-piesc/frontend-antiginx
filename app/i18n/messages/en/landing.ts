@@ -13,6 +13,12 @@ const landing = {
     nav: "Main",
     features: "Features",
     docs: "Documentation",
+    /** The documentation menu: one site per part of the project. */
+    docsParts: {
+      engine: { name: "Engine", description: "Security checks and their results" },
+      backend: { name: "Backend", description: "API, configuration and deployment" },
+      daemon: { name: "Daemon", description: "Scan queue and running the engine" },
+    },
     pricing: "Pricing",
     signIn: "Sign in",
     dashboard: "Dashboard",

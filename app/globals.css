@@ -433,6 +433,24 @@ body,
   }
 }
 
+/* A small panel opening under its button, like the documentation menu. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
+.pop-in {
+  animation: pop-in 150ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-in {
+    animation: none;
+  }
+}
+
 /* The backdrop behind the navigation drawer. */
 .animate-fade-in {
   animation: backdrop-in 200ms ease-out;
