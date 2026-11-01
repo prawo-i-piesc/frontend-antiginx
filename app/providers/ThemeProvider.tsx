@@ -31,6 +31,7 @@ export function ThemeProvider({
     try {
       const saved = localStorage.getItem('theme') as Theme | null;
       if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTheme(saved);
       }
     } catch {

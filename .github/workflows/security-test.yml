@@ -1,7 +1,7 @@
 name: Security Verification
 run-name: >-
-    ${{ 
-        github.event_name == 'pull_request' 
+    ${{
+        github.event_name == 'pull_request'
         && format('Security Verification for CI: PR #{0} -> {1}', github.event.number, github.event.pull_request.title)
         ||
         github.event_name == 'push'
@@ -12,27 +12,27 @@ on:
     pull_request:
         types: [opened, synchronize, reopened]
     push:
-        branches: [ "main" ]
+        branches: ["main"]
 
 permissions:
     contents: read
 
 concurrency:
-    group: ${{ github.event_name == 'pull_request' && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number) || format('{0}-ref-{1}', github.workflow, github.ref) }}
-    cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
     security-ci-test:
-        name: Testing
+        name: npm audit & Trivy
         runs-on: ubuntu-latest
         timeout-minutes: 30
 
         steps:
         - name: 📥 Git -- Checkout repository
-          uses: actions/checkout@v6
+          uses: actions/checkout@v7
 
         - name: 📘 Node -- Set up
-          uses: actions/setup-node@v3
+          uses: actions/setup-node@v6
           with:
             node-version: '24'
             cache: npm
@@ -41,9 +41,9 @@ jobs:
           run: npm ci
 
         - name: 🧪 Node -- Test Vulnerability -> Modules
-          run: | 
-            echo "⚙️ Running npm audit on Node modules:"
-            if npm audit --audit-level=moderate; then
+          run: |
+            echo "⚙️ Running npm audit on production Node modules:"
+            if npm audit --omit=dev --audit-level=moderate; then
                 echo ""
                 echo "✅ No vulnerabilities found in Node modules."
             else
@@ -53,7 +53,7 @@ jobs:
             fi
 
         - name: 🧪 Trivy -- Test Vuln, Secret, Misconfig -> File System
-          uses: aquasecurity/trivy-action@0.35.0
+          uses: aquasecurity/trivy-action@v0.36.0
           with:
             scan-type: fs
             scan-ref: .

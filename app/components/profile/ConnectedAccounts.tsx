@@ -59,7 +59,7 @@ export default function ConnectedAccounts() {
     if (busy !== null) return;
     setBusy(provider);
     try {
-      window.location.href = await linkProviderUrl(provider);
+      window.location.assign(await linkProviderUrl(provider));
     } catch (error) {
       setBusy(null);
       toast.error(error instanceof ApiError ? error.message : t.common.networkError);

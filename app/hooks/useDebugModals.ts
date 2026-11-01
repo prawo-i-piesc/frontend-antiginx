@@ -15,7 +15,7 @@ export function useDebugModals({ setScanResult, setScanError, setIsModalOpen }: 
       return;
     }
 
-    // @ts-ignore
+    // @ts-expect-error -- debug helper, not declared on Window
     window.testModalWithResults = () => {
       setScanResult(mockScanWithResults);
       setScanError(null);
@@ -23,7 +23,7 @@ export function useDebugModals({ setScanResult, setScanError, setIsModalOpen }: 
       console.log('✅ Modal with 6 test results opened');
     };
 
-    // @ts-ignore
+    // @ts-expect-error -- debug helper, not declared on Window
     window.testModalInProgress = () => {
       setScanResult(mockScanInProgress);
       setScanError(null);
@@ -31,7 +31,7 @@ export function useDebugModals({ setScanResult, setScanError, setIsModalOpen }: 
       console.log('✅ Modal with "in progress" state opened');
     };
 
-    // @ts-ignore
+    // @ts-expect-error -- debug helper, not declared on Window
     window.testModalError = () => {
       setScanResult(null);
       setScanError(mockScanError);
@@ -45,11 +45,11 @@ export function useDebugModals({ setScanResult, setScanError, setIsModalOpen }: 
     console.log('  - testModalError() - Show error modal');
 
     return () => {
-      // @ts-ignore
+      // @ts-expect-error -- debug helper, not declared on Window
       delete window.testModalWithResults;
-      // @ts-ignore
+      // @ts-expect-error -- debug helper, not declared on Window
       delete window.testModalInProgress;
-      // @ts-ignore
+      // @ts-expect-error -- debug helper, not declared on Window
       delete window.testModalError;
     };
   }, [setScanResult, setScanError, setIsModalOpen]);
