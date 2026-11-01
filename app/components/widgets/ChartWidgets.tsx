@@ -10,7 +10,6 @@ import { domainRows } from "@/app/components/charts/trend";
 import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import WidgetCard from "@/app/components/widgets/WidgetCard";
 import { createWidgetData } from "@/app/components/widgets/WidgetData";
-import useApiQuery from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import { getFailedTests, getRiskTrend, getSeverity, type RiskPoint, type TestFailures } from "@/app/lib/statsApi";
 
@@ -19,10 +18,35 @@ const WIDGET_DAYS = 30;
 const WIDGET_TESTS = 6;
 const WIDGET_DOMAINS = 5;
 
+/*
+ * Each chart widget reads a shared source rather than fetching for itself, so
+ * the copies a board draws as previews (dragging, the customize library) show
+ * the same data without another request. Lazy: a source loads only while one
+ * of its widgets is rendered.
+ */
+
 /** The window's completed scans, which the risk line and the domain list both draw from. */
-export const RiskData = createWidgetData(`widget:risk:${WIDGET_DAYS}`, (signal) =>
-  getRiskTrend({ days: WIDGET_DAYS }, signal),
+export const RiskData = createWidgetData(
+  `widget:risk:${WIDGET_DAYS}`,
+  (signal) => getRiskTrend({ days: WIDGET_DAYS }, signal),
+  { lazy: true },
 );
+
+export const SeverityData = createWidgetData(
+  `widget:severity:${WIDGET_DAYS}`,
+  (signal) => getSeverity({ days: WIDGET_DAYS }, signal),
+  { lazy: true },
+);
+
+/** The account's most failed checks. */
+export const UserTestsData = createWidgetData(
+  `widget:tests:${WIDGET_DAYS}`,
+  (signal) => getFailedTests({ days: WIDGET_DAYS, limit: WIDGET_TESTS }, signal),
+  { lazy: true },
+);
+
+/** Something a chart widget can read: a shared source from createWidgetData. */
+type Source<T> = { useData: () => { data?: T; loading: boolean; error: unknown } };
 
 const MESSAGE = "flex flex-1 items-center justify-center py-6 text-center text-sm text-zinc-600 dark:text-zinc-400";
 
@@ -190,7 +214,7 @@ function DomainRiskTable({ points }: { points: readonly RiskPoint[] }) {
 
 export function SeverityWidget() {
   const { t } = useI18n();
-  const query = useApiQuery(`widget:severity:${WIDGET_DAYS}`, (signal) => getSeverity({ days: WIDGET_DAYS }, signal));
+  const query = SeverityData.useData();
 
   return (
     <WidgetCard title={t.widgets.names.severity} action={<ChartsLink />}>
@@ -204,18 +228,14 @@ export function SeverityWidget() {
 /** The most failed checks, from the account's scans or, for the admin, the whole platform's. */
 export function FailedTestsWidget({
   title,
-  queryKey,
-  load,
+  source,
   action,
 }: {
   title: string;
-  queryKey: string;
-  load: (params: { days: number; limit: number }, signal: AbortSignal) => Promise<TestFailures[]>;
+  source: Source<TestFailures[]>;
   action?: ReactNode;
 }) {
-  const query = useApiQuery(`${queryKey}:${WIDGET_DAYS}`, (signal) =>
-    load({ days: WIDGET_DAYS, limit: WIDGET_TESTS }, signal),
-  );
+  const query = source.useData();
 
   return (
     <WidgetCard title={title} action={action}>
@@ -231,8 +251,7 @@ export function UserFailedTestsWidget() {
   return (
     <FailedTestsWidget
       title={t.widgets.names.topThreats}
-      queryKey="widget:tests"
-      load={getFailedTests}
+      source={UserTestsData}
       action={<ChartsLink />}
     />
   );

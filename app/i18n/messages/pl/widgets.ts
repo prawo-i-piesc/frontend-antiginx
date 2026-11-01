@@ -17,6 +17,9 @@ const widgets: Messages["widgets"] = {
     activeScans: "Wszystkie skany",
     newRegistrations: "Nowe rejestracje",
     failedChecks: "Najczęściej nieudane testy",
+    services: "Usługi",
+    serverLoad: "Obciążenie serwera",
+    systemHistory: "Obciążenie w czasie",
   },
 
   kpi: {
@@ -28,10 +31,6 @@ const widgets: Messages["widgets"] = {
 
   noData: "Brak danych",
   viewAll: "Pokaż wszystkie",
-  trend: {
-    up: "Wzrost",
-    down: "Spadek",
-  },
 
   board: {
     customize: "Dostosuj",
@@ -65,6 +64,10 @@ const widgets: Messages["widgets"] = {
 
   newRegistrations: {
     window: "w ostatnich 7 dniach",
+  },
+
+  system: {
+    moreContext: "szczegóły stanu",
   },
 
   failedChecks: {

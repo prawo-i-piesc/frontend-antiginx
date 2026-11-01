@@ -16,6 +16,7 @@ const shell = {
     profile: "Profile",
     users: "Users",
     scans: "Scans",
+    system: "System",
     userDashboard: "User dashboard",
     adminPanel: "Admin panel",
   },

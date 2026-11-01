@@ -31,6 +31,8 @@ export const TOOLBAR =
 export const SCROLL_REGION = "relative overflow-x-auto scrollbar-theme focus-visible:-outline-offset-2";
 export const TABLE = "w-full border-collapse text-left text-[13px]";
 export const THEAD = "border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/60";
+/** For a header that stays put while the rows scroll under it: opaque, or they show through. */
+export const STICKY_THEAD = "sticky top-0 z-10 border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900";
 export const TH = "h-9 px-3 text-xs font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400";
 export const ROW =
   "border-b border-zinc-100 last:border-0 transition-colors hover:bg-zinc-50 dark:border-zinc-800/60 dark:hover:bg-zinc-800/30";

@@ -22,8 +22,8 @@ export interface BarDatum {
  * nowhere and the figure never wears the bar's colour. Bars are 8px thick
  * with a rounded data end; hovering a row shows its detail and dims the rest.
  */
-export default function BarList({ data, max, label }: { data: readonly BarDatum[]; max?: number; label: string }) {
-  const top = Math.max(max ?? 0, ...data.map((datum) => datum.value), 1);
+export default function BarList({ data, label }: { data: readonly BarDatum[]; label: string }) {
+  const top = Math.max(...data.map((datum) => datum.value), 1);
 
   return (
     <ul aria-label={label} className="group/bars flex flex-col gap-3">
@@ -48,7 +48,7 @@ export default function BarList({ data, max, label }: { data: readonly BarDatum[
             <div className="relative h-2" aria-hidden="true">
               {datum.value > 0 ? (
                 <div
-                  className="h-full min-w-0.5 rounded-r-[4px]"
+                  className="bar-grow h-full min-w-0.5 rounded-r-[4px]"
                   style={{ width: `${share}%`, backgroundColor: datum.color }}
                 />
               ) : null}

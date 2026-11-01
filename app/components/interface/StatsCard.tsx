@@ -15,17 +15,12 @@ interface StatsCardProps {
   unit?: string;
   /** A line of context under the figure. */
   hint?: React.ReactNode;
-  trend?: {
-    value: string;
-    isPositive: boolean;
-    color: string;
-  };
   /** The value is still on its way. */
   loading?: boolean;
 }
 
 /** One figure under its label. Not interactive, so it has no hover state. */
-export default function StatsCard({ icon, tone, value, label, unit, hint, trend, loading = false }: StatsCardProps) {
+export default function StatsCard({ icon, tone, value, label, unit, hint, loading = false }: StatsCardProps) {
   const { t, format } = useI18n();
 
   let shown: ReactNode;
@@ -63,15 +58,6 @@ export default function StatsCard({ icon, tone, value, label, unit, hint, trend,
           ) : null}
         </dd>
         {hint ? <dd className="-mt-1 text-xs text-zinc-600 dark:text-zinc-400">{hint}</dd> : null}
-        {trend ? (
-          <dd>
-            <span className={`inline-flex items-center gap-1 text-xs font-medium ${trend.color}`}>
-              <i className={`ri-arrow-${trend.isPositive ? "up" : "down"}-line`} aria-hidden="true"></i>
-              <span className="sr-only">{trend.isPositive ? t.widgets.trend.up : t.widgets.trend.down} </span>
-              {trend.value}
-            </span>
-          </dd>
-        ) : null}
       </dl>
     </div>
   );

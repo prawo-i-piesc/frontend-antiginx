@@ -35,6 +35,7 @@ import {
   TABLE,
   TD,
   TH,
+  STICKY_THEAD,
   THEAD,
   TableMessage,
 } from "@/app/components/ui/table";
@@ -66,10 +67,13 @@ async function loadStats(scope: StatsWindow, signal: AbortSignal) {
     getSeverity(scope, signal),
     getFailedTests({ ...scope, limit: TESTS_SHOWN }, signal),
   ]);
-  return { summary, points, severity, tests };
+  // The window it was loaded for travels with it: while the next one loads, the
+  // page keeps showing this answer, and must describe it, not the new filters.
+  return { summary, points, severity, tests, days: scope.days, domain: scope.domain ?? "" };
 }
 
-const COLUMN = "contents @4xl:flex @4xl:flex-col @4xl:gap-4";
+/** The cards inside rise one after another, also when the column dissolves on a narrow screen. */
+const COLUMN = "stagger contents @4xl:flex @4xl:flex-col @4xl:gap-4";
 
 export default function DashboardChartsPage() {
   const { t } = useI18n();
@@ -159,8 +163,12 @@ function ChartsView() {
   }
 
   const { summary, points, severity, tests } = data;
+  // The filters the shown data belongs to; the URL may already hold newer ones.
+  const shownDays = data.days;
+  const shownDomain = data.domain;
   const hasScans = points.length > 0;
-  const noScansAtAll = !domain && domains.data?.length === 0;
+  // From the summary, not the domain list, which may still be loading.
+  const noScansAtAll = !shownDomain && summary.scans.completed === 0;
 
   const failedTotal = summary.tests.failed;
   const latest = summary.risk.latest;
@@ -201,13 +209,13 @@ function ChartsView() {
           </div>
         ) : (
           <>
-            <div className={`${KPI_GRID} mb-3 sm:mb-4`}>
+            <div className={`${KPI_GRID} stagger mb-3 sm:mb-4`}>
               <StatsCard
                 icon="ri-checkbox-circle-line"
                 tone="cyan"
                 label={copy.kpi.scans}
                 value={points.length}
-                hint={domain ? copy.kpi.since(format.date(points[0].created_at)) : copy.kpi.acrossDomains(summary.domains)}
+                hint={shownDomain ? copy.kpi.since(format.date(points[0].created_at)) : copy.kpi.acrossDomains(summary.domains)}
               />
               <StatsCard
                 icon="ri-pulse-line"
@@ -244,14 +252,14 @@ function ChartsView() {
                 <div className="order-1 min-w-0">
                   <WidgetCard
                     title={copy.risk.heading}
-                    action={<ChartMeta>{granularityLabel(granularityFor(days, domain))}</ChartMeta>}
+                    action={<ChartMeta>{granularityLabel(granularityFor(shownDays, shownDomain))}</ChartMeta>}
                   >
-                    <RiskTrend points={points} days={days} domain={domain} height={280} />
+                    <RiskTrend points={points} days={shownDays} domain={shownDomain} height={280} />
                     <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">{copy.risk.footnote}</p>
                   </WidgetCard>
                 </div>
                 <div className="order-4 min-w-0">
-                  {domain ? (
+                  {shownDomain ? (
                     <ScansTable points={points} />
                   ) : (
                     <DomainsTable points={points} onSelect={(url) => update({ domain: url })} />
@@ -367,7 +375,7 @@ function ScansTable({ points }: { points: readonly RiskPoint[] }) {
     <TableCard title={copy.heading}>
       <div className={`${SCROLL_REGION} max-h-[26rem] overflow-y-auto`}>
         <table className={TABLE}>
-          <thead className={`${THEAD} sticky top-0`}>
+          <thead className={STICKY_THEAD}>
             <tr>
               <th scope="col" className={`${TH} pl-5`}>
                 {copy.columns.date}

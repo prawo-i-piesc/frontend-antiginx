@@ -21,7 +21,8 @@ export default function WidgetCard({
   const headingId = useId();
 
   return (
-    <section aria-labelledby={headingId} className={`${SURFACE} flex h-full flex-col p-5`}>
+    // A named container, so a widget can lay out for the card's width rather than the page's.
+    <section aria-labelledby={headingId} className={`${SURFACE} @container/widget flex h-full flex-col p-5`}>
       <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
         <h2 id={headingId} className="min-w-0 truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {title}

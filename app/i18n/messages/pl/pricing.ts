@@ -7,6 +7,7 @@ const pricing: Messages["pricing"] = {
 
   plansHeading: "Plany",
   yourPlan: "Twój plan",
+  unavailable: "Płatności nie są jeszcze dostępne",
   perMonth: "/miesiąc",
   plus: (plan) => `Wszystko z ${plan}, a do tego:`,
 

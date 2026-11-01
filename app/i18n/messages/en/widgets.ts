@@ -17,6 +17,9 @@ const widgets = {
     activeScans: "All-time scans",
     newRegistrations: "New registrations",
     failedChecks: "Most failed checks",
+    services: "Services",
+    serverLoad: "Server load",
+    systemHistory: "Load over time",
   },
 
   /** Lines under the overview's figures. */
@@ -29,10 +32,6 @@ const widgets = {
 
   noData: "No data",
   viewAll: "View all",
-  trend: {
-    up: "Increase",
-    down: "Decrease",
-  },
 
   board: {
     customize: "Customize",
@@ -73,6 +72,11 @@ const widgets = {
 
   newRegistrations: {
     window: "in the last 7 days",
+  },
+
+  system: {
+    /** Completes the "System" link for screen readers. */
+    moreContext: "status details",
   },
 
   failedChecks: {

@@ -8,8 +8,10 @@ import {
   DomainRiskWidget,
   RiskData,
   RiskTrendWidget,
+  SeverityData,
   SeverityWidget,
   UserFailedTestsWidget,
+  UserTestsData,
 } from "@/app/components/widgets/ChartWidgets";
 import type { WidgetDefinition, WidgetRegistry } from "@/app/components/widgets/contract";
 import RecentScansWidget from "@/app/components/widgets/RecentScansWidget";
@@ -22,17 +24,35 @@ import { getSummary, getUserWidgets, type StatsSummary, type UserWidgets } from 
 export const UserWidgetsData = createWidgetData("widgets", getUserWidgets);
 
 /** The overview's figures: the same 30 days as its charts. */
-const SummaryData = createWidgetData("widget:summary:30", (signal) => getSummary({ days: 30 }, signal));
+const SummaryData = createWidgetData("widget:summary:30", (signal) => getSummary({ days: 30 }, signal), { lazy: true });
 
-/** Everything the overview's widgets share, loaded once for the whole board. */
+/**
+ * Everything the overview's widgets share, loaded once for the whole board.
+ * Lazy sources load only while one of their widgets is rendered.
+ */
 export function DashboardData({ children }: { children: ReactNode }) {
   return (
     <UserWidgetsData.Provider>
       <SummaryData.Provider>
-        <RiskData.Provider>{children}</RiskData.Provider>
+        <RiskData.Provider>
+          <SeverityData.Provider>
+            <UserTestsData.Provider>{children}</UserTestsData.Provider>
+          </SeverityData.Provider>
+        </RiskData.Provider>
       </SummaryData.Provider>
     </UserWidgetsData.Provider>
   );
+}
+
+/** Every source's state, for the overview's error banner and its retry. */
+export function useDashboardDataStatus() {
+  return [
+    UserWidgetsData.useStatus(),
+    SummaryData.useStatus(),
+    RiskData.useStatus(),
+    SeverityData.useStatus(),
+    UserTestsData.useStatus(),
+  ];
 }
 
 type CounterType = "totalScans" | "averageRisk" | "domains" | "failedTests" | "safeSites" | "threats";

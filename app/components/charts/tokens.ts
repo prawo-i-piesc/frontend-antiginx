@@ -12,6 +12,8 @@ import type { SeverityLevel } from "@/app/lib/api";
 export const VIZ = {
   /** The single hue of a one-series chart. */
   accent: "var(--viz-accent)",
+  /** The second series of a two-series chart, after the accent. */
+  series2: "var(--viz-series-2)",
   /** One ordered ramp: the further from the card, the more severe. */
   severity: {
     CRITICAL: "var(--viz-severity-critical)",
@@ -43,3 +45,6 @@ export const AXIS_FONT_SIZE = 11;
 
 /** A risk score is 0–100; the axis marks the quarters. */
 export const RISK_TICKS = [0, 25, 50, 75, 100];
+
+/** Percentages share the risk score's quarters. */
+export const PERCENT_TICKS = RISK_TICKS;

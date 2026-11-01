@@ -10,6 +10,11 @@ const charts = {
   newScan: "New scan",
   keyboardHint: "Use the left and right arrow keys to move between points.",
 
+  /** Live metric charts (admin System view): the lines in words for screen readers. */
+  metric: {
+    summary: (label: string, now: string, peak: string) => `${label}: now ${now}, peak ${peak}.`,
+  },
+
   filters: {
     domain: "Domain",
     allDomains: "All domains",
@@ -44,7 +49,8 @@ const charts = {
     scanDetail: (failed: number, tests: number) => `${failed} of ${tests} ${pluralEn(tests, "check", "checks")} failed`,
     bucketDetail: (count: number) => `Average of ${count} ${pluralEn(count, "scan", "scans")}`,
     week: (date: string) => `Week of ${date}`,
-    footnote: "Risk is the average severity of a scan's failed checks, from 0 when all pass to 100 when all that fail are critical.",
+    footnote:
+      "Risk runs from 0 to 100. The worst failed check sets the band (low from 1, medium from 25, high from 50, critical from 75), and every further one raises it.",
     date: "Date",
   },
 

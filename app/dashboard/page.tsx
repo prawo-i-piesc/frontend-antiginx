@@ -6,7 +6,7 @@ import {
   DASHBOARD_DEFAULTS,
   DASHBOARD_WIDGETS,
   DashboardData,
-  UserWidgetsData,
+  useDashboardDataStatus,
 } from "@/app/components/widgets/dashboardWidgets";
 import WidgetBoard from "@/app/components/widgets/WidgetBoard";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
@@ -28,7 +28,8 @@ export default function DashboardPage() {
 
 function Overview() {
   const { t } = useI18n();
-  const { error, reload } = UserWidgetsData.useData();
+  // Any source that failed: one banner, and Retry reloads exactly those.
+  const failed = useDashboardDataStatus().filter((source) => source.error);
 
   return (
     <WidgetBoard
@@ -37,8 +38,8 @@ function Overview() {
       defaults={DASHBOARD_DEFAULTS}
       title={t.dashboard.title}
       description={t.dashboard.description}
-      error={error ? t.dashboard.loadError : null}
-      onRetry={reload}
+      error={failed.length > 0 ? t.dashboard.loadError : null}
+      onRetry={() => failed.forEach((source) => source.reload())}
     />
   );
 }
