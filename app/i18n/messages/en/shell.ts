@@ -31,6 +31,8 @@ const shell = {
   collapseSidebar: "Collapse menu",
   expandSidebar: "Expand menu",
   menu: "Menu",
+  /** Completes the plan name under the account, which links to the pricing page. */
+  seePlans: "See plans",
   closeMenu: "Close menu",
   lightTheme: "Switch to light theme",
   darkTheme: "Switch to dark theme",

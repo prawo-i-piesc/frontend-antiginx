@@ -76,6 +76,7 @@ const profile = {
     loadError: "Could not load your plan. Reload the page to try again.",
     upgrade: "Upgrade to Pro",
     manage: "Manage subscription",
+    comparePlans: "Compare plans",
     manageHint: "Cancelling, changing your card and invoices are handled on Stripe.",
     welcome: "Welcome to Pro",
     welcomeHint: "Your subscription is active.",
