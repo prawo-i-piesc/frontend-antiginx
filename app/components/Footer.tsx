@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useId } from 'react';
 
-import { CONTACT_EMAIL, DOCS_URL, GITHUB_URL } from '@/app/config/constants';
+import { CONTACT_EMAIL, DOCS, DOCS_PARTS, GITHUB_URL } from '@/app/config/constants';
 import { useI18n } from '@/app/i18n/I18nProvider';
 
 const linkClass = 'inline-flex items-center gap-1.5 text-zinc-400 hover:text-cyan-400 transition-colors text-sm';
@@ -15,10 +16,7 @@ export default function Footer() {
   const copy = t.landing.footer;
   const pathname = usePathname();
 
-  const links = [
-    { href: DOCS_URL, label: copy.links.docs, icon: 'ri-book-open-line' },
-    { href: GITHUB_URL, label: copy.links.github, icon: 'ri-github-line' },
-  ];
+  const docsLabelId = useId();
   const legalLinks = [
     { href: '/terms', label: t.legal.links.terms },
     { href: '/privacy', label: t.legal.links.privacy },
@@ -41,7 +39,7 @@ export default function Footer() {
 
         <div className="flex flex-col sm:items-end gap-3">
           <nav aria-label={copy.nav}>
-            <ul className="flex items-center gap-5">
+            <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <li>
                 <Link
                   href="/pricing"
@@ -52,15 +50,29 @@ export default function Footer() {
                   {copy.links.pricing}
                 </Link>
               </li>
-              {links.map((link) => (
-                <li key={link.href}>
-                  <a href={link.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                    <i className={link.icon} aria-hidden="true"></i>
-                    {link.label}
-                    <span className="sr-only"> {t.common.opensInNewTab}</span>
-                  </a>
-                </li>
-              ))}
+              {/* One documentation site per part of the project. */}
+              <li className="inline-flex items-center gap-1.5 text-sm text-zinc-500">
+                <i className="ri-book-open-line" aria-hidden="true"></i>
+                <span id={docsLabelId}>{copy.links.docs}:</span>
+                <ul aria-labelledby={docsLabelId} className="inline-flex items-center gap-2">
+                  {DOCS_PARTS.map((part, index) => (
+                    <li key={part} className="inline-flex items-center gap-2">
+                      {index > 0 ? <span aria-hidden="true">·</span> : null}
+                      <a href={DOCS[part]} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                        {t.landing.header.docsParts[part].name}
+                        <span className="sr-only"> {t.common.opensInNewTab}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+              <li>
+                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                  <i className="ri-github-line" aria-hidden="true"></i>
+                  {copy.links.github}
+                  <span className="sr-only"> {t.common.opensInNewTab}</span>
+                </a>
+              </li>
             </ul>
           </nav>
           {/*

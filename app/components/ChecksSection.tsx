@@ -1,6 +1,6 @@
 "use client";
 
-import { DOCS_URL } from '@/app/config/constants';
+import { DOCS } from '@/app/config/constants';
 import { useI18n } from '@/app/i18n/I18nProvider';
 import { FEATURES_HEADING_ID, FEATURES_SECTION_ID } from './SiteHeader';
 
@@ -234,7 +234,7 @@ export default function ChecksSection() {
         <p className="mt-5 flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1 text-sm text-zinc-400">
           <span>{copy.growing}</span>
           <a
-            href={DOCS_URL}
+            href={DOCS.engine}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
