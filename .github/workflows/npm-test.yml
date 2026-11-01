@@ -18,23 +18,23 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number) || format('{0}-ref-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   node-ci-test:
-    name: Testing
+    name: Lint & Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
       - name: 📥 Git -- Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: 📘 Node -- Set up
         uses: actions/setup-node@v6
         with:
-          node-version: "25"
+          node-version: "24"
           cache: npm
 
       - name: 🧪 Node -- Test Module Integrity
@@ -54,6 +54,18 @@ jobs:
           else
               echo ""
               echo "✅ package.json and package-lock.json are up to date."
+          fi
+
+      - name: 🧪 Node -- Test Lint
+        run: |
+          echo "⚙️ Running ESLint..."
+          if npm run lint; then
+              echo ""
+              echo "✅ No lint errors found."
+          else
+              echo ""
+              echo "❌ Lint errors found. Please fix the errors above."
+              exit 1
           fi
 
       - name: 🧪 Node -- Test Compilation

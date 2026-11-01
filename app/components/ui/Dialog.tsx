@@ -67,7 +67,6 @@ export default function Dialog({
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
     // In a layout effect, so the content renders before the empty dialog is painted.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShown(open);
   }, [open]);
 

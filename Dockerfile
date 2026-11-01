@@ -1,6 +1,4 @@
 # Variables
-ARG NPM_VERSION=11.19.1
-
 ARG USERNAME=antiginx_user
 ARG GROUPNAME=antiginx_group
 ARG USER_UID=1001
@@ -33,10 +31,6 @@ RUN \
 
 
 # STAGE: Build the application
-#
-# The build takes no environment-specific configuration: the client calls the
-# API over same-origin /api paths and the ingress routes them to the backend.
-# The resulting image is promoted unchanged across environments.
 FROM base AS build
 
 WORKDIR /app
@@ -52,14 +46,8 @@ RUN npm prune --production
 
 
 # STAGE: Final image to run the application
-#
-# Requires BACKEND_URL at runtime: the address used to proxy /api to the
-# backend. It is read per request and never reaches the browser, so it may be
-# an address only resolvable from inside the network. Without it /api answers
-# 502 while the rest of the UI still serves.
 FROM base AS runner
 
-ARG NPM_VERSION
 ARG USERNAME
 ARG GROUPNAME
 ARG USER_UID
@@ -69,9 +57,11 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-RUN apk --no-cache upgrade &&              \
-    apk --no-cache add ca-certificates &&  \
-    npm install -g npm@${NPM_VERSION}
+RUN apk --no-cache upgrade &&                                                      \
+    apk --no-cache add ca-certificates &&                                          \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack    \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack           \
+           /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 RUN addgroup -g ${USER_GID} -S ${GROUPNAME}
 RUN adduser -u ${USER_UID} -S ${USERNAME} -G ${GROUPNAME}
