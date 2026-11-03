@@ -302,6 +302,8 @@ export default function DashboardScannerPage() {
   const testsError = testsLoading ? null : (testConfig?.error ?? null);
   const testCategories = testConfig?.data ?? [];
   // Tests outside the plan cannot be chosen; the backend would refuse them too.
+  // selectedTests may still hold them, so that moving to Pro finds them on:
+  // anything that counts or sends the selection goes by testsToRun.
   const isLocked = (test: ScanTestOption) => test.pro && auth.user?.plan !== "pro";
   const allTestIds = testCategories.flatMap((category) =>
     category.tests.filter((test) => !isLocked(test)).map((test) => test.id),
@@ -435,7 +437,7 @@ export default function DashboardScannerPage() {
   }
 
   const hasResults = !isLoadingScans && !scanListError && filteredScans.length > 0;
-  const noTestsSelected = !testsLoading && !testsError && selectedTests.length === 0;
+  const noTestsSelected = !testsLoading && !testsError && testsToRun.length === 0;
 
   let listMessage = "";
   if (isLoadingScans) {
@@ -503,7 +505,7 @@ export default function DashboardScannerPage() {
                         ? t.scanner.form.noTestsSelected
                         : allSelected
                           ? t.scanner.form.allSelected(totalTests)
-                          : t.scanner.form.totalSelected(selectedTests.length, totalTests)}
+                          : t.scanner.form.totalSelected(testsToRun.length, totalTests)}
                     </p>
                   ) : null}
                 </div>
