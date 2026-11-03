@@ -23,9 +23,77 @@ const scan = {
     FAILED: "Failed",
   },
 
-  result: {
+  /** A test's row in the results: its outcome, or why it does not have one. */
+  verdict: {
     passed: "Passed",
     failed: "Failed",
+    notice: "Notice",
+    pending: "Waiting",
+    missing: "No result",
+  },
+
+  riskBands: {
+    none: "No findings",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    critical: "Critical",
+  },
+  riskLegend: "Low 1–24, medium 25–49, high 50–74, critical 75–100",
+
+  /** The results table, shown live while a scan runs. */
+  live: {
+    /** The scan never reported its end, or has not yet. */
+    noSignal: "No end signal",
+    summary: {
+      status: "Status",
+      tests: "Tests",
+      risk: "Risk",
+      findings: "Findings",
+      time: "Time",
+      connection: "Updates",
+      finished: "Finished",
+    },
+    transport: {
+      connecting: "Connecting…",
+      live: "Live",
+      polling: "Every 2 s",
+      closed: "Stopped",
+    },
+    stalled: "No new results for 2 minutes. What is shown may be incomplete.",
+    stalledShort: "No new results for 2 minutes",
+    gaveUp: "Stopped waiting for this scan. Results may be incomplete.",
+    gaveUpShort: "Stopped waiting",
+    checkAgain: "Check again",
+    waitingFirst: "Waiting for the first result…",
+    failedCount: (count: number) => `Failed: ${count}.`,
+    columns: {
+      result: "Result",
+      test: "Test",
+      message: "Details",
+      severity: "Severity",
+    },
+    filters: {
+      searchLabel: "Search tests",
+      searchPlaceholder: "Search tests and details…",
+      resultLabel: "Filter by result",
+      allResults: "All results",
+      severityLabel: "Filter by severity",
+      allSeverities: "All severities",
+      categoryLabel: "Filter by category",
+      allCategories: "All categories",
+      shown: (shown: string, total: string) => `${shown} of ${total}`,
+      noMatches: "No tests match these filters.",
+    },
+    details: {
+      label: (test: string) => `Details: ${test}`,
+      message: "Message",
+      category: "Category",
+      id: "Test ID",
+      data: "Recorded data",
+      pending: "This test has not reported yet.",
+      noMessage: (test: string) => `The engine reported nothing for ${test}.`,
+    },
   },
 
   /** Full names, as the engine reports them. */
@@ -93,8 +161,6 @@ const scan = {
   resultsTitle: "Security scan results",
   target: "Target",
   riskScore: "Risk score",
-  inProgressTitle: "Scanning in progress",
-  inProgressBody: "Analyzing website security…",
   testsCompleted: (count: number) => `${count} ${pluralEn(count, "test", "tests")} completed`,
   export: "Export",
   exportReport: "Export report",
@@ -104,9 +170,6 @@ const scan = {
 
   errorTitle: "Scan failed",
   errors: {
-    timeoutFree:
-      "The scan is taking longer than usual. Try again in a moment or check that the address is reachable.",
-    timeoutPremium: "The scan did not finish in the expected time. Try again shortly.",
     network: "Cannot connect to the scanner. Check your connection and try again.",
     invalidRequest: "Invalid scan request. Check the address and try again.",
     unauthorized: "You are not allowed to run this scan. Sign in again.",
@@ -115,7 +178,6 @@ const scan = {
     rateLimited: "Too many requests. Wait a moment and try again.",
     server: "The scanner is temporarily unavailable. Try again shortly.",
     unexpected: "An unexpected error occurred while scanning this address.",
-    detailsUnavailable: "Scan details are not available yet.",
   },
 
   report: {

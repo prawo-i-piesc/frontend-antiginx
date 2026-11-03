@@ -17,9 +17,74 @@ const scan: Messages["scan"] = {
     FAILED: "Nieudany",
   },
 
-  result: {
+  verdict: {
     passed: "Zaliczony",
     failed: "Niezaliczony",
+    notice: "Komunikat",
+    pending: "Czeka",
+    missing: "Brak wyniku",
+  },
+
+  riskBands: {
+    none: "Bez znalezisk",
+    low: "Niskie",
+    medium: "Średnie",
+    high: "Wysokie",
+    critical: "Krytyczne",
+  },
+  riskLegend: "Niskie 1–24, średnie 25–49, wysokie 50–74, krytyczne 75–100",
+
+  live: {
+    noSignal: "Bez sygnału końca",
+    summary: {
+      status: "Status",
+      tests: "Testy",
+      risk: "Ryzyko",
+      findings: "Znaleziska",
+      time: "Czas",
+      connection: "Aktualizacje",
+      finished: "Zakończono",
+    },
+    transport: {
+      connecting: "Łączenie…",
+      live: "Na żywo",
+      polling: "Co 2 s",
+      closed: "Zatrzymane",
+    },
+    stalled: "Od 2 minut brak nowych wyników. To, co widać, może być niepełne.",
+    stalledShort: "Od 2 minut brak nowych wyników",
+    gaveUp: "Przestaliśmy czekać na ten skan. Wyniki mogą być niepełne.",
+    gaveUpShort: "Przestaliśmy czekać",
+    checkAgain: "Sprawdź ponownie",
+    waitingFirst: "Czekamy na pierwszy wynik…",
+    failedCount: (count) => `Niezaliczone: ${count}.`,
+    columns: {
+      result: "Wynik",
+      test: "Test",
+      message: "Szczegóły",
+      severity: "Waga",
+    },
+    filters: {
+      searchLabel: "Szukaj testów",
+      searchPlaceholder: "Szukaj w testach i szczegółach…",
+      resultLabel: "Filtruj według wyniku",
+      allResults: "Wszystkie wyniki",
+      severityLabel: "Filtruj według wagi",
+      allSeverities: "Każda waga",
+      categoryLabel: "Filtruj według kategorii",
+      allCategories: "Wszystkie kategorie",
+      shown: (shown, total) => `${shown} z ${total}`,
+      noMatches: "Żaden test nie pasuje do tych filtrów.",
+    },
+    details: {
+      label: (test) => `Szczegóły: ${test}`,
+      message: "Komunikat",
+      category: "Kategoria",
+      id: "ID testu",
+      data: "Zebrane dane",
+      pending: "Ten test jeszcze się nie zgłosił.",
+      noMessage: (test) => `Silnik nie zgłosił niczego dla: ${test}.`,
+    },
   },
 
   tests: {
@@ -84,8 +149,6 @@ const scan: Messages["scan"] = {
   resultsTitle: "Wyniki skanu bezpieczeństwa",
   target: "Cel",
   riskScore: "Poziom ryzyka",
-  inProgressTitle: "Skanowanie w toku",
-  inProgressBody: "Analizujemy bezpieczeństwo strony…",
   testsCompleted: (count) => `Ukończono ${count} ${pluralPl(count, "test", "testy", "testów")}`,
   export: "Eksportuj",
   exportReport: "Eksportuj raport",
@@ -94,9 +157,6 @@ const scan: Messages["scan"] = {
 
   errorTitle: "Skanowanie nie powiodło się",
   errors: {
-    timeoutFree:
-      "Skanowanie trwa dłużej niż zwykle. Spróbuj ponownie za chwilę albo sprawdź, czy adres jest osiągalny.",
-    timeoutPremium: "Skanowanie nie zakończyło się w oczekiwanym czasie. Spróbuj ponownie za chwilę.",
     network: "Nie można połączyć się ze skanerem. Sprawdź połączenie i spróbuj ponownie.",
     invalidRequest: "Nieprawidłowe żądanie skanowania. Sprawdź adres i spróbuj ponownie.",
     unauthorized: "Nie masz uprawnień do uruchomienia tego skanu. Zaloguj się ponownie.",
@@ -105,7 +165,6 @@ const scan: Messages["scan"] = {
     rateLimited: "Zbyt wiele żądań. Odczekaj chwilę i spróbuj ponownie.",
     server: "Skaner jest chwilowo niedostępny. Spróbuj ponownie za chwilę.",
     unexpected: "Podczas skanowania tego adresu wystąpił nieoczekiwany błąd.",
-    detailsUnavailable: "Szczegóły skanu nie są jeszcze dostępne.",
   },
 
   report: {

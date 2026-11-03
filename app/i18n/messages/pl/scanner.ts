@@ -2,17 +2,16 @@ import type { Messages } from "@/app/i18n/messages/en";
 
 const scanner: Messages["scanner"] = {
   title: "Skaner",
-  subtitle: "Przeglądaj wszystkie zakończone skany stron",
+  subtitle: "Twoje skany stron, trwające i zakończone",
   newScan: "Nowy skan",
 
   form: {
     title: "Uruchom nowy skan",
     urlLabel: "Adres celu",
-    urlPlaceholder: "https://example.com",
+    urlPlaceholder: "example.com",
     urlRequired: "Wpisz adres strony do przeskanowania.",
     scope: "Zakres testów",
     testsLoadError: "Nie udało się wczytać listy testów.",
-    selectCategory: (category) => `Zaznacz wszystkie testy: ${category}`,
     selectedCount: (selected, total) => `Zaznaczono ${selected} z ${total}`,
     noTestsSelected: "Nie wybrano żadnego testu",
     allSelected: (total) => `Wszystkie testy: ${total}`,
@@ -34,16 +33,17 @@ const scanner: Messages["scanner"] = {
   },
 
   list: {
-    caption: "Zakończone skany",
+    caption: "Skany",
     searchLabel: "Szukaj skanów po adresie URL",
     searchPlaceholder: "Szukaj po adresie URL…",
     filterLabel: "Filtruj według statusu",
     filters: {
-      all: "Wszystkie",
-      safe: "Bezpieczne",
-      warning: "Ostrzeżenia",
-      danger: "Niebezpieczne",
+      active: "W toku",
+      COMPLETED: "Zakończone",
+      FAILED: "Nieudane",
     },
+    riskFilterLabel: "Filtruj według ryzyka",
+    allRisks: "Każde ryzyko",
     loading: "Ładowanie skanów…",
     loadError: "Nie udało się wczytać skanów.",
     clearFilters: "Wyczyść filtry",
@@ -55,12 +55,6 @@ const scanner: Messages["scanner"] = {
       date: "Data",
       duration: "Czas trwania",
     },
-    status: {
-      safe: "Bezpieczna",
-      warning: "Ostrzeżenie",
-      danger: "Zagrożenie",
-    },
-    scanId: (id) => `ID skanu: ${id}`,
     underOneSecond: "poniżej sekundy",
     viewDetails: (url) => `Pokaż szczegóły: ${url}`,
     downloadReport: (url) => `Pobierz raport: ${url}`,
@@ -69,6 +63,7 @@ const scanner: Messages["scanner"] = {
 
   detail: {
     back: "Wróć do listy",
+    loadError: "Nie udało się wczytać tego skanu.",
     resultsHeading: "Wyniki testów",
     failed: "Ten skan nie powiódł się i nie ma wyników.",
     noResults: "Ten skan nie ma wyników testów.",

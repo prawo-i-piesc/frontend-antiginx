@@ -3,50 +3,27 @@
 import { useId, useState } from 'react';
 
 import Dialog from '@/app/components/ui/Dialog';
+import type { LiveScan } from '@/app/hooks/useLiveScan';
 import { useI18n } from '@/app/i18n/I18nProvider';
-import { getCompletedScanResults, type ScanResponse, type ScanStatus } from '@/app/lib/api';
+import { isFinishedStatus } from '@/app/lib/api';
 import ReportDialog from './ReportDialog';
 import { closeEnclosingDialog } from './ScanErrorModal';
-import ScanResultItem from './ScanResultItem';
+import ScanResults from './scan/ScanResults';
 
 interface ScanResultModalProps {
   isOpen: boolean;
   onClose: () => void;
-  scanResult: ScanResponse;
+  live: LiveScan;
 }
 
-const SEVERITY_ORDER: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };
-
-const STATUS_STYLES: Record<ScanStatus, { badge: string; icon?: string }> = {
-  COMPLETED: { badge: 'bg-green-500/15 text-green-400', icon: 'ri-checkbox-circle-fill' },
-  RUNNING: { badge: 'bg-yellow-500/15 text-yellow-400', icon: 'ri-loader-4-line animate-spin' },
-  FAILED: { badge: 'bg-red-500/15 text-red-400', icon: 'ri-error-warning-fill' },
-  PENDING: { badge: 'bg-zinc-600/15 text-zinc-400' },
-};
-
-export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanResultModalProps) {
-  const { t, locale } = useI18n();
+/** The scan started from the landing page, followed live. The page is always dark, hence the class. */
+export default function ScanResultModal({ isOpen, onClose, live }: ScanResultModalProps) {
+  const { t } = useI18n();
   const titleId = useId();
   const [reportOpen, setReportOpen] = useState(false);
 
-  const completedResults = getCompletedScanResults(scanResult.results || []);
-
-  const sortedResults = [...completedResults].sort((a, b) => {
-    const aOrder = SEVERITY_ORDER[a.severity.toUpperCase()] ?? 5;
-    const bOrder = SEVERITY_ORDER[b.severity.toUpperCase()] ?? 5;
-    return aOrder - bOrder;
-  }).map((result, index) => ({ ...result, animIndex: index }));
-
-  const inProgress = scanResult.status === 'PENDING' || scanResult.status === 'RUNNING';
-  const status = STATUS_STYLES[scanResult.status] ?? STATUS_STYLES.PENDING;
-
-  // Read out when a scan that was running while the modal is open comes to an end.
-  const outcome =
-    scanResult.status === 'COMPLETED'
-      ? t.scan.testsCompleted(sortedResults.length)
-      : scanResult.status === 'FAILED'
-        ? t.scan.errorTitle
-        : '';
+  const scan = live.scan;
+  const finished = scan !== null && isFinishedStatus(scan.status);
 
   return (
     <Dialog
@@ -54,113 +31,73 @@ export default function ScanResultModal({ isOpen, onClose, scanResult }: ScanRes
       onClose={onClose}
       labelledBy={titleId}
       closeOnBackdrop
-      className="m-auto p-0 w-[calc(100%-2rem)] max-w-2xl overflow-hidden bg-black/60 backdrop-blur-xl rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/30 text-white backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+      className="dark quiet-focus m-auto w-[calc(100%-2rem)] max-w-6xl overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-0 text-zinc-100 shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
     >
-      {/* Modal Header */}
-      <div className="px-5 py-3 border-b border-cyan-500/20">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 id={titleId} className="text-base font-bold text-white">{t.scan.resultsTitle}</h2>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <i className="ri-global-line text-zinc-500" aria-hidden="true"></i>
-              <span className="sr-only">{t.scan.target}: </span>
-              <span className="text-cyan-400/80 font-mono truncate">{scanResult.target_url.replace(/^https?:\/\//, '')}</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${status.badge}`}>
-                {status.icon && <i className={`${status.icon} text-[10px]`} aria-hidden="true"></i>}
-                {t.scan.status[scanResult.status] ?? scanResult.status}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={(event) => closeEnclosingDialog(event, onClose)}
-            aria-label={t.common.close}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-800/50 transition-colors cursor-pointer group ml-3"
-          >
-            <i className="ri-close-line text-lg text-zinc-400 group-hover:text-white transition-colors" aria-hidden="true"></i>
-          </button>
+      <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
+        <div className="min-w-0">
+          <h2 id={titleId} className="text-base font-semibold text-white">{t.scan.resultsTitle}</h2>
+          {/* min-h keeps the header's height until the address arrives. */}
+          <p className="min-h-4 truncate text-xs text-zinc-400" title={scan?.target_url}>
+            {scan ? (
+              <>
+                <span className="sr-only">{t.scan.target}: </span>
+                {scan.target_url.replace(/^https?:\/\//, '')}
+              </>
+            ) : null}
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={(event) => closeEnclosingDialog(event, onClose)}
+          aria-label={t.common.close}
+          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+        >
+          <i className="ri-close-line text-lg" aria-hidden="true"></i>
+        </button>
       </div>
 
-      {/* Modal Content; focusable so it can be scrolled from the keyboard */}
+      {/* Focusable so it can be scrolled from the keyboard */}
       <div
         role="region"
         aria-labelledby={titleId}
         tabIndex={0}
-        className="p-4 overflow-y-auto scrollbar-hidden max-h-[calc(85vh-120px)] focus-visible:-outline-offset-2"
+        className="scrollbar-theme max-h-[calc(90vh-7.5rem)] overflow-y-auto focus-visible:-outline-offset-2"
       >
-        {sortedResults.length > 0 ? (
-          <>
-            <ul className="space-y-2.5">
-              {sortedResults.map((result) => (
-                <li key={result.id}>
-                  <ScanResultItem result={result} index={result.animIndex} />
-                </li>
-              ))}
-            </ul>
-            {locale !== 'en' && (
-              <p className="mt-3 text-xs text-zinc-400">{t.scan.engineLanguageNote}</p>
-            )}
-          </>
-        ) : inProgress ? (
-          <div role="status" className="text-center py-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 mb-2" aria-hidden="true">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
-            </div>
-            <h3 className="text-sm font-semibold text-white mb-1">{t.scan.inProgressTitle}</h3>
-            <p className="text-zinc-400 text-sm">{t.scan.inProgressBody}</p>
-          </div>
-        ) : (
-          <p className="text-center py-8 text-zinc-400 text-sm">
-            {scanResult.status === 'FAILED' ? t.scan.errors.unexpected : t.scan.errors.detailsUnavailable}
-          </p>
-        )}
+        <ScanResults live={live} bare />
       </div>
 
-      <p role="status" className="sr-only">{outcome}</p>
-
-      {/* Modal Footer */}
-      <div className="px-5 py-3 border-t border-zinc-800/50 flex items-center justify-between">
-        <div className="text-xs text-zinc-400 hidden lg:flex items-center gap-3">
-          {sortedResults.length > 0 && (
-            <span>{t.scan.testsCompleted(sortedResults.length)}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2.5 ml-auto">
-          {sortedResults.length > 0 && !inProgress && (
-            <button
-              type="button"
-              onClick={() => setReportOpen(true)}
-              aria-haspopup="dialog"
-              className="px-3.5 py-1.5 bg-cyan-600/20 text-cyan-300 rounded-lg hover:bg-cyan-600/30 transition-all font-medium text-xs border border-cyan-500/30 cursor-pointer flex items-center gap-1.5"
-            >
-              <i className="ri-download-line text-sm" aria-hidden="true"></i>
-              {t.scan.export}
-            </button>
-          )}
+      <div className="flex items-center justify-end gap-2.5 border-t border-zinc-800 px-4 py-3">
+        {finished ? (
           <button
             type="button"
-            onClick={(event) => closeEnclosingDialog(event, onClose)}
-            className="px-4 py-2 bg-zinc-800/50 text-zinc-300 rounded-lg hover:bg-zinc-700/50 transition-all font-medium text-sm border border-zinc-700/50 cursor-pointer"
+            onClick={() => setReportOpen(true)}
+            aria-haspopup="dialog"
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-sm font-medium text-zinc-100 transition-colors hover:border-zinc-600 hover:bg-zinc-800"
           >
-            {t.common.close}
+            <i className="ri-download-line" aria-hidden="true"></i>
+            {t.scan.export}
           </button>
-        </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={(event) => closeEnclosingDialog(event, onClose)}
+          className="cursor-pointer rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-sm font-medium text-zinc-100 transition-colors hover:border-zinc-600 hover:bg-zinc-800"
+        >
+          {t.common.close}
+        </button>
       </div>
 
       {/* Opened on top of this modal, so closing it returns focus to the export button. */}
-      {reportOpen && (
+      {reportOpen && scan ? (
         <ReportDialog
           open
           onClose={() => setReportOpen(false)}
-          scanId={scanResult.id}
-          targetUrl={scanResult.target_url}
+          scanId={scan.id}
+          targetUrl={scan.target_url}
           mode="free"
           variant="modal"
         />
-      )}
+      ) : null}
     </Dialog>
   );
 }

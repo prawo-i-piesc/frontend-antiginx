@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 
 import { NoAccess } from "@/app/components/admin/AdminFrame";
 import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
+import { SeverityLabel, Verdict } from "@/app/components/scan/labels";
 import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout, SheetSkeleton } from "@/app/components/admin/Sheet";
 import {
   CODE,
@@ -21,28 +22,15 @@ import { BUTTON_DANGER } from "@/app/components/profile/ui";
 import useApiQuery from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import { deleteScan, getScan, type AdminScanResult } from "@/app/lib/adminApi";
+import { displaySeverity } from "@/app/lib/scanRows";
 import { useToast } from "@/app/providers/ToastProvider";
 
 const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
 
-const SEVERITY_TONES: Record<string, string> = {
-  CRITICAL: "text-rose-700 dark:text-rose-400",
-  HIGH: "text-orange-700 dark:text-orange-400",
-  MEDIUM: "text-amber-700 dark:text-amber-400",
-  LOW: "text-yellow-700 dark:text-yellow-300",
-  INFO: "text-sky-700 dark:text-sky-400",
-};
-
-/** The engine reports "no severity" as NONE, which the rest of the app shows as INFO. */
-function severityOf(result: AdminScanResult): string {
-  const value = result.severity.trim().toUpperCase();
-  return value === "NONE" ? "INFO" : value;
-}
-
 /** Failures first, the worst of them on top; passes after, by name. */
 function sortResults(results: AdminScanResult[]): AdminScanResult[] {
   const rank = (result: AdminScanResult) => {
-    const index = SEVERITY_ORDER.indexOf(severityOf(result));
+    const index = SEVERITY_ORDER.indexOf(displaySeverity(result.severity) ?? "");
     return index === -1 ? SEVERITY_ORDER.length : index;
   };
   return [...results].sort(
@@ -209,7 +197,7 @@ function Inspector({
                         className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-800/60"
                       >
                         <td className="px-3 py-2.5">
-                          <Verdict passed={result.passed} />
+                          <Verdict state={result.passed ? "passed" : "failed"} />
                         </td>
                         <td className="px-3 py-2.5">
                           <div className={`${CODE} text-zinc-900 dark:text-zinc-100 wrap-anywhere`}>
@@ -223,7 +211,7 @@ function Inspector({
                           ) : null}
                         </td>
                         <td className="px-3 py-2.5 text-right">
-                          <Severity value={severityOf(result)} />
+                          <SeverityOrDash severity={result.severity} />
                         </td>
                       </tr>
                     ))}
@@ -255,24 +243,7 @@ function Inspector({
   );
 }
 
-function Verdict({ passed }: { passed: boolean }) {
-  const { t } = useI18n();
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap ${
-        passed ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
-      }`}
-    >
-      <i className={passed ? "ri-check-line" : "ri-close-line"} aria-hidden="true" />
-      {passed ? t.scan.result.passed : t.scan.result.failed}
-    </span>
-  );
-}
-
-function Severity({ value }: { value: string }) {
-  const { t } = useI18n();
-  const label = (t.scan.severity as Record<string, string | undefined>)[value] ?? value;
-  return (
-    <span className={`text-xs font-medium ${SEVERITY_TONES[value] ?? "text-zinc-600 dark:text-zinc-400"}`}>{label}</span>
-  );
+function SeverityOrDash({ severity }: { severity: string }) {
+  const value = displaySeverity(severity);
+  return value ? <SeverityLabel value={value} /> : <span className="text-zinc-400 dark:text-zinc-600">—</span>;
 }
