@@ -13,23 +13,17 @@ import SiteHeader, { FEATURES_HEADING_ID, FEATURES_SECTION_ID } from './componen
 import Footer from './components/Footer';
 import { MAIN_CONTENT_ID } from './components/ui/SkipLink';
 import { useScanModal } from './hooks/useScanModal';
-import { useDebugModals } from './hooks/useDebugModals';
 
 export default function HomePage() {
   const {
-    scanResult,
+    live,
+    hasScan,
     isScanning,
     scanError,
     isModalOpen,
     handleScan,
     closeModal,
-    setScanResult,
-    setScanError,
-    setIsModalOpen
-  } = useScanModal({ mode: "free" });
-
-  // Debug helpers (only in development)
-  useDebugModals({ setScanResult, setScanError, setIsModalOpen });
+  } = useScanModal();
 
   // Arriving at /#features, /#how-it-works or /#scanner from another page, the router scrolls
   // to the section but leaves focus at the top of the document.
@@ -69,11 +63,11 @@ export default function HomePage() {
         comes first: when a running scan fails, it has to close (returning
         focus) before the error modal opens and records where focus goes back.
       */}
-      {scanResult && (
+      {hasScan && (
         <ScanResultModal
           isOpen={isModalOpen && !scanError}
           onClose={closeModal}
-          scanResult={scanResult}
+          live={live}
         />
       )}
 

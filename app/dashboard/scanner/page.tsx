@@ -9,9 +9,8 @@ import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/
 import PagePending from "@/app/components/layout/PagePending";
 import ReportDialog from "@/app/components/ReportDialog";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
-// Renamed so it does not clash with the API type of the same name.
-import ScanResultItemComponent from "@/app/components/ScanResultItem";
-import { buttonClass, iconButtonClass } from "@/app/components/ui/buttonStyles";
+import { RiskLabel } from "@/app/components/scan/labels";
+import { buttonClass } from "@/app/components/ui/buttonStyles";
 import Dropdown from "@/app/components/ui/Dropdown";
 import { SURFACE } from "@/app/components/ui/surface";
 import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
@@ -24,6 +23,7 @@ import {
   ROW,
   SCROLL_REGION,
   Stamp,
+  StatusLabel,
   TABLE,
   TD,
   TH,
@@ -33,30 +33,42 @@ import {
   TableLoading,
   TableMessage,
 } from "@/app/components/ui/table";
+import usePolling from "@/app/hooks/usePolling";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
-import { useScanModal } from "@/app/hooks/useScanModal";
 import { INTL_LOCALES } from "@/app/i18n/config";
 import { SCAN_LIST_SIZES } from "@/app/lib/paging";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import {
   ApiRequestError,
   calculateThreatLevel,
-  getCompletedScanResults,
+  createScan,
   getPremiumScanConfig,
+  getScan,
   getUserScans,
+  isFinishedStatus,
+  type ScanResponse,
+  type ScanStatus,
   type ScanTestOption,
   type TestCategory,
-  type UserScanResponse,
 } from "@/app/lib/api";
+import { isAbandoned } from "@/app/lib/liveScan";
+import { riskBand, type RiskBand } from "@/app/lib/risk";
+import { scanErrorMessage } from "@/app/lib/scanErrors";
+import { buildRows, progressOf, type ScanProgress } from "@/app/lib/scanRows";
 
-type RowStatus = "safe" | "warning" | "danger";
-type StatusFilter = "all" | RowStatus;
+type StatusFilter = "all" | "active" | "COMPLETED" | "FAILED";
+type RiskFilter = "all" | RiskBand;
 
 type ScanRow = {
   id: string;
   url: string;
-  status: RowStatus;
-  threat: number;
+  status: ScanStatus;
+  /** Still marked as running long after anything could have happened. */
+  stale: boolean;
+  /** While it runs. */
+  progress: ScanProgress | null;
+  /** Null until there is at least one result to judge by. */
+  risk: number | null;
   createdAt: string;
   durationSeconds: number | null;
 };
@@ -65,10 +77,13 @@ type ScanRow = {
 type LoadError = "network" | "other";
 
 /** A response tagged with the request it answers, so "loading" is simply "not answered yet". */
-type Loaded<T> = { request: number; data: T; error: LoadError | null };
+type Loaded<T> = { request: number; data: T; error: LoadError | null; at: number };
 
-const STATUS_FILTERS: StatusFilter[] = ["all", "safe", "warning", "danger"];
-const SEVERITY_ORDER: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };
+const STATUS_FILTERS: StatusFilter[] = ["all", "active", "COMPLETED", "FAILED"];
+const RISK_FILTERS: RiskFilter[] = ["all", "critical", "high", "medium", "low", "none"];
+
+/** How often the list looks again while one of its scans is running. */
+const LIST_REFRESH_MS = 5_000;
 
 const RETRY_BUTTON_CLASS = buttonClass("secondary", "sm");
 
@@ -78,13 +93,6 @@ const FIELD_LABEL = "block text-xs font-medium text-zinc-600 dark:text-zinc-400"
 /** Small text actions beside a heading, like "Select all". */
 const TEXT_ACTION =
   "cursor-pointer text-xs font-medium text-cyan-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-cyan-400";
-
-/** The verdict in words, coloured like the scan statuses in the admin tables. */
-const ROW_STATUS_TONES: Record<RowStatus, string> = {
-  safe: "text-emerald-700 dark:text-emerald-400",
-  warning: "text-amber-700 dark:text-amber-400",
-  danger: "text-rose-700 dark:text-rose-400",
-};
 
 function durationSeconds(startedAt?: string | null, completedAt?: string | null): number | null {
   if (!startedAt || !completedAt) return null;
@@ -96,26 +104,18 @@ function durationSeconds(startedAt?: string | null, completedAt?: string | null)
   return (end - start) / 1000;
 }
 
-function mapScanToRow(scan: UserScanResponse): ScanRow {
-  const threat = calculateThreatLevel(scan.results || []);
-
-  let status: RowStatus = "safe";
-  if (scan.status === "FAILED") {
-    status = "danger";
-  } else if (scan.status === "RUNNING" || scan.status === "PENDING") {
-    status = "warning";
-  } else if (threat >= 50) {
-    // High and critical bands (lib/risk.ts).
-    status = "danger";
-  } else if (threat >= 25) {
-    status = "warning";
-  }
+function mapScanToRow(scan: ScanResponse, at: number): ScanRow {
+  const active = !isFinishedStatus(scan.status);
+  const results = scan.results ?? [];
 
   return {
     id: scan.id,
     url: scan.target_url,
-    status,
-    threat,
+    status: scan.status,
+    stale: isAbandoned(scan, at),
+    progress: active ? progressOf(scan, buildRows(scan)) : null,
+    // An engine notice is not a verdict: a scan that only produced those checked nothing.
+    risk: results.some((result) => !result.notice) ? calculateThreatLevel(results) : null,
     createdAt: scan.created_at,
     durationSeconds: durationSeconds(scan.started_at, scan.completed_at),
   };
@@ -132,35 +132,29 @@ function categoryKey(category: TestCategory, index: number): string {
   return category.category || `other-${index}`;
 }
 
-/** Colours by risk band (lib/risk.ts): high and critical red, medium orange, below that green. */
-function threatBarColor(level: number) {
-  if (level >= 50) return "bg-red-500";
-  if (level >= 25) return "bg-orange-500";
-  return "bg-green-500";
-}
-
-function threatTextColor(level: number) {
-  if (level >= 50) return "text-red-700 dark:text-red-400";
-  if (level >= 25) return "text-orange-700 dark:text-orange-400";
-  return "text-green-700 dark:text-green-400";
-}
-
 /**
- * Opens the scan named by `?scan=` once the list is in, then drops the
- * parameter: the overview's recent scans link here. Reads useSearchParams,
- * so it renders inside a Suspense boundary of its own.
+ * What the address asks of the list. `?scan=` is an older link to a scan, now
+ * at its own address. `?opened=` comes back from a scan's page and says whose
+ * row should get the focus back, once the list is in.
+ * Reads useSearchParams, so it renders inside a Suspense boundary of its own.
  */
-function OpenScanFromAddress({ ready, onOpen }: { ready: boolean; onOpen: (scanId: string) => void }) {
-  const scanId = useSearchParams().get("scan");
+function AddressRequests({ ready, onReturn }: { ready: boolean; onReturn: (scanId: string) => void }) {
+  const params = useSearchParams();
+  const linked = params.get("scan");
+  const opened = params.get("opened");
   const router = useRouter();
   const pathname = usePathname();
-  const open = useEffectEvent(onOpen);
+  const returned = useEffectEvent(onReturn);
 
   useEffect(() => {
-    if (!ready || !scanId) return;
-    open(scanId);
+    if (linked) router.replace(`${pathname}/${encodeURIComponent(linked)}`);
+  }, [linked, pathname, router]);
+
+  useEffect(() => {
+    if (!ready || !opened) return;
+    returned(opened);
     router.replace(pathname, { scroll: false });
-  }, [ready, scanId, pathname, router]);
+  }, [ready, opened, pathname, router]);
 
   return null;
 }
@@ -168,28 +162,19 @@ function OpenScanFromAddress({ ready, onOpen }: { ready: boolean; onOpen: (scanI
 export default function DashboardScannerPage() {
   const { t, locale, format } = useI18n();
   const { authenticated, initialized, auth } = useRequireAuth();
+  const router = useRouter();
 
-  const {
-    scanResult,
-    isScanning,
-    scanError,
-    isModalOpen,
-    handleScan,
-    closeModal,
-    setScanResult,
-    setScanError,
-    setIsModalOpen,
-  } = useScanModal({ mode: "premium" });
-
-  const [activeView, setActiveView] = useState<"list" | "detail">("list");
   const [showNewScan, setShowNewScan] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(SCAN_LIST_SIZES[0]);
   const [listRequest, setListRequest] = useState(0);
-  const [scanList, setScanList] = useState<Loaded<UserScanResponse[]> | null>(null);
+  const [scanList, setScanList] = useState<Loaded<ScanResponse[]> | null>(null);
 
   const [url, setUrl] = useState("");
   const [urlError, setUrlError] = useState(false);
@@ -198,10 +183,6 @@ export default function DashboardScannerPage() {
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [authorizedTester, setAuthorizedTester] = useState(false);
 
-  /** Address of the scan started from this page, for the screen reader announcements. */
-  const [scanStartedFor, setScanStartedFor] = useState<string | null>(null);
-  /** A running scan the person left for the list; finishing must not pull them back. */
-  const [leftScanId, setLeftScanId] = useState<string | null>(null);
   /** The scan whose report dialog is open. */
   const [reportScan, setReportScan] = useState<{ id: string; url: string } | null>(null);
 
@@ -217,10 +198,6 @@ export default function DashboardScannerPage() {
 
   const urlInputRef = useRef<HTMLInputElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
-  const detailHeadingRef = useRef<HTMLHeadingElement>(null);
-  /** The row whose details are open, to return focus to its button. */
-  const lastOpenedScanId = useRef<string | null>(null);
-  const previousView = useRef(activeView);
 
   useEffect(() => {
     if (!authenticated) return;
@@ -229,16 +206,12 @@ export default function DashboardScannerPage() {
     getUserScans().then(
       (scans) => {
         if (!active) return;
-        setScanList({
-          request: listRequest,
-          data: scans.filter((scan) => scan.status === "COMPLETED"),
-          error: null,
-        });
+        setScanList({ request: listRequest, data: scans, error: null, at: Date.now() });
       },
       (error: unknown) => {
         if (!active) return;
         console.error("Failed to load scans:", error);
-        setScanList({ request: listRequest, data: [], error: loadErrorOf(error) });
+        setScanList({ request: listRequest, data: [], error: loadErrorOf(error), at: Date.now() });
       },
     );
 
@@ -254,14 +227,14 @@ export default function DashboardScannerPage() {
     getPremiumScanConfig().then(
       (config) => {
         if (!active) return;
-        setTestConfig({ request: testsRequest, data: config, error: null });
+        setTestConfig({ request: testsRequest, data: config, error: null, at: Date.now() });
         // Every test starts selected, with the first category open.
         setSelectedTests(config.flatMap((category) => category.tests.map((test) => test.id)));
       },
       (error: unknown) => {
         if (!active) return;
         console.error("Failed to load the available tests:", error);
-        setTestConfig({ request: testsRequest, data: [], error: loadErrorOf(error) });
+        setTestConfig({ request: testsRequest, data: [], error: loadErrorOf(error), at: Date.now() });
       },
     );
 
@@ -270,32 +243,35 @@ export default function DashboardScannerPage() {
     };
   }, [authenticated, testsRequest]);
 
-  // List and results swap in place: focus follows to the new view's heading,
-  // and back to the row that was opened.
-  useEffect(() => {
-    if (previousView.current === activeView) return;
-    previousView.current = activeView;
-
-    if (activeView === "detail") {
-      detailHeadingRef.current?.focus();
-      return;
-    }
-
-    const openedId = lastOpenedScanId.current;
-    const detailsButton = openedId ? document.getElementById(`${baseId}-details-${openedId}`) : null;
-    (detailsButton ?? listHeadingRef.current)?.focus();
-  }, [activeView, baseId]);
-
   const isLoadingScans = scanList?.request !== listRequest;
   const scanListError = isLoadingScans ? null : (scanList?.error ?? null);
-  const userScans = useMemo(() => scanList?.data ?? [], [scanList]);
 
   const scanRows = useMemo(
     () =>
-      userScans
-        .map(mapScanToRow)
+      (scanList?.data ?? [])
+        .map((scan) => mapScanToRow(scan, scanList?.at ?? 0))
         .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)),
-    [userScans],
+    [scanList],
+  );
+
+  // A running scan changes on its own, so the list follows it until it ends,
+  // reading only those: the whole list holds every result of every scan. A failed
+  // read changes nothing, and the next one tries again.
+  const runningScans = scanRows.filter((row) => row.progress !== null && !row.stale).map((row) => row.id);
+  usePolling(
+    () => {
+      Promise.allSettled(runningScans.map((id) => getScan(id, { mode: "premium" }))).then((reads) => {
+        const fresh = new Map(
+          reads.flatMap((read) => (read.status === "fulfilled" ? [[read.value.id, read.value] as const] : [])),
+        );
+        setScanList((current) =>
+          current?.request === listRequest
+            ? { ...current, data: current.data.map((scan) => fresh.get(scan.id) ?? scan), at: Date.now() }
+            : current,
+        );
+      });
+    },
+    runningScans.length > 0 ? LIST_REFRESH_MS : null,
   );
 
   const testsLoading = testConfig?.request !== testsRequest;
@@ -315,9 +291,13 @@ export default function DashboardScannerPage() {
   const filteredScans = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return scanRows.filter(
-      (row) => row.url.toLowerCase().includes(query) && (statusFilter === "all" || row.status === statusFilter),
+      (row) =>
+        row.url.toLowerCase().includes(query) &&
+        (statusFilter === "all" ||
+          (statusFilter === "active" ? row.progress !== null : row.status === statusFilter)) &&
+        (riskFilter === "all" || (row.risk !== null && riskBand(row.risk) === riskFilter)),
     );
-  }, [scanRows, searchQuery, statusFilter]);
+  }, [scanRows, searchQuery, statusFilter, riskFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredScans.length / pageSize));
   const page = Math.min(currentPage, totalPages);
@@ -326,7 +306,6 @@ export default function DashboardScannerPage() {
 
   const numberFormats = useMemo(
     () => ({
-      percent: new Intl.NumberFormat(INTL_LOCALES[locale], { style: "percent", maximumFractionDigits: 0 }),
       seconds: new Intl.NumberFormat(INTL_LOCALES[locale], {
         style: "unit",
         unit: "second",
@@ -336,34 +315,6 @@ export default function DashboardScannerPage() {
     }),
     [locale],
   );
-
-  // The hook "opens its modal" once a scan is running or done; on this page
-  // the results view takes its place.
-  if (isModalOpen && scanResult && !scanError) {
-    setIsModalOpen(false);
-    if (scanResult.id !== leftScanId) {
-      setShowNewScan(false);
-      setActiveView("detail");
-    }
-  }
-
-  const sortedResults = scanResult
-    ? getCompletedScanResults(scanResult.results || [])
-        .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 5) - (SEVERITY_ORDER[b.severity] ?? 5))
-        .map((result, index) => ({ ...result, animIndex: index }))
-    : [];
-  const scanInProgress = !scanResult || scanResult.status === "PENDING" || scanResult.status === "RUNNING";
-
-  let scanAnnouncement = "";
-  if (scanStartedFor && !scanError) {
-    if (scanResult?.status === "COMPLETED") {
-      scanAnnouncement = `${t.scanner.announce.finished} ${t.scan.testsCompleted(sortedResults.length)}.`;
-    } else if (scanResult?.status === "FAILED") {
-      scanAnnouncement = t.scanner.announce.failed;
-    } else {
-      scanAnnouncement = t.scanner.announce.started(scanStartedFor);
-    }
-  }
 
   if (!initialized || !authenticated) return <PagePending layout="table" />;
 
@@ -384,8 +335,6 @@ export default function DashboardScannerPage() {
     return numberFormats.seconds.format(seconds);
   };
 
-  const formatThreat = (level: number) => numberFormats.percent.format(level / 100);
-
   function toggleTest(testId: string) {
     setSelectedTests((previous) =>
       previous.includes(testId) ? previous.filter((id) => id !== testId) : [...previous, testId],
@@ -404,36 +353,26 @@ export default function DashboardScannerPage() {
     }
     if (testsToRun.length === 0) return;
 
-    lastOpenedScanId.current = null;
-    setScanStartedFor(target);
-    await handleScan(target, testsToRun, authorizedTester);
-    // The finished scan belongs in the list.
-    setListRequest((request) => request + 1);
+    setIsScanning(true);
+    setStartError(null);
+    try {
+      const { scanId } = await createScan(target, testsToRun, { mode: "premium", authorizedTester });
+      // Stays "scanning" until the page changes, so a second click cannot start another.
+      router.push(`/dashboard/scanner/${encodeURIComponent(scanId)}`);
+    } catch (error) {
+      console.error("Scan error:", error);
+      setStartError(scanErrorMessage(t.scan.errors, error));
+      setIsScanning(false);
+    }
   }
 
-  function openScanResult(scanId: string) {
-    const selectedScan = userScans.find((scan) => scan.id === scanId);
-
-    if (!selectedScan) {
-      setScanError(t.scan.errors.detailsUnavailable);
-      setIsModalOpen(true);
-      return;
-    }
-
-    lastOpenedScanId.current = scanId;
-    setScanStartedFor(null);
-    setScanError(null);
-    setScanResult(selectedScan);
-    setActiveView("detail");
+  /** Back from a scan's page: focus returns to its row, or to the heading if it is not on this page. */
+  function returnFocus(scanId: string) {
+    (document.getElementById(detailsButtonId(scanId)) ?? listHeadingRef.current)?.focus();
   }
 
   function openReport(scanId: string, url: string) {
     setReportScan({ id: scanId, url });
-  }
-
-  function backToList() {
-    setLeftScanId(scanResult?.id ?? null);
-    setActiveView("list");
   }
 
   const hasResults = !isLoadingScans && !scanListError && filteredScans.length > 0;
@@ -451,15 +390,11 @@ export default function DashboardScannerPage() {
   return (
     <DashboardShell area="dashboard" activePage="scanner">
       <div className={PAGE_PADDING}>
-        <p role="status" className="sr-only">
-          {scanAnnouncement}
-        </p>
         <Suspense fallback={null}>
-          <OpenScanFromAddress ready={!isLoadingScans && !scanListError} onOpen={openScanResult} />
+          <AddressRequests ready={!isLoadingScans} onReturn={returnFocus} />
         </Suspense>
 
-        {activeView === "list" ? (
-          <div className="page-in">
+        <div className="page-in">
             <PageHeader
               title={t.scanner.title}
               description={t.scanner.subtitle}
@@ -735,6 +670,18 @@ export default function DashboardScannerPage() {
                       setCurrentPage(1);
                     }}
                   />
+                  <Dropdown
+                    label={t.scanner.list.riskFilterLabel}
+                    value={riskFilter}
+                    options={RISK_FILTERS.map((band) => ({
+                      value: band,
+                      label: band === "all" ? t.scanner.list.allRisks : t.scan.riskBands[band],
+                    }))}
+                    onChange={(next) => {
+                      setRiskFilter(next);
+                      setCurrentPage(1);
+                    }}
+                  />
                   <p role="status" className={`${DATA} ml-auto text-xs text-zinc-600 dark:text-zinc-400`}>
                     {hasResults ? t.table.records(filteredScans.length, format.number(filteredScans.length)) : ""}
                   </p>
@@ -761,6 +708,7 @@ export default function DashboardScannerPage() {
                         onClick={() => {
                           setSearchQuery("");
                           setStatusFilter("all");
+                          setRiskFilter("all");
                           setCurrentPage(1);
                         }}
                         className="mt-2 cursor-pointer font-medium text-cyan-700 hover:underline dark:text-cyan-400"
@@ -807,25 +755,23 @@ export default function DashboardScannerPage() {
                               </span>
                             </td>
                             <td className={TD}>
-                              <span className={`font-medium ${ROW_STATUS_TONES[row.status]}`}>
-                                {t.scanner.list.status[row.status]}
+                              <span className="inline-flex items-baseline gap-1.5">
+                                {row.stale ? (
+                                  <span className="font-medium text-amber-700 dark:text-amber-400">
+                                    {t.scan.live.noSignal}
+                                  </span>
+                                ) : (
+                                  <StatusLabel status={row.status} />
+                                )}
+                                {row.progress?.total && !row.stale ? (
+                                  <span className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
+                                    {format.number(row.progress.done)}/{format.number(row.progress.total)}
+                                  </span>
+                                ) : null}
                               </span>
                             </td>
                             <td className={TD}>
-                              <span className="flex items-center gap-2">
-                                <span
-                                  className="h-1 w-14 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700/70"
-                                  aria-hidden="true"
-                                >
-                                  <span
-                                    className={`block h-full ${threatBarColor(row.threat)}`}
-                                    style={{ width: `${row.threat}%` }}
-                                  ></span>
-                                </span>
-                                <span className={`${DATA} font-medium ${threatTextColor(row.threat)}`}>
-                                  {formatThreat(row.threat)}
-                                </span>
-                              </span>
+                              {row.risk === null ? <span className={DATA}>—</span> : <RiskLabel score={row.risk} />}
                             </td>
                             <td className={TD}>
                               <Stamp value={row.createdAt} />
@@ -834,23 +780,24 @@ export default function DashboardScannerPage() {
                               {formatDuration(row.durationSeconds)}
                             </td>
                             <td className={`${TD} text-right`}>
-                              <button
+                              <Link
                                 id={detailsButtonId(row.id)}
-                                type="button"
-                                onClick={() => openScanResult(row.id)}
+                                href={`/dashboard/scanner/${encodeURIComponent(row.id)}`}
                                 aria-label={t.scanner.list.viewDetails(row.url)}
                                 title={t.scanner.list.viewDetails(row.url)}
                                 className={`${ICON_BUTTON} h-8 w-8`}
                               >
                                 <i className="ri-eye-line" aria-hidden="true"></i>
-                              </button>
+                              </Link>
                               <button
                                 type="button"
                                 onClick={() => openReport(row.id, row.url)}
                                 aria-haspopup="dialog"
                                 aria-label={t.scanner.list.downloadReport(row.url)}
                                 title={t.scanner.list.downloadReport(row.url)}
-                                className={`${ICON_BUTTON} h-8 w-8`}
+                                // The backend reports on finished scans only, failed ones included.
+                                disabled={row.progress !== null}
+                                className={`${ICON_BUTTON} h-8 w-8 disabled:cursor-not-allowed disabled:opacity-40`}
                               >
                                 <i className="ri-download-line" aria-hidden="true"></i>
                               </button>
@@ -887,95 +834,10 @@ export default function DashboardScannerPage() {
                 ) : null}
               </div>
             )}
-          </div>
-        ) : (
-          <div className="page-in">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:pr-14">
-              <div className="flex items-center gap-4 min-w-0">
-                <button
-                  type="button"
-                  onClick={backToList}
-                  aria-label={t.scanner.detail.back}
-                  title={t.scanner.detail.back}
-                  className={iconButtonClass("secondary")}
-                >
-                  <i className="ri-arrow-left-line" aria-hidden="true"></i>
-                </button>
-                <div className="min-w-0">
-                  <h1
-                    ref={detailHeadingRef}
-                    tabIndex={-1}
-                    className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
-                  >
-                    {t.scan.resultsTitle}
-                  </h1>
-                  <p className="text-sm text-cyan-700 dark:text-cyan-400 font-mono font-medium wrap-anywhere">
-                    <span className="sr-only">{t.scan.target}: </span>
-                    {scanResult?.target_url.replace(/^https?:\/\//, "")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="sm:ml-auto flex items-center gap-3">
-                {sortedResults.length > 0 && (
-                  <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 mr-2 hidden md:block">
-                    {t.scan.testsCompleted(sortedResults.length)}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => scanResult && openReport(scanResult.id, scanResult.target_url)}
-                  aria-haspopup="dialog"
-                  // The backend reports on finished scans only, failed ones included.
-                  disabled={!scanResult || scanInProgress}
-                  className={buttonClass("secondary")}
-                >
-                  <i className="ri-download-line" aria-hidden="true"></i>
-                  {t.scan.exportReport}
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 py-0 min-h-[400px]">
-              {sortedResults.length > 0 ? (
-                <div className="sm:px-10">
-                  {/* Each result names its test in an h3. */}
-                  <h2 className="sr-only">
-                    {t.scanner.detail.resultsHeading}
-                  </h2>
-                  {/* Only worth saying when the interface is not in English itself. */}
-                  {locale !== "en" ? (
-                    <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">{t.scan.engineLanguageNote}</p>
-                  ) : null}
-                  <ul className="space-y-3">
-                    {sortedResults.map((result) => (
-                      <li key={result.id}>
-                        <ScanResultItemComponent result={result} index={result.animIndex} variant="page" />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : scanInProgress ? (
-                <div role="status" className="flex flex-col items-center justify-center h-full py-20">
-                  <div className="inline-flex items-center justify-center w-14 h-14 mb-4" aria-hidden="true">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500/30 border-t-cyan-500"></div>
-                  </div>
-                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
-                    {t.scan.inProgressTitle}
-                  </h2>
-                  <p className="text-zinc-600 dark:text-zinc-400 text-sm">{t.scan.inProgressBody}</p>
-                </div>
-              ) : (
-                <p className="py-20 text-center text-sm text-zinc-600 dark:text-zinc-400">
-                  {scanResult?.status === "FAILED" ? t.scanner.detail.failed : t.scanner.detail.noResults}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
-      {isModalOpen && scanError && <ScanErrorModal isOpen={isModalOpen} onClose={closeModal} error={scanError} />}
+      {startError ? <ScanErrorModal isOpen onClose={() => setStartError(null)} error={startError} /> : null}
 
       {reportScan && (
         <ReportDialog

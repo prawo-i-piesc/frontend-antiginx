@@ -425,10 +425,22 @@ body,
   animation: bar-grow 450ms cubic-bezier(0.22, 1, 0.36, 1) 80ms backwards;
 }
 
+/* A test's result arriving during a live scan: its row lights up for a moment. */
+@keyframes result-in {
+  from {
+    background-color: color-mix(in oklab, var(--color-cyan-500) 16%, transparent);
+  }
+}
+
+.result-in {
+  animation: result-in 900ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-in,
   .stagger > *,
-  .bar-grow {
+  .bar-grow,
+  .result-in {
     animation: none;
   }
 }

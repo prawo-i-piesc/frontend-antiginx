@@ -1,5 +1,6 @@
 import { authorizedFetch } from "@/app/lib/session";
 import { riskScore } from "@/app/lib/risk";
+import { normalizeTargetUrl } from "@/app/lib/scanTarget";
 
 // API configuration and types based on backend specification
 
@@ -10,19 +11,22 @@ export type SeverityLevel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
 export interface ScanResultItem {
   id: number;
   scan_id: string;
-  test_id: string;
   test_name: string;
-  category: string;
-  severity: SeverityLevel;
+  /** As the engine reports it: High, Info, None… */
+  severity: string;
   passed: boolean;
   /** An engine notice (a test aborted or blocked), not an outcome. */
   notice?: boolean;
   message: string;
-  reference: string;
-  remediation: string;
+  /** What the test recorded; its shape differs from test to test. */
+  metadata?: unknown;
 }
 
 type PartialScanResult = Partial<ScanResultItem> | null | undefined;
+
+export function isFinishedStatus(status: ScanStatus): boolean {
+  return status === "COMPLETED" || status === "FAILED";
+}
 
 function normalizeSeverity(severity: unknown): SeverityLevel | null {
   if (typeof severity !== "string") return null;
@@ -45,7 +49,7 @@ function normalizeSeverity(severity: unknown): SeverityLevel | null {
   return null;
 }
 
-export function isCompletedScanResult(
+function isCompletedScanResult(
   result: PartialScanResult,
 ): result is ScanResultItem {
   if (!result || typeof result !== "object") return false;
@@ -58,7 +62,7 @@ export function isCompletedScanResult(
   return hasName && hasPassStatus && severity !== null;
 }
 
-export function getCompletedScanResults(
+function getCompletedScanResults(
   results: PartialScanResult[] = [],
 ): ScanResultItem[] {
   return results.filter(isCompletedScanResult).map((result) => ({
@@ -74,17 +78,14 @@ export interface ScanResponse {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+  /** The engine test ids asked for; null on scans from before this was kept. */
+  tests?: string[] | null;
   results: ScanResultItem[];
 }
 
-export interface UserScanResponse extends ScanResponse {
-  user_id: string;
-}
-
-export interface CreateScanRequest {
+interface CreateScanRequest {
   target_url: string;
   tests?: string[];
-  authorizedTester?: boolean;
   anti_bot_detection?: boolean;
 }
 
@@ -115,10 +116,7 @@ export type ScanAccessMode = "free" | "premium";
 export interface ScanRequestOptions {
   mode?: ScanAccessMode;
   authorizedTester?: boolean;
-}
-
-export interface PremiumScanCompliance {
-  authorizedTester: boolean;
+  signal?: AbortSignal;
 }
 
 export class ApiRequestError extends Error {
@@ -170,17 +168,12 @@ function scanFetch(mode: ScanAccessMode, path: string, init: RequestInit): Promi
 export async function createScan(
   targetUrl: string,
   tests?: string[],
-  compliance?: PremiumScanCompliance,
   options?: ScanRequestOptions,
 ): Promise<CreateScanResponse> {
   const mode = options?.mode ?? "free";
-  const payload: CreateScanRequest = { target_url: targetUrl };
+  const payload: CreateScanRequest = { target_url: normalizeTargetUrl(targetUrl) };
   if (tests && tests.length > 0) {
     payload.tests = tests;
-  }
-
-  if (compliance?.authorizedTester) {
-    payload.authorizedTester = compliance.authorizedTester;
   }
 
   if (options?.authorizedTester) {
@@ -301,6 +294,7 @@ export async function getScan(
     response = await scanFetch(mode, `${scanPath(mode)}/${scanId}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      signal: options?.signal,
     });
   } catch (error) {
     throw new ApiRequestError("Cannot connect to scanner service", {
@@ -322,7 +316,7 @@ export async function getScan(
   return response.json();
 }
 
-export async function getUserScans(): Promise<UserScanResponse[]> {
+export async function getUserScans(): Promise<ScanResponse[]> {
   let response: Response;
   try {
     response = await authorizedFetch("/api/users/scans", {
@@ -349,81 +343,6 @@ export async function getUserScans(): Promise<UserScanResponse[]> {
   return response.json();
 }
 
-// Polling function to wait for scan completion
-export async function pollScanUntilComplete(
-  scanId: string,
-  onProgress?: (scan: ScanResponse) => void,
-  maxAttempts: number = 60,
-  intervalMs: number = 2000,
-  shouldAbort?: () => boolean,
-  options?: ScanRequestOptions,
-): Promise<ScanResponse> {
-  const mode = options?.mode ?? "free";
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    // Check if polling should be aborted
-    if (shouldAbort && shouldAbort()) {
-      const scan = await getScan(scanId, options);
-      return scan; // Return current state and stop polling
-    }
-
-    const scan = await getScan(scanId, options);
-
-    if (onProgress) {
-      onProgress(scan);
-    }
-
-    if (scan.status === "COMPLETED" || scan.status === "FAILED") {
-      return scan;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    attempts++;
-  }
-
-  const timeoutSeconds = Math.round((maxAttempts * intervalMs) / 1000);
-  throw new ApiRequestError(
-    `Scan timeout after ${timeoutSeconds}s (${mode} mode)`,
-    { code: "SCAN_TIMEOUT" },
-  );
-}
-
-// Helper functions for UI
-export function getSeverityColor(severity: SeverityLevel): string {
-  switch (severity) {
-    case "CRITICAL":
-      return "text-red-500";
-    case "HIGH":
-      return "text-red-400";
-    case "MEDIUM":
-      return "text-orange-400";
-    case "LOW":
-      return "text-yellow-400";
-    case "INFO":
-      return "text-blue-400";
-    default:
-      return "text-zinc-400";
-  }
-}
-
-export function getSeverityBgColor(severity: SeverityLevel): string {
-  switch (severity) {
-    case "CRITICAL":
-      return "bg-red-900/30 border-red-600/50";
-    case "HIGH":
-      return "bg-red-900/20 border-red-600/30";
-    case "MEDIUM":
-      return "bg-orange-900/20 border-orange-600/30";
-    case "LOW":
-      return "bg-yellow-900/20 border-yellow-600/30";
-    case "INFO":
-      return "bg-blue-900/20 border-blue-600/30";
-    default:
-      return "bg-zinc-800/50 border-zinc-700/50";
-  }
-}
-
 /** The scan's risk, 0–100, by the model in lib/risk.ts that the charts share. */
 export function calculateThreatLevel(results: ScanResultItem[]): number {
   const findings = getCompletedScanResults(results)
@@ -431,19 +350,3 @@ export function calculateThreatLevel(results: ScanResultItem[]): number {
     .map((result) => ({ test: result.test_name, severity: result.severity }));
   return Math.round(riskScore(findings));
 }
-
-export function getStatusColor(status: ScanStatus): string {
-  switch (status) {
-    case "COMPLETED":
-      return "text-green-400";
-    case "FAILED":
-      return "text-red-400";
-    case "RUNNING":
-      return "text-yellow-400";
-    case "PENDING":
-      return "text-blue-400";
-    default:
-      return "text-zinc-400";
-  }
-}
-

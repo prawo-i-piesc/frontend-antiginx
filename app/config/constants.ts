@@ -3,22 +3,18 @@
  */
 
 export const SCAN_CONFIG = {
-  /** Interval in milliseconds between poll requests (2 seconds) */
+  /** Milliseconds between reads of a running scan while its WebSocket is away. */
   POLL_INTERVAL: 2000,
-
-  /** Longer timeout for free scans (about 2 minutes) */
-  FREE_MAX_POLL_ATTEMPTS: 60,
-
-  /** Maximum number of poll attempts before giving up (about 2 minutes) */
-  MAX_POLL_ATTEMPTS: 60,
 } as const;
 
 /**
  * The API is reached over same-origin relative paths (`/api/...`); there is
  * deliberately no configurable base URL here.
  *
- * Routing `/api` to the backend is an infrastructure concern: the ingress does
- * it in deployed environments, `rewrites()` in next.config.ts does it locally.
+ * Routing is an infrastructure concern. `/api` goes through the proxy in
+ * app/api/[...path]. `/api/live`, a WebSocket the proxy cannot carry, is sent to
+ * the backend by the ingress when deployed and by `rewrites()` in next.config.ts
+ * in `next dev`.
  * Do not reintroduce a `NEXT_PUBLIC_*` base URL — those are inlined into the
  * client bundle at build time and cannot be overridden per environment, which
  * would force one image build per environment.

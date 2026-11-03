@@ -7,17 +7,16 @@ import { pluralEn } from "@/app/i18n/plural";
  */
 const scanner = {
   title: "Scanner",
-  subtitle: "Browse all completed website scans",
+  subtitle: "Your website scans, running and finished",
   newScan: "New scan",
 
   form: {
     title: "Run new scan",
     urlLabel: "Target URL",
-    urlPlaceholder: "https://example.com",
+    urlPlaceholder: "example.com",
     urlRequired: "Enter the address of the website to scan.",
     scope: "Test scope",
     testsLoadError: "We could not load the list of tests.",
-    selectCategory: (category: string) => `Select all tests: ${category}`,
     selectedCount: (selected: number, total: number) => `${selected} of ${total} selected`,
     noTestsSelected: "No tests selected",
     allSelected: (total: number) => `All ${total} tests`,
@@ -41,16 +40,17 @@ const scanner = {
   },
 
   list: {
-    caption: "Completed scans",
+    caption: "Scans",
     searchLabel: "Search scans by URL",
     searchPlaceholder: "Search by URL…",
     filterLabel: "Filter by status",
     filters: {
-      all: "All",
-      safe: "Safe",
-      warning: "Warnings",
-      danger: "Dangerous",
+      active: "In progress",
+      COMPLETED: "Completed",
+      FAILED: "Failed",
     },
+    riskFilterLabel: "Filter by risk",
+    allRisks: "Any risk",
     loading: "Loading scans…",
     loadError: "We could not load your scans.",
     clearFilters: "Clear filters",
@@ -62,12 +62,6 @@ const scanner = {
       date: "Date",
       duration: "Duration",
     },
-    status: {
-      safe: "Safe",
-      warning: "Warning",
-      danger: "Danger",
-    },
-    scanId: (id: string) => `Scan ID #${id}`,
     /** Spoken in place of the "<1s" shown on screen. */
     underOneSecond: "less than a second",
     viewDetails: (url: string) => `Show details: ${url}`,
@@ -77,6 +71,7 @@ const scanner = {
 
   detail: {
     back: "Back to list",
+    loadError: "We could not load this scan.",
     resultsHeading: "Test results",
     failed: "This scan failed and has no results.",
     noResults: "This scan has no test results.",

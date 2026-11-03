@@ -405,7 +405,7 @@ function ScansTable({ points }: { points: readonly RiskPoint[] }) {
                 <td className={`${TD} ${DATA} text-right font-medium`}>{point.risk}</td>
                 <td className={`${TD} pr-5 text-right`}>
                   <Link
-                    href={`/dashboard/scanner?scan=${encodeURIComponent(point.scan_id)}`}
+                    href={`/dashboard/scanner/${encodeURIComponent(point.scan_id)}`}
                     aria-label={copy.open}
                     title={copy.open}
                     className={`${ICON_BUTTON} h-7 w-7`}

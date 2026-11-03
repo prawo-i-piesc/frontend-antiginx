@@ -103,10 +103,7 @@ function RecentScans() {
       isLoading={loading && !data}
       error={error !== null}
       viewAllHref="/dashboard/scanner"
-      // The scanner lists finished scans only, so only those link there.
-      scanHref={(scan) =>
-        scan.status === "COMPLETED" ? `/dashboard/scanner?scan=${encodeURIComponent(scan.id)}` : undefined
-      }
+      scanHref={(scan) => `/dashboard/scanner/${encodeURIComponent(scan.id)}`}
     />
   );
 }
