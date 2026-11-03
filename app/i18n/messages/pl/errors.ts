@@ -35,6 +35,7 @@ const errors: Messages["errors"] = {
     CREDENTIAL_NOT_FOUND: "Nie znaleźliśmy tego klucza dostępu.",
     PASSKEY_PASSWORD_REQUIRED:
       "Na tym koncie najpierw logujesz się hasłem, a potem potwierdzasz kluczem dostępu.",
+    PRO_REQUIRED: "To wymaga planu Pro.",
     BILLING_DISABLED: "Płatności nie są jeszcze dostępne.",
     BILLING_UNAVAILABLE: "Nie udało się połączyć z operatorem płatności. Spróbuj ponownie za chwilę.",
     ALREADY_SUBSCRIBED: "Masz już aktywny plan Pro.",

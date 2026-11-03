@@ -49,6 +49,10 @@ export function useScanModal(options?: UseScanModalOptions) {
         return messages.network;
       }
 
+      if (error.code === "PRO_REQUIRED") {
+        return messages.proRequired;
+      }
+
       if (error.status === 401 || error.status === 403) {
         return messages.unauthorized;
       }

@@ -40,6 +40,11 @@ const scan: Messages["scan"] = {
     "dns-reputation": "Analiza DNS i rejestracji domeny",
     "favicon-origin": "Analiza pochodzenia favikony",
     "bot-protection": "Ocena blokady ochrony przed botami",
+    "cache-control": "Analiza nagłówka Cache-Control",
+    "robots-txt": "Analiza bezpieczeństwa pliku robots.txt",
+    urlhaus: "Sprawdzenie adresu w bazie URLhaus",
+    "dir-listing": "Wykrywanie listowania katalogów",
+    "sensitive-files": "Wykrywanie dostępnych wrażliwych plików",
   },
 
   testsShort: {
@@ -60,6 +65,11 @@ const scan: Messages["scan"] = {
     "dns-reputation": "Reputacja DNS",
     "favicon-origin": "Pochodzenie favikony",
     "bot-protection": "Ochrona przed botami",
+    "cache-control": "Cache-Control",
+    "robots-txt": "Plik robots.txt",
+    urlhaus: "Baza URLhaus",
+    "dir-listing": "Listowanie katalogów",
+    "sensitive-files": "Wrażliwe pliki",
   },
 
   categories: {
@@ -90,6 +100,7 @@ const scan: Messages["scan"] = {
     network: "Nie można połączyć się ze skanerem. Sprawdź połączenie i spróbuj ponownie.",
     invalidRequest: "Nieprawidłowe żądanie skanowania. Sprawdź adres i spróbuj ponownie.",
     unauthorized: "Nie masz uprawnień do uruchomienia tego skanu. Zaloguj się ponownie.",
+    proRequired: "Część wybranych testów wymaga planu Pro. Odznacz je albo przejdź na Pro.",
     notFound: "Nie znaleziono skanu. Zadanie mogło wygasnąć lub zostać usunięte.",
     rateLimited: "Zbyt wiele żądań. Odczekaj chwilę i spróbuj ponownie.",
     server: "Skaner jest chwilowo niedostępny. Spróbuj ponownie za chwilę.",

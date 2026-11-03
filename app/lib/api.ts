@@ -92,6 +92,8 @@ export interface CreateScanRequest {
 export interface ScanTestOption {
   id: string;
   label: string;
+  /** Needs the Pro plan; the backend refuses it on any other. */
+  pro: boolean;
 }
 
 // Nowy interfejs reprezentujący pojedynczą kategorię
@@ -200,11 +202,14 @@ export async function createScan(
   }
 
   if (!response.ok) {
+    // The backend's own code where it sent one: 403 alone cannot tell a lapsed
+    // session from a plan that does not include the test.
+    const body = (await response.clone().json().catch(() => null)) as { code?: unknown } | null;
     throw new ApiRequestError(
       await readErrorMessage(response, "Failed to create scan"),
       {
         status: response.status,
-        code: `HTTP_${response.status}`,
+        code: typeof body?.code === "string" ? body.code : `HTTP_${response.status}`,
       },
     );
   }
@@ -245,8 +250,9 @@ export async function getPremiumScanConfig(): Promise<PremiumScanConfigResponse>
 
   // Mapujemy surowe stringi z "tests" na pełne obiekty { id, label }
   return rawCategories.map((item: unknown) => {
-    const entry = (item ?? {}) as { category?: unknown; tests?: unknown };
+    const entry = (item ?? {}) as { category?: unknown; tests?: unknown; pro_tests?: unknown };
     const rawTests: unknown[] = Array.isArray(entry.tests) ? entry.tests : [];
+    const proTests: unknown[] = Array.isArray(entry.pro_tests) ? entry.pro_tests : [];
 
     return {
       // Translated on screen; an empty name shows there as "Other".
@@ -256,6 +262,7 @@ export async function getPremiumScanConfig(): Promise<PremiumScanConfigResponse>
         .map((id) => ({
           id,
           label: humanizeTestId(id), // Automatyczne nadawanie ładnych nazw z Twojego słownika
+          pro: proTests.includes(id),
         })),
     };
   });
@@ -274,6 +281,11 @@ function humanizeTestId(id: string): string {
     "x-content-type-options": "X-Content-Type-Options",
     "referrer-policy": "Referrer Policy",
     "cross-origin-x": "Cross-Origin",
+    "cache-control": "Cache-Control",
+    "robots-txt": "Robots.txt",
+    urlhaus: "URLhaus",
+    "dir-listing": "Directory Listing",
+    "sensitive-files": "Sensitive Files",
   };
 
   return names[id] ?? id;

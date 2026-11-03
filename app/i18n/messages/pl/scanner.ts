@@ -17,6 +17,7 @@ const scanner: Messages["scanner"] = {
     noTestsSelected: "Nie wybrano żadnego testu",
     allSelected: (total) => `Wszystkie testy: ${total}`,
     categoryAll: "Zaznacz wszystkie",
+    proTest: "W planie Pro, zobacz plany",
     categoryNone: "Odznacz wszystkie",
     // "z" takes the genitive: z 1 testu, z 2 testów, z 5 testów.
     totalSelected: (selected, total) => `Zaznaczono ${selected} z ${total} ${total === 1 ? "testu" : "testów"}`,

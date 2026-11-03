@@ -47,6 +47,11 @@ const scan = {
     "dns-reputation": "DNS and Domain Registration Analysis",
     "favicon-origin": "Favicon Origin Analysis",
     "bot-protection": "Bot Protection Block Assessment",
+    "cache-control": "Cache-Control Analysis",
+    "robots-txt": "Robots.txt Security Analysis",
+    urlhaus: "URLhaus Malicious URL Lookup",
+    "dir-listing": "Directory Listing Detection",
+    "sensitive-files": "Sensitive File Exposure",
   } as Record<string, string>,
 
   /** Short labels for the test picker. */
@@ -68,6 +73,11 @@ const scan = {
     "dns-reputation": "DNS reputation",
     "favicon-origin": "Favicon origin",
     "bot-protection": "Bot protection",
+    "cache-control": "Cache-Control",
+    "robots-txt": "Robots.txt",
+    urlhaus: "URLhaus database",
+    "dir-listing": "Directory listing",
+    "sensitive-files": "Sensitive files",
   } as Record<string, string>,
 
   /** Keyed by the category name the backend sends. */
@@ -100,6 +110,7 @@ const scan = {
     network: "Cannot connect to the scanner. Check your connection and try again.",
     invalidRequest: "Invalid scan request. Check the address and try again.",
     unauthorized: "You are not allowed to run this scan. Sign in again.",
+    proRequired: "Some of the selected checks need the Pro plan. Deselect them or move to Pro.",
     notFound: "Scan not found. The job may have expired or been removed.",
     rateLimited: "Too many requests. Wait a moment and try again.",
     server: "The scanner is temporarily unavailable. Try again shortly.",
