@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -166,7 +167,7 @@ function OpenScanFromAddress({ ready, onOpen }: { ready: boolean; onOpen: (scanI
 
 export default function DashboardScannerPage() {
   const { t, locale, format } = useI18n();
-  const { authenticated, initialized } = useRequireAuth();
+  const { authenticated, initialized, auth } = useRequireAuth();
 
   const {
     scanResult,
@@ -300,10 +301,14 @@ export default function DashboardScannerPage() {
   const testsLoading = testConfig?.request !== testsRequest;
   const testsError = testsLoading ? null : (testConfig?.error ?? null);
   const testCategories = testConfig?.data ?? [];
-  const allTestIds = testCategories.flatMap((category) => category.tests.map((test) => test.id));
+  // Tests outside the plan cannot be chosen; the backend would refuse them too.
+  const isLocked = (test: ScanTestOption) => test.pro && auth.user?.plan !== "pro";
+  const allTestIds = testCategories.flatMap((category) =>
+    category.tests.filter((test) => !isLocked(test)).map((test) => test.id),
+  );
   const totalTests = allTestIds.length;
-  const testsToRun = selectedTests;
-  const allSelected = totalTests > 0 && selectedTests.length === totalTests;
+  const testsToRun = selectedTests.filter((id) => allTestIds.includes(id));
+  const allSelected = totalTests > 0 && testsToRun.length === totalTests;
 
   const filteredScans = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -607,7 +612,8 @@ export default function DashboardScannerPage() {
                           const key = categoryKey(category, index);
                           const name = categoryName(category.category);
                           const headingId = `${baseId}-category-${index}`;
-                          const selectedCount = category.tests.filter((test) => selectedTests.includes(test.id)).length;
+                          const selectable = category.tests.filter((test) => !isLocked(test));
+                          const selectedCount = selectable.filter((test) => selectedTests.includes(test.id)).length;
 
                           return (
                             <div key={key} role="group" aria-labelledby={headingId}>
@@ -617,15 +623,30 @@ export default function DashboardScannerPage() {
                                 </p>
                                 <span className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
                                   <span aria-hidden="true">
-                                    {selectedCount}/{category.tests.length}
+                                    {selectedCount}/{selectable.length}
                                   </span>
                                   <span className="sr-only">
-                                    {t.scanner.form.selectedCount(selectedCount, category.tests.length)}
+                                    {t.scanner.form.selectedCount(selectedCount, selectable.length)}
                                   </span>
                                 </span>
                               </div>
                               <div className="flex flex-wrap gap-1.5">
                                 {category.tests.map((test) => {
+                                  if (isLocked(test)) {
+                                    return (
+                                      <Link
+                                        key={test.id}
+                                        href="/pricing"
+                                        title={t.scanner.form.proTest}
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-zinc-300 px-2.5 text-sm text-zinc-500 transition-colors hover:border-zinc-400 hover:text-zinc-800 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
+                                      >
+                                        <i className="ri-lock-line text-sm leading-none" aria-hidden="true"></i>
+                                        {testName(test)}
+                                        <span className="text-xs font-medium">{t.shell.plans.pro}</span>
+                                        <span className="sr-only">. {t.scanner.form.proTest}</span>
+                                      </Link>
+                                    );
+                                  }
                                   const on = selectedTests.includes(test.id);
                                   return (
                                     <button

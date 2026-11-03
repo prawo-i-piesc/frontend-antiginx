@@ -6,24 +6,24 @@ import { FEATURES_HEADING_ID, FEATURES_SECTION_ID } from './SiteHeader';
 
 /**
  * The tests a scan runs, by area. Mirrors the list the backend sends to the
- * engine for every free scan (`CategorizedTests` in backend-antiginx), minus
- * tests the engine has not shipped yet; keep the two in step. The page never
+ * engine for every free scan (`FreeScanTests` in backend-antiginx); keep the
+ * two in step. The page never
  * shows how many there are: the number grows, so each list ends in a "more" chip.
  *
  * `span` lays the areas out as a mosaic of two rows on wide screens, 2+1+1
  * and 2+2: the wide tiles go to phishing and to the areas with long lists.
  */
 const CHECK_GROUPS = [
-  { key: 'phishing', icon: 'ri-spy-line', span: 'md:col-span-2', tests: ['phishing-url', 'dns-reputation', 'favicon-origin', 'js-obf'] },
+  { key: 'phishing', icon: 'ri-spy-line', span: 'md:col-span-2', tests: ['phishing-url', 'dns-reputation', 'urlhaus', 'favicon-origin', 'js-obf'] },
   { key: 'encryption', icon: 'ri-lock-line', span: '', tests: ['https', 'hsts', 'ssl-cert'] },
-  { key: 'cookies', icon: 'ri-key-2-line', span: '', tests: ['cookie-sec'] },
+  { key: 'cookies', icon: 'ri-key-2-line', span: '', tests: ['cookie-sec', 'cache-control'] },
   {
     key: 'headers',
     icon: 'ri-shield-check-line',
     span: 'lg:col-span-2',
     tests: ['csp', 'xframe', 'permissions-policy', 'x-content-type-options', 'referrer-policy', 'cross-origin-x'],
   },
-  { key: 'exposure', icon: 'ri-server-line', span: 'lg:col-span-2', tests: ['serv-h-a', 'sitemap', 'bot-protection'] },
+  { key: 'exposure', icon: 'ri-server-line', span: 'lg:col-span-2', tests: ['serv-h-a', 'sitemap', 'robots-txt', 'bot-protection'] },
 ] as const;
 
 type GroupKey = (typeof CHECK_GROUPS)[number]['key'];

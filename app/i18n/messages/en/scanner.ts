@@ -22,6 +22,8 @@ const scanner = {
     noTestsSelected: "No tests selected",
     allSelected: (total: number) => `All ${total} tests`,
     categoryAll: "Select all",
+    /** Spoken and on hover for a check the plan does not include; the chip links to the pricing page. */
+    proTest: "On the Pro plan, see plans",
     categoryNone: "Select none",
     totalSelected: (selected: number, total: number) =>
       `${selected} of ${total} ${pluralEn(total, "test", "tests")} selected`,
