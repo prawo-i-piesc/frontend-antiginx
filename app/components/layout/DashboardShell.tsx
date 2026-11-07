@@ -144,7 +144,10 @@ export default function DashboardShell({ area, activePage, mainClassName = "", c
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
           // Every page mounts its own shell, so page-in plays on each move between views.
-          className={`page-in @container flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme focus:outline-none ${mainClassName}`}
+          // Relative, so absolutely positioned content (sr-only labels among it) is
+          // placed in this scroll area and clipped by it. Without a positioned
+          // ancestor it is placed against the document and lengthens the whole page.
+          className={`page-in @container relative flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 scrollbar-theme focus:outline-none ${mainClassName}`}
         >
           {children}
         </main>
