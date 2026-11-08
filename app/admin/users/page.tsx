@@ -23,7 +23,7 @@ import {
   TableLoading,
   TableMessage,
   Tag,
-  pagingFrom,
+  useAddressPaging,
   useClampPage,
 } from "@/app/components/ui/table";
 import useApiQuery from "@/app/hooks/useApiQuery";
@@ -31,7 +31,6 @@ import useQueryParams from "@/app/hooks/useQueryParams";
 import useSearchDraft from "@/app/hooks/useSearchDraft";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import { listUsers } from "@/app/lib/adminApi";
-import { PAGE_SIZES } from "@/app/lib/paging";
 import { useAuth } from "@/app/providers/AuthProvider";
 
 export default function AdminUsersPage() {
@@ -52,7 +51,7 @@ function UsersView() {
 
   const q = params.get("q")?.trim() ?? "";
   const userParam = params.get("user");
-  const { page, size, offset } = pagingFrom(params);
+  const { page, size, offset, choice, fit, panelRef } = useAddressPaging(params, update, "admin-users");
 
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
 
@@ -68,7 +67,7 @@ function UsersView() {
 
   return (
     <>
-      <div className={PANEL}>
+      <div ref={panelRef} className={PANEL}>
         <div className={TOOLBAR}>
           <div className="relative w-full sm:w-80">
             <i
@@ -213,8 +212,10 @@ function UsersView() {
             total={data.total}
             offset={offset}
             size={size}
+            choice={choice}
+            fit={fit}
             onPageChange={(next) => update({ page: next === 1 ? null : next })}
-            onSizeChange={(next) => update({ size: next === PAGE_SIZES[0] ? null : next, page: null })}
+            onSizeChange={(next) => update({ size: next === "fit" ? null : next, page: null })}
           />
         ) : null}
       </div>

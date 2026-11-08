@@ -81,6 +81,8 @@ export interface ScanResponse {
   /** The engine test ids asked for; null on scans from before this was kept. */
   tests?: string[] | null;
   results: ScanResultItem[];
+  /** Hash of the site's icon (see SiteIcon); null until the backend has fetched it. */
+  favicon?: string | null;
 }
 
 interface CreateScanRequest {

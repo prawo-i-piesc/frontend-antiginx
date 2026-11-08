@@ -44,6 +44,8 @@ export interface RiskPoint {
   failed: number;
   /** The average weight of the failed results, 0–100; 0 when everything passed. */
   risk: number;
+  /** Hash of the site's icon, from the response's `favicons`; null until it is known. */
+  favicon: string | null;
 }
 
 export interface SeverityBreakdown {
@@ -64,6 +66,7 @@ export interface ScannedDomain {
   target_url: string;
   /** Completed scans, all time. */
   scans: number;
+  favicon?: string | null;
 }
 
 /** The keys an account may save; anything else is refused. */
@@ -79,8 +82,13 @@ export function getSummary(params: StatsWindow, signal?: AbortSignal): Promise<S
 
 /** Oldest scan first. */
 export async function getRiskTrend(params: StatsWindow, signal?: AbortSignal): Promise<RiskPoint[]> {
-  const body = await request<{ points: RiskPoint[] }>(`/api/users/stats/risk${windowQuery(params)}`, { signal });
-  return body.points;
+  // One point per scan, so the icons come once per address beside them rather than in every point.
+  const body = await request<{ points: Omit<RiskPoint, "favicon">[]; favicons?: Record<string, string> }>(
+    `/api/users/stats/risk${windowQuery(params)}`,
+    { signal },
+  );
+  const favicons = body.favicons ?? {};
+  return body.points.map((point) => ({ ...point, favicon: favicons[point.target_url] ?? null }));
 }
 
 export function getSeverity(params: StatsWindow, signal?: AbortSignal): Promise<SeverityBreakdown> {
@@ -134,7 +142,14 @@ export interface UserWidgets {
   total_scans: number;
   safe_sites: number;
   detected_threats: number;
-  recent_scans: { id: string; target_url: string; status: string; created_at: string; type: string }[];
+  recent_scans: {
+    id: string;
+    target_url: string;
+    status: string;
+    created_at: string;
+    type: string;
+    favicon?: string | null;
+  }[];
 }
 
 export function getUserWidgets(signal?: AbortSignal): Promise<UserWidgets> {

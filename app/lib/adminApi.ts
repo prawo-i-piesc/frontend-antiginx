@@ -76,6 +76,8 @@ export interface AdminScan {
   user_id?: string;
   /** The owner's address; missing once the account is gone. */
   user_email?: string;
+  /** Hash of the site's icon; null until it is known. */
+  favicon?: string | null;
 }
 
 /** One engine check. The message is the engine's own, in English. */
@@ -114,7 +116,14 @@ export interface AdminWidgets {
   detected_threats: number;
   /** Accounts created in the last 7 days. */
   new_users: number;
-  recent_scans: { id: string; target_url: string; status: string; created_at: string; type: ScanType }[];
+  recent_scans: {
+    id: string;
+    target_url: string;
+    status: string;
+    created_at: string;
+    type: ScanType;
+    favicon?: string | null;
+  }[];
 }
 
 export function getWidgets(signal?: AbortSignal): Promise<AdminWidgets> {
