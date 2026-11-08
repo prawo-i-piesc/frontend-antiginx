@@ -28,7 +28,7 @@ import {
   TableLoading,
   TableMessage,
   Tag,
-  pagingFrom,
+  useAddressPaging,
   shortId,
   useClampPage,
 } from "@/app/components/ui/table";
@@ -44,7 +44,6 @@ import {
   type AdminScan,
   type ScanType,
 } from "@/app/lib/adminApi";
-import { PAGE_SIZES } from "@/app/lib/paging";
 import { useToast } from "@/app/providers/ToastProvider";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -73,7 +72,7 @@ function ScansView() {
   const q = params.get("q")?.trim() ?? "";
   const inspectedScan = params.get("scan");
   const inspectedUser = params.get("user");
-  const { page, size, offset } = pagingFrom(params);
+  const { page, size, offset, choice, fit, panelRef } = useAddressPaging(params, update, "admin-scans");
 
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
   const [doomed, setDoomed] = useState<AdminScan | null>(null);
@@ -109,7 +108,7 @@ function ScansView() {
 
   return (
     <>
-      <div className={PANEL}>
+      <div ref={panelRef} className={PANEL}>
         <div className={TOOLBAR}>
           <div className="relative w-full sm:w-72">
             <i
@@ -307,8 +306,10 @@ function ScansView() {
             total={data.total}
             offset={offset}
             size={size}
+            choice={choice}
+            fit={fit}
             onPageChange={(next) => update({ page: next === 1 ? null : next })}
-            onSizeChange={(next) => update({ size: next === PAGE_SIZES[0] ? null : next, page: null })}
+            onSizeChange={(next) => update({ size: next === "fit" ? null : next, page: null })}
           />
         ) : null}
       </div>

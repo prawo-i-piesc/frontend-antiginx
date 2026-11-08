@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useEffectEvent, useId, useRef } from "react";
 
 import { BUTTON_QUIET } from "@/app/components/profile/ui";
 import Dropdown from "@/app/components/ui/Dropdown";
@@ -8,8 +8,9 @@ import Pagination from "@/app/components/ui/Pagination";
 import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import { SURFACE } from "@/app/components/ui/surface";
 import type { LoadError } from "@/app/hooks/useApiQuery";
+import useFitRows from "@/app/hooks/useFitRows";
 import { useI18n } from "@/app/i18n/I18nProvider";
-import { PAGE_SIZES, type PageSize } from "@/app/lib/paging";
+import { FIT_FALLBACK, PAGE_SIZES, type SizeChoice } from "@/app/lib/paging";
 import type { ScanStatus } from "@/app/lib/api";
 import { useToast } from "@/app/providers/ToastProvider";
 
@@ -54,12 +55,44 @@ const CONTROL_SKIN =
   "rounded-lg border border-zinc-300 bg-zinc-50 text-zinc-900 transition-colors quiet-focus focus:border-zinc-500 dark:border-zinc-700/70 dark:bg-zinc-950/50 dark:text-zinc-100 dark:focus:border-zinc-400";
 export const CONTROL = `h-9 text-sm ${CONTROL_SKIN}`;
 
-/** Page and page size from the address; anything unparseable falls back to the first page of 25. */
-export function pagingFrom(params: URLSearchParams): { page: number; size: PageSize; offset: number } {
-  const size = PAGE_SIZES.find((option) => String(option) === params.get("size")) ?? PAGE_SIZES[0];
+/**
+ * Page and page size of a table that keeps them in the address. Without
+ * `size` the table fits the window (useFitRows): `key` names the table, and
+ * the returned `panelRef` goes on its panel. Anything unparseable falls back
+ * to the first page.
+ */
+export function useAddressPaging(
+  params: URLSearchParams,
+  update: (changes: Record<string, string | number | null>) => void,
+  key: string,
+) {
+  const { fit, panelRef } = useFitRows(key);
+  const chosen = PAGE_SIZES.find((option) => String(option) === params.get("size")) ?? null;
+  const size = chosen ?? fit ?? FIT_FALLBACK;
   const parsed = Number.parseInt(params.get("page") ?? "", 10);
   const page = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-  return { page, size, offset: (page - 1) * size };
+
+  useKeepFirstRow(size, page, chosen === null, (next) => update({ page: next === 1 ? null : next }));
+
+  const choice: SizeChoice = chosen ?? "fit";
+  return { page, size, offset: (page - 1) * size, choice, fit, panelRef };
+}
+
+/**
+ * When a fitted page size changes with the window, moves to the page that
+ * still holds the first row in view, so resizing never jumps elsewhere in
+ * the list. A size someone picked themselves starts from the first page.
+ */
+export function useKeepFirstRow(size: number, page: number, fitted: boolean, goTo: (page: number) => void) {
+  const previous = useRef(size);
+  const move = useEffectEvent(goTo);
+
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = size;
+    if (!fitted || before === size || page === 1) return;
+    move(Math.floor(((page - 1) * before) / size) + 1);
+  }, [size, page, fitted]);
 }
 
 /**
@@ -241,17 +274,24 @@ export function TableFooter({
   total,
   offset,
   size,
+  choice,
+  fit,
   sizes = PAGE_SIZES,
   onPageChange,
   onSizeChange,
 }: {
   total: number;
   offset: number;
+  /** The rows on a page now. */
   size: number;
-  /** The page sizes on offer; the API-backed tables use PAGE_SIZES. */
+  /** What was picked: a number, or "fit" for as many as the window holds. */
+  choice: SizeChoice;
+  /** How many rows the window holds; null leaves the fit option out. */
+  fit: number | null;
+  /** The fixed page sizes on offer besides fit. */
   sizes?: readonly number[];
   onPageChange: (page: number) => void;
-  onSizeChange: (size: number) => void;
+  onSizeChange: (choice: SizeChoice) => void;
 }) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
@@ -278,9 +318,12 @@ export function TableFooter({
           <Dropdown
             size="sm"
             labelledBy={sizeLabelId}
-            value={String(size)}
-            options={sizes.map((option) => ({ value: String(option), label: String(option) }))}
-            onChange={(next) => onSizeChange(Number(next))}
+            value={choice === "fit" ? "fit" : String(size)}
+            options={[
+              ...(fit === null ? [] : [{ value: "fit", label: t.table.fitRows(fit) }]),
+              ...sizes.map((option) => ({ value: String(option), label: String(option) })),
+            ]}
+            onChange={(next) => onSizeChange(next === "fit" ? "fit" : Number(next))}
           />
         </span>
         {totalPages > 1 ? <Pagination page={page} totalPages={totalPages} onPageChange={changePage} /> : null}

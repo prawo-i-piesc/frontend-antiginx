@@ -34,11 +34,13 @@ import {
   TableFooter,
   TableLoading,
   TableMessage,
+  useKeepFirstRow,
 } from "@/app/components/ui/table";
+import useFitRows from "@/app/hooks/useFitRows";
 import usePolling from "@/app/hooks/usePolling";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { INTL_LOCALES } from "@/app/i18n/config";
-import { SCAN_LIST_SIZES } from "@/app/lib/paging";
+import { FIT_FALLBACK, PAGE_SIZES, type SizeChoice } from "@/app/lib/paging";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import {
   ApiRequestError,
@@ -176,7 +178,9 @@ export default function DashboardScannerPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(SCAN_LIST_SIZES[0]);
+  const [sizeChoice, setSizeChoice] = useState<SizeChoice>("fit");
+  const { fit, panelRef: listPanelRef } = useFitRows("scanner");
+  const pageSize = sizeChoice === "fit" ? (fit ?? FIT_FALLBACK) : sizeChoice;
   const [listRequest, setListRequest] = useState(0);
   const [scanList, setScanList] = useState<Loaded<ScanResponse[]> | null>(null);
 
@@ -302,6 +306,8 @@ export default function DashboardScannerPage() {
         (riskFilter === "all" || (row.risk !== null && riskBand(row.risk) === riskFilter)),
     );
   }, [scanRows, searchQuery, statusFilter, riskFilter]);
+
+  useKeepFirstRow(pageSize, currentPage, sizeChoice === "fit", setCurrentPage);
 
   const totalPages = Math.max(1, Math.ceil(filteredScans.length / pageSize));
   const page = Math.min(currentPage, totalPages);
@@ -640,7 +646,7 @@ export default function DashboardScannerPage() {
             )}
 
             {!showNewScan && (
-              <div className={PANEL}>
+              <div ref={listPanelRef} className={PANEL}>
                 <div className={TOOLBAR}>
                   <label htmlFor={searchId} className="sr-only">
                     {t.scanner.list.searchLabel}
@@ -834,10 +840,12 @@ export default function DashboardScannerPage() {
                     total={filteredScans.length}
                     offset={pageStart}
                     size={pageSize}
-                    sizes={SCAN_LIST_SIZES}
+                    choice={sizeChoice}
+                    fit={fit}
+                    sizes={PAGE_SIZES}
                     onPageChange={setCurrentPage}
                     onSizeChange={(next) => {
-                      setPageSize(next);
+                      setSizeChoice(next);
                       setCurrentPage(1);
                     }}
                   />
