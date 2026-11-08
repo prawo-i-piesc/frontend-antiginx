@@ -178,7 +178,7 @@ export default function ReportDialog({
 
       {/* Formats beside the preview; stacked above it on a phone. */}
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5 md:flex-row md:overflow-hidden">
-        <fieldset className="shrink-0 md:w-60">
+        <fieldset className="shrink-0 md:w-72">
           <legend className={`mb-2 text-xs ${MUTED}`}>{copy.formatLabel}</legend>
           <div className={`divide-y overflow-hidden rounded-lg border ${RULE} divide-zinc-200 dark:divide-zinc-800`}>
             {REPORT_FORMATS.map((option) => {
