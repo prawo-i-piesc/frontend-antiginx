@@ -5,6 +5,8 @@ const table = {
   /** `shown` is the count formatted for the locale. */
   records: (count: number, shown: string) => pluralEn(count, `${shown} record`, `${shown} records`),
   pageSize: "Rows per page",
+  /** The page size that fits the window, with the number it comes to now. */
+  fitRows: (rows: number) => `Fit (${rows})`,
   copyId: (id: string) => `Copy ID ${id}`,
   copied: "ID copied",
   copyFailed: "Could not copy. Select the ID and copy it by hand.",

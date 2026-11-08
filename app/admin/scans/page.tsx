@@ -7,6 +7,7 @@ import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import ScanInspector from "@/app/components/admin/ScanInspector";
 import UserInspector from "@/app/components/admin/UserInspector";
 import Dropdown from "@/app/components/ui/Dropdown";
+import SiteAddress, { ADDRESS_TEXT } from "@/app/components/ui/SiteAddress";
 import {
   CONTROL,
   ICON_BUTTON,
@@ -27,7 +28,7 @@ import {
   TableLoading,
   TableMessage,
   Tag,
-  pagingFrom,
+  useAddressPaging,
   shortId,
   useClampPage,
 } from "@/app/components/ui/table";
@@ -43,7 +44,6 @@ import {
   type AdminScan,
   type ScanType,
 } from "@/app/lib/adminApi";
-import { PAGE_SIZES } from "@/app/lib/paging";
 import { useToast } from "@/app/providers/ToastProvider";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -72,7 +72,7 @@ function ScansView() {
   const q = params.get("q")?.trim() ?? "";
   const inspectedScan = params.get("scan");
   const inspectedUser = params.get("user");
-  const { page, size, offset } = pagingFrom(params);
+  const { page, size, offset, choice, fit, panelRef } = useAddressPaging(params, update, "admin-scans");
 
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
   const [doomed, setDoomed] = useState<AdminScan | null>(null);
@@ -108,7 +108,7 @@ function ScansView() {
 
   return (
     <>
-      <div className={PANEL}>
+      <div ref={panelRef} className={PANEL}>
         <div className={TOOLBAR}>
           <div className="relative w-full sm:w-72">
             <i
@@ -243,9 +243,11 @@ function ScansView() {
                       <IdCell id={scan.id} />
                     </td>
                     <td className={`${TD} w-full max-w-0`}>
-                      <span className="block truncate" title={scan.target_url}>
-                        {scan.target_url}
-                      </span>
+                      <SiteAddress url={scan.target_url} favicon={scan.favicon}>
+                        <span className={ADDRESS_TEXT} title={scan.target_url}>
+                          {scan.target_url}
+                        </span>
+                      </SiteAddress>
                     </td>
                     <td className={TD}>
                       <Tag tone={scan.type === "premium" ? "violet" : "zinc"}>{copy.types[scan.type]}</Tag>
@@ -304,8 +306,10 @@ function ScansView() {
             total={data.total}
             offset={offset}
             size={size}
+            choice={choice}
+            fit={fit}
             onPageChange={(next) => update({ page: next === 1 ? null : next })}
-            onSizeChange={(next) => update({ size: next === PAGE_SIZES[0] ? null : next, page: null })}
+            onSizeChange={(next) => update({ size: next === "fit" ? null : next, page: null })}
           />
         ) : null}
       </div>

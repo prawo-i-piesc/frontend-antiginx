@@ -85,7 +85,8 @@ export function isAbandoned(scan: ScanResponse, now: number): boolean {
 function applyLiveEvent(scan: ScanResponse | null, event: LiveEvent): ScanResponse | null {
   switch (event.type) {
     case "snapshot":
-      return event.scan;
+      // The stream does not carry the site's icon; the one REST brought stays.
+      return { ...event.scan, favicon: event.scan.favicon ?? scan?.favicon ?? null };
     case "results": {
       if (!scan) return scan;
       const current = scan.results ?? [];

@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 
 import Dialog from '@/app/components/ui/Dialog';
+import SiteAddress, { ADDRESS_TEXT } from '@/app/components/ui/SiteAddress';
 import type { LiveScan } from '@/app/hooks/useLiveScan';
 import { useI18n } from '@/app/i18n/I18nProvider';
 import { isFinishedStatus } from '@/app/lib/api';
@@ -37,12 +38,14 @@ export default function ScanResultModal({ isOpen, onClose, live }: ScanResultMod
         <div className="min-w-0">
           <h2 id={titleId} className="text-base font-semibold text-white">{t.scan.resultsTitle}</h2>
           {/* min-h keeps the header's height until the address arrives. */}
-          <p className="min-h-4 truncate text-xs text-zinc-400" title={scan?.target_url}>
+          <p className="min-h-4 text-xs text-zinc-400">
             {scan ? (
-              <>
-                <span className="sr-only">{t.scan.target}: </span>
-                {scan.target_url.replace(/^https?:\/\//, '')}
-              </>
+              <SiteAddress url={scan.target_url} favicon={scan.favicon}>
+                <span className={ADDRESS_TEXT} title={scan.target_url}>
+                  <span className="sr-only">{t.scan.target}: </span>
+                  {scan.target_url.replace(/^https?:\/\//, '')}
+                </span>
+              </SiteAddress>
             ) : null}
           </p>
         </div>

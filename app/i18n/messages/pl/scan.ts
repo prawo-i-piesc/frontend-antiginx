@@ -148,6 +148,8 @@ const scan: Messages["scan"] = {
 
   resultsTitle: "Wyniki skanu bezpieczeństwa",
   target: "Cel",
+  openSite: (url) => `Otwórz ${url} w nowej karcie`,
+  siteCharts: (url) => `Wykresy dla ${url}`,
   riskScore: "Poziom ryzyka",
   testsCompleted: (count) => `Ukończono ${count} ${pluralPl(count, "test", "testy", "testów")}`,
   export: "Eksportuj",

@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 
+import SiteIcon from "@/app/components/ui/SiteIcon";
 import { Stamp, StatusLabel } from "@/app/components/ui/table";
 import type { ScanStatus } from "@/app/lib/api";
 
 interface ScanItemProps {
   url: string;
+  /** Hash of the site's icon; a globe stands in without it. */
+  favicon?: string | null;
   status?: ScanStatus;
   createdAt?: string;
   /** Where the scan's details open; without it the row is plain text. */
@@ -16,10 +19,10 @@ interface ScanItemProps {
 const ROW = "flex items-center gap-3 rounded-lg px-2 py-2.5";
 
 /** A scan in a short list: address, when, and how it ended. */
-export default function ScanItem({ url, status, createdAt, href }: ScanItemProps) {
+export default function ScanItem({ url, favicon, status, createdAt, href }: ScanItemProps) {
   const body = (
     <>
-      <i className="ri-global-line text-base leading-none text-zinc-500 dark:text-zinc-400" aria-hidden="true"></i>
+      <SiteIcon hash={favicon} />
       <span className="min-w-0 flex-1">
         {/* Truncated on screen only; the whole address stays in the text. */}
         <span className="block truncate text-sm font-medium text-zinc-900 dark:text-zinc-100" title={url}>
