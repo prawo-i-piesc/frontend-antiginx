@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { BUTTON_DANGER, BUTTON_PRIMARY, BUTTON_QUIET } from "@/app/components/profile/ui";
 import Dialog from "@/app/components/ui/Dialog";
@@ -20,6 +20,8 @@ interface ConfirmDialogProps {
   confirmText?: string;
   confirmTextLabel?: string;
   mismatch?: string;
+  /** Choices that shape the action, e.g. how long a grant lasts; shown under the description. */
+  children?: ReactNode;
   /** Rejects to keep the dialog open with the reason; resolves to close it. */
   onConfirm: () => Promise<void>;
   onClose: () => void;
@@ -55,6 +57,7 @@ function ConfirmForm({
   confirmText,
   confirmTextLabel,
   mismatch,
+  children,
   onConfirm,
   onClose,
 }: ConfirmDialogProps & { id: string }) {
@@ -99,6 +102,8 @@ function ConfirmForm({
       <p id={`${id}-description`} className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 wrap-anywhere">
         {description}
       </p>
+
+      {children ? <div className="mt-5">{children}</div> : null}
 
       {confirmText !== undefined ? (
         <div className="mt-5">

@@ -105,7 +105,7 @@ export function shortId(id: string): string {
 }
 
 /** A short ID with the whole of it a click away. */
-export function IdCell({ id }: { id: string }) {
+export function IdCell({ id, short = true }: { id: string; /** Our UUIDv7s share a prefix, so their tail is shown; other IDs whole. */ short?: boolean }) {
   const { t } = useI18n();
   const toast = useToast();
 
@@ -121,7 +121,7 @@ export function IdCell({ id }: { id: string }) {
   return (
     <span className="inline-flex items-center gap-0.5">
       <span title={id} className={`${CODE} text-zinc-700 dark:text-zinc-300`}>
-        {shortId(id)}
+        {short ? shortId(id) : id}
       </span>
       <button
         type="button"

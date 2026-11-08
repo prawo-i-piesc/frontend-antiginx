@@ -7,6 +7,7 @@
  */
 
 import type { ScanStatus } from "@/app/lib/api";
+import type { Plan } from "@/app/lib/billingApi";
 import { query, request } from "@/app/lib/request";
 import type { TestFailures } from "@/app/lib/statsApi";
 
@@ -25,6 +26,32 @@ export interface AdminUser {
   created_at: string;
   email_verified: boolean;
   totp_enabled: boolean;
+  /** Sent with the list; the details carry the whole `plan` instead. */
+  plan?: Plan;
+}
+
+/** An account's plan as the admin panel sees it: where Pro comes from, if it has it. */
+export interface AdminPlan {
+  plan: Plan;
+  /** Stripe's side, as last synced; null for an account that never started a payment. */
+  subscription: {
+    status: string;
+    current_period_end: string | null;
+    cancel_at: string | null;
+    stripe_customer_id: string;
+    synced_at: string;
+  } | null;
+  /** Pro granted by an administrator, while it lasts. */
+  grant: {
+    granted_at: string;
+    /** Null for a grant with no end. */
+    expires_at: string | null;
+    granted_by: string;
+    /** Null once that administrator's account is gone. */
+    granted_by_email: string | null;
+  } | null;
+  /** No paid subscription runs, so Pro can be granted. The grant itself checks Stripe again. */
+  can_grant: boolean;
 }
 
 export interface AdminUserDetails {
@@ -36,6 +63,7 @@ export interface AdminUserDetails {
   passkeys: number;
   recovery_codes_remaining: number;
   premium_scans: number;
+  plan: AdminPlan;
 }
 
 export interface AdminScan {
@@ -112,6 +140,27 @@ export function setUserRole(id: string, role: Role): Promise<AdminUser> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ role }),
   });
+}
+
+/** Grant lengths the panel offers, in days; 0 grants Pro with no end. */
+export const GRANT_DAYS = [30, 90, 365, 0] as const;
+export type GrantDays = (typeof GRANT_DAYS)[number];
+
+/**
+ * Grants Pro for `days` days, or with no end for 0, replacing an earlier
+ * grant. Refused with SUBSCRIPTION_ACTIVE while the account pays in Stripe.
+ */
+export function grantPro(id: string, days: GrantDays): Promise<AdminPlan> {
+  return request<AdminPlan>(`/api/admin/users/${encodeURIComponent(id)}/plan-grant`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ days }),
+  });
+}
+
+/** Ends a grant. A Stripe subscription is left alone: the owner cancels that in the portal. */
+export function revokePro(id: string): Promise<AdminPlan> {
+  return request<AdminPlan>(`/api/admin/users/${encodeURIComponent(id)}/plan-grant`, { method: "DELETE" });
 }
 
 /**

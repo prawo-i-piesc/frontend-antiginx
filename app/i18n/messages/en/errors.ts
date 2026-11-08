@@ -43,6 +43,7 @@ const errors = {
     BILLING_DISABLED: "Payments are not available yet.",
     BILLING_UNAVAILABLE: "We could not reach the payment provider. Try again in a moment.",
     ALREADY_SUBSCRIBED: "You are already on the Pro plan.",
+    SUBSCRIPTION_ACTIVE: "This account pays for Pro in Stripe, so there is nothing to grant.",
     NO_BILLING_ACCOUNT: "This account has no payments yet.",
     USER_NOT_FOUND: "This account no longer exists.",
     SCAN_NOT_FOUND: "This scan no longer exists.",

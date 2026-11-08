@@ -93,7 +93,7 @@ function UsersView() {
         {error ? (
           <LoadFailure error={error} title={t.admin.loadError} onRetry={reload} />
         ) : !data ? (
-          <TableLoading columns={8} />
+          <TableLoading columns={9} />
         ) : users.length === 0 ? (
           <TableMessage>
             {q ? (
@@ -139,6 +139,9 @@ function UsersView() {
                   <th scope="col" className={`${TH} w-28`}>
                     {copy.columns.role}
                   </th>
+                  <th scope="col" className={`${TH} w-20`}>
+                    {copy.columns.plan}
+                  </th>
                   <th scope="col" className={`${TH} w-36`}>
                     {copy.columns.verification}
                   </th>
@@ -174,6 +177,9 @@ function UsersView() {
                     </td>
                     <td className={TD}>
                       <Tag tone={user.role === "admin" ? "cyan" : "zinc"}>{t.admin.roles[user.role]}</Tag>
+                    </td>
+                    <td className={TD}>
+                      <Tag tone={user.plan === "pro" ? "violet" : "zinc"}>{t.admin.plans[user.plan ?? "free"]}</Tag>
                     </td>
                     <td className={TD}>
                       <Flag on={user.email_verified} label={user.email_verified ? copy.verified : copy.unverified} />

@@ -39,6 +39,7 @@ const errors: Messages["errors"] = {
     BILLING_DISABLED: "Płatności nie są jeszcze dostępne.",
     BILLING_UNAVAILABLE: "Nie udało się połączyć z operatorem płatności. Spróbuj ponownie za chwilę.",
     ALREADY_SUBSCRIBED: "Masz już aktywny plan Pro.",
+    SUBSCRIPTION_ACTIVE: "To konto płaci za Pro w Stripe, więc nie ma czego nadawać.",
     NO_BILLING_ACCOUNT: "Na tym koncie nie było jeszcze żadnych płatności.",
     USER_NOT_FOUND: "To konto już nie istnieje.",
     SCAN_NOT_FOUND: "Ten skan już nie istnieje.",

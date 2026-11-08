@@ -82,6 +82,8 @@ const profile: Messages["profile"] = {
     processingHint: "Pro włączy się, gdy tylko Stripe potwierdzi płatność.",
     cancelled: "Płatność anulowana",
     cancelledHint: "Nic nie zostało pobrane.",
+    granted: "Pro nadane przez administratora.",
+    grantedUntil: (date) => `Pro nadane przez administratora do ${date}.`,
   },
 
   connected: {
