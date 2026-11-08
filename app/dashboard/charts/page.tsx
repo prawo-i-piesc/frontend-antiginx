@@ -22,7 +22,7 @@ import PagePending from "@/app/components/layout/PagePending";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import Dropdown from "@/app/components/ui/Dropdown";
 import Segmented from "@/app/components/ui/Segmented";
-import SiteIcon from "@/app/components/ui/SiteIcon";
+import SiteAddress, { ADDRESS_LINK } from "@/app/components/ui/SiteAddress";
 import { SkeletonRegion } from "@/app/components/ui/Skeleton";
 import { SURFACE } from "@/app/components/ui/surface";
 import {
@@ -337,17 +337,16 @@ function DomainsTable({ points, onSelect }: { points: readonly RiskPoint[]; onSe
             {rows.map((row) => (
               <tr key={row.url} className={ROW}>
                 <td className={`${TD} max-w-44 pl-5 sm:max-w-72`}>
-                  <span className="flex items-center gap-2">
-                    <SiteIcon hash={row.latest.favicon} />
+                  <SiteAddress url={row.url} favicon={row.latest.favicon}>
                     <button
                       type="button"
                       onClick={() => onSelect(row.url)}
                       title={copy.filter(row.url)}
-                      className="min-w-0 cursor-pointer truncate text-left text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+                      className={`${ADDRESS_LINK} text-zinc-900 dark:text-zinc-100`}
                     >
                       {displayUrl(row.url)}
                     </button>
-                  </span>
+                  </SiteAddress>
                 </td>
                 <td className={`${TD} ${DATA} text-right`}>{row.points.length}</td>
                 <td className={TD}>

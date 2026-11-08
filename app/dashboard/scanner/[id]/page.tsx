@@ -9,7 +9,8 @@ import PagePending from "@/app/components/layout/PagePending";
 import ReportDialog from "@/app/components/ReportDialog";
 import ScanResults from "@/app/components/scan/ScanResults";
 import { buttonClass, iconButtonClass } from "@/app/components/ui/buttonStyles";
-import SiteIcon from "@/app/components/ui/SiteIcon";
+import { chartsHref } from "@/app/components/charts/domain";
+import SiteAddress, { ADDRESS_LINK } from "@/app/components/ui/SiteAddress";
 import { LoadFailure, PANEL, TableMessage } from "@/app/components/ui/table";
 import useLiveScan from "@/app/hooks/useLiveScan";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
@@ -63,18 +64,18 @@ export default function ScanDetailPage({ params }: { params: Promise<{ id: strin
               {t.scan.resultsTitle}
             </h1>
             {/* min-h keeps the title in place until the address arrives. */}
-            <p
-              className="mt-1 flex min-h-5 items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400"
-              title={scan?.target_url}
-            >
-              {target ? (
-                <>
-                  <SiteIcon hash={scan?.favicon} />
-                  <span className="min-w-0 truncate">
+            <p className="mt-1 min-h-5 text-sm text-zinc-600 dark:text-zinc-400">
+              {scan && target ? (
+                <SiteAddress url={scan.target_url} favicon={scan.favicon}>
+                  <Link
+                    href={chartsHref(scan.target_url, scan.created_at)}
+                    title={t.scan.siteCharts(scan.target_url)}
+                    className={ADDRESS_LINK}
+                  >
                     <span className="sr-only">{t.scan.target}: </span>
                     {target}
-                  </span>
-                </>
+                  </Link>
+                </SiteAddress>
               ) : null}
             </p>
           </div>

@@ -9,10 +9,11 @@ import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/
 import PagePending from "@/app/components/layout/PagePending";
 import ReportDialog from "@/app/components/ReportDialog";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
+import { chartsHref } from "@/app/components/charts/domain";
 import { RiskLabel } from "@/app/components/scan/labels";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import Dropdown from "@/app/components/ui/Dropdown";
-import SiteIcon from "@/app/components/ui/SiteIcon";
+import SiteAddress, { ADDRESS_LINK } from "@/app/components/ui/SiteAddress";
 import { SURFACE } from "@/app/components/ui/surface";
 import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import {
@@ -752,13 +753,16 @@ export default function DashboardScannerPage() {
                         {paginatedScans.map((row) => (
                           <tr key={row.id} className={ROW}>
                             <td className={`${TD} w-full max-w-0`}>
-                              <span className="flex items-center gap-2">
-                                <SiteIcon hash={row.favicon} />
+                              <SiteAddress url={row.url} favicon={row.favicon}>
                                 {/* Cut short on screen; the full address stays in the text and the tooltip. */}
-                                <span className="min-w-0 truncate" title={row.url}>
+                                <Link
+                                  href={chartsHref(row.url, row.createdAt)}
+                                  title={t.scan.siteCharts(row.url)}
+                                  className={ADDRESS_LINK}
+                                >
                                   {row.url}
-                                </span>
-                              </span>
+                                </Link>
+                              </SiteAddress>
                             </td>
                             <td className={TD}>
                               <span className="inline-flex items-baseline gap-1.5">

@@ -7,7 +7,7 @@ import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import ScanInspector from "@/app/components/admin/ScanInspector";
 import UserInspector from "@/app/components/admin/UserInspector";
 import Dropdown from "@/app/components/ui/Dropdown";
-import SiteIcon from "@/app/components/ui/SiteIcon";
+import SiteAddress, { ADDRESS_TEXT } from "@/app/components/ui/SiteAddress";
 import {
   CONTROL,
   ICON_BUTTON,
@@ -244,12 +244,11 @@ function ScansView() {
                       <IdCell id={scan.id} />
                     </td>
                     <td className={`${TD} w-full max-w-0`}>
-                      <span className="flex items-center gap-2">
-                        <SiteIcon hash={scan.favicon} />
-                        <span className="min-w-0 truncate" title={scan.target_url}>
+                      <SiteAddress url={scan.target_url} favicon={scan.favicon}>
+                        <span className={ADDRESS_TEXT} title={scan.target_url}>
                           {scan.target_url}
                         </span>
-                      </span>
+                      </SiteAddress>
                     </td>
                     <td className={TD}>
                       <Tag tone={scan.type === "premium" ? "violet" : "zinc"}>{copy.types[scan.type]}</Tag>

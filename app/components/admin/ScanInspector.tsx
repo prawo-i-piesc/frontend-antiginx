@@ -6,6 +6,7 @@ import { NoAccess } from "@/app/components/admin/AdminFrame";
 import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import { SeverityLabel, Verdict } from "@/app/components/scan/labels";
 import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout, SheetSkeleton } from "@/app/components/admin/Sheet";
+import { OpenSiteLink } from "@/app/components/ui/SiteAddress";
 import SiteIcon from "@/app/components/ui/SiteIcon";
 import {
   CODE,
@@ -132,7 +133,11 @@ function Inspector({
               <span className="flex items-start gap-1.5">
                 {/* On the first line of an address that wraps. */}
                 <SiteIcon hash={scan.favicon} className="mt-0.5" />
-                <span className="min-w-0 wrap-anywhere">{scan.target_url}</span>
+                <span className="min-w-0 wrap-anywhere">
+                  {scan.target_url}
+                  {/* Follows the last line of the address, wherever it wraps. */}
+                  <OpenSiteLink url={scan.target_url} className="ml-0.5 align-middle" />
+                </span>
               </span>
             </Field>
             <Field label={copy.fields.type}>

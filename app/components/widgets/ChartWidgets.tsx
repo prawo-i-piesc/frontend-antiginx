@@ -7,7 +7,7 @@ import { displayUrl, RiskChange } from "@/app/components/charts/domain";
 import Sparkline from "@/app/components/charts/Sparkline";
 import { ChartMeta, FailedTestBars, RiskTrend, SeverityBars } from "@/app/components/charts/StatsCharts";
 import { domainRows } from "@/app/components/charts/trend";
-import SiteIcon from "@/app/components/ui/SiteIcon";
+import SiteAddress, { ADDRESS_LINK } from "@/app/components/ui/SiteAddress";
 import { Bone, ROW_WIDTHS, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import WidgetCard from "@/app/components/widgets/WidgetCard";
 import { createWidgetData } from "@/app/components/widgets/WidgetData";
@@ -189,16 +189,15 @@ function DomainRiskTable({ points }: { points: readonly RiskPoint[] }) {
         {rows.map((row) => (
           <tr key={row.url}>
             <td className={`${cell} w-full max-w-0`}>
-              <span className="flex items-center gap-2">
-                <SiteIcon hash={row.latest.favicon} />
+              <SiteAddress url={row.url} favicon={row.latest.favicon}>
                 <Link
                   href={`/dashboard/charts?days=${WIDGET_DAYS}&domain=${encodeURIComponent(row.url)}`}
-                  title={row.url}
-                  className="min-w-0 truncate text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+                  title={t.scan.siteCharts(row.url)}
+                  className={`${ADDRESS_LINK} text-zinc-900 dark:text-zinc-100`}
                 >
                   {displayUrl(row.url)}
                 </Link>
-              </span>
+              </SiteAddress>
             </td>
             <td className={`${cell} hidden px-3 sm:table-cell`}>
               <Sparkline values={row.points.map((point) => point.risk)} />

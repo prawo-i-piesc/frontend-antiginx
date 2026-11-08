@@ -160,6 +160,8 @@ const scan = {
 
   resultsTitle: "Security scan results",
   target: "Target",
+  openSite: (url: string) => `Open ${url} in a new tab`,
+  siteCharts: (url: string) => `Charts for ${url}`,
   riskScore: "Risk score",
   testsCompleted: (count: number) => `${count} ${pluralEn(count, "test", "tests")} completed`,
   export: "Export",
