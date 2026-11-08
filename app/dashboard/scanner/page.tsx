@@ -192,7 +192,7 @@ export default function DashboardScannerPage() {
   const [authorizedTester, setAuthorizedTester] = useState(false);
 
   /** The scan whose report dialog is open. */
-  const [reportScan, setReportScan] = useState<{ id: string; url: string } | null>(null);
+  const [reportScan, setReportScan] = useState<{ id: string; url: string; favicon: string | null } | null>(null);
 
   const baseId = useId();
   const formId = `${baseId}-form`;
@@ -381,8 +381,8 @@ export default function DashboardScannerPage() {
     (document.getElementById(detailsButtonId(scanId)) ?? listHeadingRef.current)?.focus();
   }
 
-  function openReport(scanId: string, url: string) {
-    setReportScan({ id: scanId, url });
+  function openReport(row: ScanRow) {
+    setReportScan({ id: row.id, url: row.url, favicon: row.favicon });
   }
 
   const hasResults = !isLoadingScans && !scanListError && filteredScans.length > 0;
@@ -807,7 +807,7 @@ export default function DashboardScannerPage() {
                               </Link>
                               <button
                                 type="button"
-                                onClick={() => openReport(row.id, row.url)}
+                                onClick={() => openReport(row)}
                                 aria-haspopup="dialog"
                                 aria-label={t.scanner.list.downloadReport(row.url)}
                                 title={t.scanner.list.downloadReport(row.url)}
@@ -864,6 +864,7 @@ export default function DashboardScannerPage() {
           onClose={() => setReportScan(null)}
           scanId={reportScan.id}
           targetUrl={reportScan.url}
+          favicon={reportScan.favicon}
           mode="premium"
           variant="page"
         />
