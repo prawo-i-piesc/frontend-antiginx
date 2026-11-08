@@ -6,6 +6,7 @@ import { NoAccess } from "@/app/components/admin/AdminFrame";
 import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import { SeverityLabel, Verdict } from "@/app/components/scan/labels";
 import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout, SheetSkeleton } from "@/app/components/admin/Sheet";
+import SiteIcon from "@/app/components/ui/SiteIcon";
 import {
   CODE,
   DATA,
@@ -128,7 +129,11 @@ function Inspector({
               <IdCell id={scan.id} />
             </Field>
             <Field label={copy.fields.target}>
-              <span className="wrap-anywhere">{scan.target_url}</span>
+              <span className="flex items-start gap-1.5">
+                {/* On the first line of an address that wraps. */}
+                <SiteIcon hash={scan.favicon} className="mt-0.5" />
+                <span className="min-w-0 wrap-anywhere">{scan.target_url}</span>
+              </span>
             </Field>
             <Field label={copy.fields.type}>
               <Tag tone={scan.type === "premium" ? "violet" : "zinc"}>{t.admin.scans.types[scan.type]}</Tag>

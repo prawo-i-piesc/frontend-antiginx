@@ -12,6 +12,7 @@ import ScanErrorModal from "@/app/components/ScanErrorModal";
 import { RiskLabel } from "@/app/components/scan/labels";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import Dropdown from "@/app/components/ui/Dropdown";
+import SiteIcon from "@/app/components/ui/SiteIcon";
 import { SURFACE } from "@/app/components/ui/surface";
 import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import {
@@ -62,6 +63,7 @@ type RiskFilter = "all" | RiskBand;
 type ScanRow = {
   id: string;
   url: string;
+  favicon: string | null;
   status: ScanStatus;
   /** Still marked as running long after anything could have happened. */
   stale: boolean;
@@ -111,6 +113,7 @@ function mapScanToRow(scan: ScanResponse, at: number): ScanRow {
   return {
     id: scan.id,
     url: scan.target_url,
+    favicon: scan.favicon ?? null,
     status: scan.status,
     stale: isAbandoned(scan, at),
     progress: active ? progressOf(scan, buildRows(scan)) : null,
@@ -749,9 +752,12 @@ export default function DashboardScannerPage() {
                         {paginatedScans.map((row) => (
                           <tr key={row.id} className={ROW}>
                             <td className={`${TD} w-full max-w-0`}>
-                              {/* Cut short on screen; the full address stays in the text and the tooltip. */}
-                              <span className="block truncate" title={row.url}>
-                                {row.url}
+                              <span className="flex items-center gap-2">
+                                <SiteIcon hash={row.favicon} />
+                                {/* Cut short on screen; the full address stays in the text and the tooltip. */}
+                                <span className="min-w-0 truncate" title={row.url}>
+                                  {row.url}
+                                </span>
                               </span>
                             </td>
                             <td className={TD}>

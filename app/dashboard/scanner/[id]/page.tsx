@@ -9,6 +9,7 @@ import PagePending from "@/app/components/layout/PagePending";
 import ReportDialog from "@/app/components/ReportDialog";
 import ScanResults from "@/app/components/scan/ScanResults";
 import { buttonClass, iconButtonClass } from "@/app/components/ui/buttonStyles";
+import SiteIcon from "@/app/components/ui/SiteIcon";
 import { LoadFailure, PANEL, TableMessage } from "@/app/components/ui/table";
 import useLiveScan from "@/app/hooks/useLiveScan";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
@@ -62,11 +63,17 @@ export default function ScanDetailPage({ params }: { params: Promise<{ id: strin
               {t.scan.resultsTitle}
             </h1>
             {/* min-h keeps the title in place until the address arrives. */}
-            <p className="mt-1 min-h-5 truncate text-sm text-zinc-600 dark:text-zinc-400" title={scan?.target_url}>
+            <p
+              className="mt-1 flex min-h-5 items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400"
+              title={scan?.target_url}
+            >
               {target ? (
                 <>
-                  <span className="sr-only">{t.scan.target}: </span>
-                  {target}
+                  <SiteIcon hash={scan?.favicon} />
+                  <span className="min-w-0 truncate">
+                    <span className="sr-only">{t.scan.target}: </span>
+                    {target}
+                  </span>
                 </>
               ) : null}
             </p>

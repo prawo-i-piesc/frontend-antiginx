@@ -7,6 +7,7 @@ import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import ScanInspector from "@/app/components/admin/ScanInspector";
 import UserInspector from "@/app/components/admin/UserInspector";
 import Dropdown from "@/app/components/ui/Dropdown";
+import SiteIcon from "@/app/components/ui/SiteIcon";
 import {
   CONTROL,
   ICON_BUTTON,
@@ -243,8 +244,11 @@ function ScansView() {
                       <IdCell id={scan.id} />
                     </td>
                     <td className={`${TD} w-full max-w-0`}>
-                      <span className="block truncate" title={scan.target_url}>
-                        {scan.target_url}
+                      <span className="flex items-center gap-2">
+                        <SiteIcon hash={scan.favicon} />
+                        <span className="min-w-0 truncate" title={scan.target_url}>
+                          {scan.target_url}
+                        </span>
                       </span>
                     </td>
                     <td className={TD}>

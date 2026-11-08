@@ -14,6 +14,7 @@ export interface ApiScanData {
   target_url: string;
   status?: string;
   created_at?: string;
+  favicon?: string | null;
 }
 
 interface RecentScansWidgetProps {
@@ -78,6 +79,7 @@ export default function RecentScansWidget({
             <li key={scan.id} className="py-0.5">
               <ScanItem
                 url={scan.target_url}
+                favicon={scan.favicon}
                 status={scan.status && SCAN_STATUSES.has(scan.status) ? (scan.status as ScanStatus) : undefined}
                 createdAt={scan.created_at}
                 href={scanHref?.(scan)}
