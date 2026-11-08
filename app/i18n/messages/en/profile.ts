@@ -84,6 +84,8 @@ const profile = {
     processingHint: "Pro turns on as soon as Stripe confirms the payment.",
     cancelled: "Payment cancelled",
     cancelledHint: "Nothing was charged.",
+    granted: "Pro granted by an administrator.",
+    grantedUntil: (date: string) => `Pro granted by an administrator until ${date}.`,
   },
 
   connected: {

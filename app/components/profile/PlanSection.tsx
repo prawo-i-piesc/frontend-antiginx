@@ -30,6 +30,14 @@ function describe(
   copy: Messages["profile"]["plan"],
   format: Formatters,
 ): { detail: string; tone: Tone } {
+  // A grant is refused while a subscription runs, so the two do not overlap.
+  if (status.granted) {
+    return {
+      detail: status.granted_until ? copy.grantedUntil(format.date(status.granted_until)) : copy.granted,
+      tone: "on",
+    };
+  }
+
   switch (status.status) {
     case "past_due":
       return { detail: copy.pastDue, tone: "warn" };

@@ -8,15 +8,45 @@ import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import { Empty, Field, Section, SectionTitle, SheetDialog, SheetLayout, SheetSkeleton } from "@/app/components/admin/Sheet";
 import { Flag, IdCell, LoadFailure, Stamp, Tag } from "@/app/components/ui/table";
 import { BUTTON_DANGER, BUTTON_PRIMARY, BUTTON_QUIET } from "@/app/components/profile/ui";
+import Segmented from "@/app/components/ui/Segmented";
 import useApiQuery from "@/app/hooks/useApiQuery";
 import { useI18n } from "@/app/i18n/I18nProvider";
-import { deleteUser, getUser, logoutUser, setUserRole, type AdminUser } from "@/app/lib/adminApi";
+import {
+  deleteUser,
+  getUser,
+  grantPro,
+  GRANT_DAYS,
+  logoutUser,
+  revokePro,
+  setUserRole,
+  type AdminPlan,
+  type AdminUser,
+  type GrantDays,
+} from "@/app/lib/adminApi";
+import type { Messages } from "@/app/i18n/messages/en";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 
-export type InspectorChange = { type: "role"; user: AdminUser } | { type: "logout" } | { type: "delete" };
+export type InspectorChange =
+  | { type: "role"; user: AdminUser }
+  | { type: "plan"; plan: AdminPlan }
+  | { type: "logout" }
+  | { type: "delete" };
 
-type Action = "grant" | "revoke" | "signOut" | "remove";
+/** grant and revoke are the administrator role; grantPro and revokePro the plan. */
+type Action = "grant" | "revoke" | "grantPro" | "revokePro" | "signOut" | "remove";
+
+/** The confirmation copy for each action. */
+function confirmCopyOf(action: Action, copy: Messages["admin"]["inspector"]) {
+  switch (action) {
+    case "grantPro":
+      return copy.grantProDialog;
+    case "revokePro":
+      return copy.revokeProDialog;
+    default:
+      return copy[action];
+  }
+}
 
 /**
  * Everything GET /api/admin/users/:id knows about one account, and the
@@ -57,6 +87,7 @@ function Inspector({
   const toast = useToast();
   const { user: me } = useAuth();
   const [action, setAction] = useState<Action | null>(null);
+  const [grantDays, setGrantDays] = useState<GrantDays>(GRANT_DAYS[0]);
 
   const { data, loading, error, reload } = useApiQuery(`user:${userId}`, (signal) => getUser(userId, signal));
   // Keyed by account, so the data on hand is always this account's: after an
@@ -75,6 +106,14 @@ function Inspector({
         reload();
         return;
       }
+      case "grantPro":
+      case "revokePro": {
+        const plan = current === "grantPro" ? await grantPro(userId, grantDays) : await revokePro(userId);
+        toast.success(confirmCopyOf(current, copy).done(email));
+        onChange({ type: "plan", plan });
+        reload();
+        return;
+      }
       case "signOut":
         await logoutUser(userId);
         toast.success(copy.signOut.done(email));
@@ -90,7 +129,7 @@ function Inspector({
     }
   }
 
-  const confirmCopy = action ? copy[action] : null;
+  const confirmCopy = action ? confirmCopyOf(action, copy) : null;
   const yesNo = (value: boolean) => (value ? copy.yes : copy.no);
 
   return (
@@ -101,7 +140,7 @@ function Inspector({
       busy={loading}
       onClose={onClose}
     >
-      {loading && !details ? <SheetSkeleton sections={[5, 7, 2]} /> : null}
+      {loading && !details ? <SheetSkeleton sections={[5, 2, 7, 2]} /> : null}
       {error?.kind === "forbidden" ? <NoAccess /> : null}
       {error && error.kind !== "forbidden" ? (
         <LoadFailure error={error} title={copy.loadError} onRetry={reload} />
@@ -124,6 +163,32 @@ function Inspector({
               <Stamp value={account.created_at} />
             </Field>
           </Section>
+
+          <div>
+            <PlanFields plan={details.plan} />
+            <div className="mt-2">
+              {details.plan.grant ? (
+                <button type="button" onClick={() => setAction("revokePro")} className={BUTTON_QUIET}>
+                  <i className="ri-close-circle-line" aria-hidden="true" />
+                  {copy.revokePro}
+                </button>
+              ) : details.plan.can_grant ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGrantDays(GRANT_DAYS[0]);
+                    setAction("grantPro");
+                  }}
+                  className={BUTTON_PRIMARY}
+                >
+                  <i className="ri-vip-diamond-line" aria-hidden="true" />
+                  {copy.grantPro}
+                </button>
+              ) : (
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">{copy.paysNote}</p>
+              )}
+            </div>
+          </div>
 
           <Section title={copy.sections.security}>
             <Field label={copy.fields.emailVerified}>
@@ -199,15 +264,81 @@ function Inspector({
             title={confirmCopy?.title ?? ""}
             description={confirmCopy?.description(account.email) ?? ""}
             confirmLabel={confirmCopy?.confirm ?? ""}
-            tone={action === "grant" ? "primary" : "danger"}
+            tone={action === "grant" || action === "grantPro" ? "primary" : "danger"}
             confirmText={action === "remove" ? account.email : undefined}
             confirmTextLabel={copy.remove.typeToConfirm}
             mismatch={copy.remove.mismatch}
             onConfirm={() => (action ? perform(action, account.email) : Promise.resolve())}
             onClose={() => setAction(null)}
-          />
+          >
+            {action === "grantPro" ? (
+              <>
+                <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-400" aria-hidden="true">
+                  {copy.grantLength}
+                </p>
+                <Segmented
+                  value={grantDays}
+                  options={GRANT_DAYS.map((days) => ({ value: days, label: copy.grantDays[days] }))}
+                  onChange={setGrantDays}
+                  label={copy.grantLength}
+                />
+              </>
+            ) : null}
+          </ConfirmDialog>
         </>
       ) : null}
     </SheetLayout>
+  );
+}
+
+/** Where the account's plan comes from: Stripe, a grant, or neither. */
+function PlanFields({ plan }: { plan: AdminPlan }) {
+  const { t, format } = useI18n();
+  const copy = t.admin.inspector;
+  const { subscription, grant } = plan;
+
+  const source = grant ? copy.sources.grant : plan.plan === "pro" ? copy.sources.stripe : copy.sources.none;
+  const stripeState = subscription
+    ? subscription.cancel_at && plan.plan === "pro" && !grant
+      ? copy.cancelsOn(format.date(subscription.cancel_at))
+      : (copy.stripeStatuses[subscription.status] ?? subscription.status)
+    : null;
+
+  return (
+    <Section title={copy.sections.plan}>
+      <Field label={copy.fields.plan}>
+        <Tag tone={plan.plan === "pro" ? "violet" : "zinc"}>{t.admin.plans[plan.plan]}</Tag>
+      </Field>
+      <Field label={copy.fields.source}>{source}</Field>
+      {grant ? (
+        <>
+          <Field label={copy.fields.granted}>
+            <Stamp value={grant.granted_at} />{" "}
+            <span className="text-zinc-600 dark:text-zinc-400">
+              {grant.granted_by_email ? copy.grantedBy(grant.granted_by_email) : copy.grantedByGone}
+            </span>
+          </Field>
+          <Field label={copy.fields.grantEnds}>
+            {grant.expires_at ? <Stamp value={grant.expires_at} /> : copy.noEnd}
+          </Field>
+        </>
+      ) : null}
+      {subscription ? (
+        <>
+          <Field label={copy.fields.stripe}>{stripeState}</Field>
+          {subscription.current_period_end ? (
+            <Field label={copy.fields.periodEnd}>
+              <Stamp value={subscription.current_period_end} />
+            </Field>
+          ) : null}
+          <Field label={copy.fields.customer}>
+            <IdCell id={subscription.stripe_customer_id} short={false} />
+          </Field>
+          <Field label={copy.fields.synced}>
+            <Stamp value={subscription.synced_at} />
+          </Field>
+        </>
+      ) : null}
+    </Section>
   );
 }

@@ -20,6 +20,10 @@ export interface BillingStatus {
   cancel_at: string | null;
   /** Whether Stripe's customer portal has anything to show. */
   manageable: boolean;
+  /** Pro granted by an administrator, outside Stripe. */
+  granted?: boolean;
+  /** When that grant ends; null for one with no end. */
+  granted_until?: string | null;
 }
 
 async function request<T>(path: string, method: "GET" | "POST"): Promise<T> {
