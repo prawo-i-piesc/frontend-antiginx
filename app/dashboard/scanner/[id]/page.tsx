@@ -127,6 +127,7 @@ export default function ScanDetailPage({ params }: { params: Promise<{ id: strin
           onClose={() => setReportOpen(false)}
           scanId={scan.id}
           targetUrl={scan.target_url}
+          favicon={scan.favicon}
           mode="premium"
           variant="page"
         />

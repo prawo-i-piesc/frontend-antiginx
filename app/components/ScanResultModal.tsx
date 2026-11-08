@@ -97,6 +97,7 @@ export default function ScanResultModal({ isOpen, onClose, live }: ScanResultMod
           onClose={() => setReportOpen(false)}
           scanId={scan.id}
           targetUrl={scan.target_url}
+          favicon={scan.favicon}
           mode="free"
           variant="modal"
         />
