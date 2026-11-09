@@ -131,7 +131,7 @@ export default function AccountSection() {
 
           {/* The mascot, pointing at the sign-up button, on one row with it and the pricing link */}
           <div className="mt-8 sm:mt-10 flex items-center gap-2.5 sm:gap-5">
-            <Image src="/logo404.png" alt="" width={525} height={254} className="w-12 sm:w-28 h-auto shrink-0" />
+            <Image src="/logo404.svg" alt="" width={525} height={254} className="w-12 sm:w-28 h-auto shrink-0" />
             <Link
               href={signedIn ? '/dashboard' : '/register'}
               className={`${buttonClass} shrink-0 ${PRIMARY_BUTTON}`}
