@@ -34,7 +34,7 @@ export default async function NotFound() {
 
         {/* The mascot, pointing at the visitor */}
         <Image
-          src="/logo404.png"
+          src="/logo404.svg"
           alt={copy.imageAlt}
           width={250}
           height={250}

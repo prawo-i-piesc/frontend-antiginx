@@ -569,7 +569,7 @@ export default function XRayPreview({ isScanning }: { isScanning: boolean }) {
             {mascot && (
               <motion.div className="absolute left-0 top-0" style={{ x: flyX, y: flyY, rotate: flyRotate, width: mascot.width }}>
                 <Image
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt=""
                   width={525}
                   height={254}
