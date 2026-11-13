@@ -105,7 +105,7 @@ export function RiskTrend({
   );
 }
 
-/** Failed results per severity, most severe first, on the severity ramp. */
+/** Failed results per severity, most severe first, each bar in its severity's colour. */
 export function SeverityBars({ breakdown }: { breakdown: SeverityBreakdown }) {
   const { t, format } = useI18n();
   const percent = usePercent();
