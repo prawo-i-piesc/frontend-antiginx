@@ -77,7 +77,7 @@ const CLOSE_SCAN_GONE = 4404;
 const CLOSE_LIFETIME = 4408;
 
 /** Still marked as running long after anything could have been happening: most likely nobody is coming to end it. */
-export function isAbandoned(scan: ScanResponse, now: number): boolean {
+export function isAbandoned(scan: Pick<ScanResponse, "status" | "started_at" | "created_at">, now: number): boolean {
   return !isFinishedStatus(scan.status) && now - Date.parse(scan.started_at ?? scan.created_at) > GIVE_UP_AFTER_MS;
 }
 

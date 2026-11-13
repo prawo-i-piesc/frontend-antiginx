@@ -49,8 +49,6 @@ const scanner = {
       COMPLETED: "Completed",
       FAILED: "Failed",
     },
-    riskFilterLabel: "Filter by risk",
-    allRisks: "Any risk",
     loading: "Loading scans…",
     loadError: "We could not load your scans.",
     clearFilters: "Clear filters",

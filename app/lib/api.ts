@@ -1,5 +1,6 @@
 import { authorizedFetch } from "@/app/lib/session";
 import { riskScore } from "@/app/lib/risk";
+import { query, request } from "@/app/lib/request";
 import { normalizeTargetUrl } from "@/app/lib/scanTarget";
 
 // API configuration and types based on backend specification
@@ -318,31 +319,44 @@ export async function getScan(
   return response.json();
 }
 
-export async function getUserScans(): Promise<ScanResponse[]> {
-  let response: Response;
-  try {
-    response = await authorizedFetch("/api/users/scans", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    throw new ApiRequestError("Cannot connect to scanner service", {
-      code: "NETWORK_ERROR",
-      cause: error,
-    });
-  }
+/** A scan on the account's list: what the list shows, without the results. */
+export interface ScanListItem {
+  id: string;
+  target_url: string;
+  status: ScanStatus;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  /** The engine test ids asked for; null on scans from before this was kept. */
+  tests?: string[] | null;
+  /** Tests that have answered so far: the scan's progress. */
+  answered: number;
+  /** 0–100 from the backend's risk model; null until the scan has a test outcome. */
+  risk: number | null;
+  /** Hash of the site's icon (see SiteIcon); null until the backend has fetched it. */
+  favicon?: string | null;
+}
 
-  if (!response.ok) {
-    throw new ApiRequestError(
-      await readErrorMessage(response, "Failed to fetch user scans"),
-      {
-        status: response.status,
-        code: `HTTP_${response.status}`,
-      },
-    );
-  }
+/** "active" is a scan still on its way: PENDING or RUNNING. */
+export const SCAN_LIST_STATUSES = ["active", "COMPLETED", "FAILED"] as const;
+export type ScanListStatus = (typeof SCAN_LIST_STATUSES)[number];
 
-  return response.json();
+export interface ScanListPage {
+  scans: ScanListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** One page of the account's scans, newest first, paged and filtered by the backend. */
+export function getUserScans(
+  params: { q?: string; status?: ScanListStatus; limit: number; offset: number },
+  signal?: AbortSignal,
+): Promise<ScanListPage> {
+  return request<ScanListPage>(
+    `/api/users/scans${query({ q: params.q, status: params.status, limit: params.limit, offset: params.offset })}`,
+    { signal },
+  );
 }
 
 /** The scan's risk, 0–100, by the model in lib/risk.ts that the charts share. */
