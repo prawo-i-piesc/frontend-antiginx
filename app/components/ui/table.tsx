@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useRef } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 
 import { BUTTON_QUIET } from "@/app/components/profile/ui";
 import Dropdown from "@/app/components/ui/Dropdown";
@@ -40,6 +40,12 @@ export const ROW =
 export const TD = "h-11 px-3 whitespace-nowrap text-zinc-800 dark:text-zinc-200";
 /** Dates, counts and other values that should line up in a column. */
 export const DATA = "tabular-nums";
+/**
+ * The record count at the end of a toolbar. It keeps its line while there is
+ * no count yet, so where the toolbar wraps it onto a line of its own the
+ * table does not move down when the count arrives.
+ */
+export const RECORD_COUNT = `${DATA} ml-auto min-h-4 text-xs text-zinc-600 dark:text-zinc-400`;
 /** IDs and test names: read character by character, so monospaced. */
 export const CODE = "font-code text-xs";
 /** No size of its own: add h-8 w-8 or similar where it is used. */
@@ -60,6 +66,9 @@ export const CONTROL = `h-9 text-sm ${CONTROL_SKIN}`;
  * `size` the table fits the window (useFitRows): `key` names the table, and
  * the returned `panelRef` goes on its panel. Anything unparseable falls back
  * to the first page.
+ *
+ * `ready` stays false until a fitted size has been measured. Load nothing
+ * before it: the size, and with it the offset, are only stand-ins until then.
  */
 export function useAddressPaging(
   params: URLSearchParams,
@@ -68,31 +77,47 @@ export function useAddressPaging(
 ) {
   const { fit, panelRef } = useFitRows(key);
   const chosen = PAGE_SIZES.find((option) => String(option) === params.get("size")) ?? null;
+  const ready = chosen !== null || fit !== null;
   const size = chosen ?? fit ?? FIT_FALLBACK;
   const parsed = Number.parseInt(params.get("page") ?? "", 10);
-  const page = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  const linked = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 
-  useKeepFirstRow(size, page, chosen === null, (next) => update({ page: next === 1 ? null : next }));
+  const page = useKeptPage(linked, chosen === null && ready ? size : null, (next) =>
+    update({ page: next === 1 ? null : next }),
+  );
 
   const choice: SizeChoice = chosen ?? "fit";
-  return { page, size, offset: (page - 1) * size, choice, fit, panelRef };
+  return { page, size, offset: (page - 1) * size, choice, fit, panelRef, ready };
 }
 
 /**
- * When a fitted page size changes with the window, moves to the page that
- * still holds the first row in view, so resizing never jumps elsewhere in
- * the list. A size someone picked themselves starts from the first page.
+ * The page to show, from `linked`, the page in the address. When the fitted
+ * page size changes with the window, it is the page that still holds the
+ * first row in view, so resizing never jumps elsewhere in the list. That page
+ * is worked out as the size changes, not after it, so the old page number is
+ * never loaded at the new size; the address catches up after.
+ *
+ * `fitted` is null while the size is not a fitted one that has been measured.
+ * A size someone picked themselves starts from the first page, and the first
+ * measure of a fitted one changes nothing: a linked page stays put.
  */
-export function useKeepFirstRow(size: number, page: number, fitted: boolean, goTo: (page: number) => void) {
-  const previous = useRef(size);
-  const move = useEffectEvent(goTo);
+function useKeptPage(linked: number, fitted: number | null, goTo: (page: number) => void): number {
+  // What was shown: the page, the fitted size it was at, and the address's page then.
+  const [shown, setShown] = useState({ page: linked, fitted, linked });
 
+  // Until the address has caught up with a page worked out here, that page stands.
+  let page = shown.linked === linked ? shown.page : linked;
+  if (fitted !== null && shown.fitted !== null && fitted !== shown.fitted && page !== 1) {
+    page = Math.floor(((page - 1) * shown.fitted) / fitted) + 1;
+  }
+  if (page !== shown.page || fitted !== shown.fitted || linked !== shown.linked) setShown({ page, fitted, linked });
+
+  const move = useEffectEvent(goTo);
   useEffect(() => {
-    const before = previous.current;
-    previous.current = size;
-    if (!fitted || before === size || page === 1) return;
-    move(Math.floor(((page - 1) * before) / size) + 1);
-  }, [size, page, fitted]);
+    if (page !== linked) move(page);
+  }, [page, linked]);
+
+  return page;
 }
 
 /**
@@ -222,7 +247,9 @@ export function TableMessage({ children }: { children: React.ReactNode }) {
 
 /**
  * Rows of placeholders where the table will be: a header strip, then rows
- * as tall as the real ones, so nothing moves when the data arrives.
+ * as tall as the real ones, so nothing moves when the data arrives. A table
+ * that fits the window (useFitRows) is measured from them before its first
+ * page is loaded, so they must stay as tall as TH and TD.
  */
 export function TableLoading({ rows = 6, columns = 5 }: { rows?: number; columns?: number }) {
   const rest = Array.from({ length: Math.max(columns - 1, 0) }, (_, index) => index);
@@ -237,6 +264,7 @@ export function TableLoading({ rows = 6, columns = 5 }: { rows?: number; columns
       {Array.from({ length: rows }, (_, row) => (
         <div
           key={row}
+          data-placeholder-row
           className="flex h-11 items-center gap-6 border-b border-zinc-100 px-3 last:border-0 dark:border-zinc-800/60"
         >
           <span className="min-w-0 flex-1">
@@ -308,7 +336,7 @@ export function TableFooter({
   }
 
   return (
-    <div ref={ref} className="flex flex-col gap-3 border-t border-zinc-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 dark:border-zinc-800">
+    <div ref={ref} data-pager className="flex flex-col gap-3 border-t border-zinc-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 dark:border-zinc-800">
       <p className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
         {t.common.pagination.range(Math.min(offset + 1, total), Math.min(offset + size, total), total)}
       </p>

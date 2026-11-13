@@ -15,6 +15,7 @@ import {
   ICON_BUTTON,
   LoadFailure,
   PANEL,
+  RECORD_COUNT,
   ROW,
   SCROLL_REGION,
   Stamp,
@@ -118,11 +119,11 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
   const q = params.get("q")?.trim() ?? "";
   // A value the API would reject is ignored rather than sent on to fail validation.
   const status = SCAN_LIST_STATUSES.find((option) => option === params.get("status"));
-  const { page, size, offset, choice, fit, panelRef } = useAddressPaging(params, update, "scanner");
+  const { page, size, offset, choice, fit, panelRef, ready: sized } = useAddressPaging(params, update, "scanner");
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
 
   const key = `scans:${q}:${status ?? ""}:${size}:${offset}`;
-  const { data, loading, error, reload } = useApiQuery<Loaded>(key, async (signal) => ({
+  const { data, loading, error, reload } = useApiQuery<Loaded>(sized ? key : null, async (signal) => ({
     page: await getUserScans({ q: q || undefined, status, limit: size, offset }, signal),
     at: Date.now(),
   }));
@@ -219,7 +220,7 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
           ]}
           onChange={(next) => update({ status: next === "all" ? null : next, page: null })}
         />
-        <p role="status" className={`${DATA} ml-auto text-xs text-zinc-600 dark:text-zinc-400`}>
+        <p role="status" className={RECORD_COUNT}>
           {data && total > 0 ? t.table.records(total, format.number(total)) : ""}
         </p>
       </div>

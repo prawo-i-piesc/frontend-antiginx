@@ -8,5 +8,5 @@ export type PageSize = (typeof PAGE_SIZES)[number];
  */
 export type SizeChoice = "fit" | number;
 
-/** The size used before the window has been measured, e.g. while rendering on the server. */
+/** Stands in for a fitted page size until the window has been measured. Nothing is loaded with it: see useAddressPaging's `ready`. */
 export const FIT_FALLBACK = 14;
