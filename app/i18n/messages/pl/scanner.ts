@@ -42,8 +42,6 @@ const scanner: Messages["scanner"] = {
       COMPLETED: "Zakończone",
       FAILED: "Nieudane",
     },
-    riskFilterLabel: "Filtruj według ryzyka",
-    allRisks: "Każde ryzyko",
     loading: "Ładowanie skanów…",
     loadError: "Nie udało się wczytać skanów.",
     clearFilters: "Wyczyść filtry",

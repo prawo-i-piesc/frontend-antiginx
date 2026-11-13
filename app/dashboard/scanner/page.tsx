@@ -1,94 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import DashboardShell from "@/app/components/layout/DashboardShell";
 import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/components/layout/PageHeader";
 import PagePending from "@/app/components/layout/PagePending";
-import ReportDialog from "@/app/components/ReportDialog";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
-import { chartsHref } from "@/app/components/charts/domain";
-import { RiskLabel } from "@/app/components/scan/labels";
+import ScanList from "@/app/components/scan/ScanList";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
-import Dropdown from "@/app/components/ui/Dropdown";
-import SiteAddress, { ADDRESS_LINK } from "@/app/components/ui/SiteAddress";
 import { SURFACE } from "@/app/components/ui/surface";
 import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
-import {
-  CONTROL,
-  DATA,
-  ICON_BUTTON,
-  LoadFailure,
-  PANEL,
-  ROW,
-  SCROLL_REGION,
-  Stamp,
-  StatusLabel,
-  TABLE,
-  TD,
-  TH,
-  THEAD,
-  TOOLBAR,
-  TableFooter,
-  TableLoading,
-  TableMessage,
-  useKeepFirstRow,
-} from "@/app/components/ui/table";
-import useFitRows from "@/app/hooks/useFitRows";
-import usePolling from "@/app/hooks/usePolling";
+import { CONTROL, DATA, TOOLBAR } from "@/app/components/ui/table";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
 import { INTL_LOCALES } from "@/app/i18n/config";
-import { FIT_FALLBACK, PAGE_SIZES, type SizeChoice } from "@/app/lib/paging";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import {
   ApiRequestError,
-  calculateThreatLevel,
   createScan,
   getPremiumScanConfig,
-  getScan,
-  getUserScans,
-  isFinishedStatus,
-  type ScanResponse,
-  type ScanStatus,
   type ScanTestOption,
   type TestCategory,
 } from "@/app/lib/api";
-import { isAbandoned } from "@/app/lib/liveScan";
-import { riskBand, type RiskBand } from "@/app/lib/risk";
 import { scanErrorMessage } from "@/app/lib/scanErrors";
-import { buildRows, progressOf, type ScanProgress } from "@/app/lib/scanRows";
-
-type StatusFilter = "all" | "active" | "COMPLETED" | "FAILED";
-type RiskFilter = "all" | RiskBand;
-
-type ScanRow = {
-  id: string;
-  url: string;
-  favicon: string | null;
-  status: ScanStatus;
-  /** Still marked as running long after anything could have happened. */
-  stale: boolean;
-  /** While it runs. */
-  progress: ScanProgress | null;
-  /** Null until there is at least one result to judge by. */
-  risk: number | null;
-  createdAt: string;
-  durationSeconds: number | null;
-};
 
 /** What the person can do about a failed request: check the connection, or just retry. */
 type LoadError = "network" | "other";
 
 /** A response tagged with the request it answers, so "loading" is simply "not answered yet". */
 type Loaded<T> = { request: number; data: T; error: LoadError | null; at: number };
-
-const STATUS_FILTERS: StatusFilter[] = ["all", "active", "COMPLETED", "FAILED"];
-const RISK_FILTERS: RiskFilter[] = ["all", "critical", "high", "medium", "low", "none"];
-
-/** How often the list looks again while one of its scans is running. */
-const LIST_REFRESH_MS = 5_000;
 
 const RETRY_BUTTON_CLASS = buttonClass("secondary", "sm");
 
@@ -98,34 +39,6 @@ const FIELD_LABEL = "block text-xs font-medium text-zinc-600 dark:text-zinc-400"
 /** Small text actions beside a heading, like "Select all". */
 const TEXT_ACTION =
   "cursor-pointer text-xs font-medium text-cyan-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-cyan-400";
-
-function durationSeconds(startedAt?: string | null, completedAt?: string | null): number | null {
-  if (!startedAt || !completedAt) return null;
-
-  const start = new Date(startedAt).getTime();
-  const end = new Date(completedAt).getTime();
-  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return null;
-
-  return (end - start) / 1000;
-}
-
-function mapScanToRow(scan: ScanResponse, at: number): ScanRow {
-  const active = !isFinishedStatus(scan.status);
-  const results = scan.results ?? [];
-
-  return {
-    id: scan.id,
-    url: scan.target_url,
-    favicon: scan.favicon ?? null,
-    status: scan.status,
-    stale: isAbandoned(scan, at),
-    progress: active ? progressOf(scan, buildRows(scan)) : null,
-    // An engine notice is not a verdict: a scan that only produced those checked nothing.
-    risk: results.some((result) => !result.notice) ? calculateThreatLevel(results) : null,
-    createdAt: scan.created_at,
-    durationSeconds: durationSeconds(scan.started_at, scan.completed_at),
-  };
-}
 
 function loadErrorOf(error: unknown): LoadError {
   if (error instanceof ApiRequestError) return error.code === "NETWORK_ERROR" ? "network" : "other";
@@ -138,51 +51,14 @@ function categoryKey(category: TestCategory, index: number): string {
   return category.category || `other-${index}`;
 }
 
-/**
- * What the address asks of the list. `?scan=` is an older link to a scan, now
- * at its own address. `?opened=` comes back from a scan's page and says whose
- * row should get the focus back, once the list is in.
- * Reads useSearchParams, so it renders inside a Suspense boundary of its own.
- */
-function AddressRequests({ ready, onReturn }: { ready: boolean; onReturn: (scanId: string) => void }) {
-  const params = useSearchParams();
-  const linked = params.get("scan");
-  const opened = params.get("opened");
-  const router = useRouter();
-  const pathname = usePathname();
-  const returned = useEffectEvent(onReturn);
-
-  useEffect(() => {
-    if (linked) router.replace(`${pathname}/${encodeURIComponent(linked)}`);
-  }, [linked, pathname, router]);
-
-  useEffect(() => {
-    if (!ready || !opened) return;
-    returned(opened);
-    router.replace(pathname, { scroll: false });
-  }, [ready, opened, pathname, router]);
-
-  return null;
-}
-
 export default function DashboardScannerPage() {
-  const { t, locale, format } = useI18n();
+  const { t, locale } = useI18n();
   const { authenticated, initialized, auth } = useRequireAuth();
   const router = useRouter();
 
   const [showNewScan, setShowNewScan] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sizeChoice, setSizeChoice] = useState<SizeChoice>("fit");
-  const { fit, panelRef: listPanelRef } = useFitRows("scanner");
-  const pageSize = sizeChoice === "fit" ? (fit ?? FIT_FALLBACK) : sizeChoice;
-  const [listRequest, setListRequest] = useState(0);
-  const [scanList, setScanList] = useState<Loaded<ScanResponse[]> | null>(null);
 
   const [url, setUrl] = useState("");
   const [urlError, setUrlError] = useState(false);
@@ -191,9 +67,6 @@ export default function DashboardScannerPage() {
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [authorizedTester, setAuthorizedTester] = useState(false);
 
-  /** The scan whose report dialog is open. */
-  const [reportScan, setReportScan] = useState<{ id: string; url: string; favicon: string | null } | null>(null);
-
   const baseId = useId();
   const formId = `${baseId}-form`;
   const formHeadingId = `${baseId}-form-heading`;
@@ -201,32 +74,9 @@ export default function DashboardScannerPage() {
   const urlId = `${baseId}-url`;
   const urlErrorId = `${baseId}-url-error`;
   const noTestsHintId = `${baseId}-no-tests`;
-  const searchId = `${baseId}-search`;
-  const detailsButtonId = (scanId: string) => `${baseId}-details-${scanId}`;
 
   const urlInputRef = useRef<HTMLInputElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    if (!authenticated) return;
-
-    let active = true;
-    getUserScans().then(
-      (scans) => {
-        if (!active) return;
-        setScanList({ request: listRequest, data: scans, error: null, at: Date.now() });
-      },
-      (error: unknown) => {
-        if (!active) return;
-        console.error("Failed to load scans:", error);
-        setScanList({ request: listRequest, data: [], error: loadErrorOf(error), at: Date.now() });
-      },
-    );
-
-    return () => {
-      active = false;
-    };
-  }, [authenticated, listRequest]);
 
   useEffect(() => {
     if (!authenticated) return;
@@ -251,37 +101,6 @@ export default function DashboardScannerPage() {
     };
   }, [authenticated, testsRequest]);
 
-  const isLoadingScans = scanList?.request !== listRequest;
-  const scanListError = isLoadingScans ? null : (scanList?.error ?? null);
-
-  const scanRows = useMemo(
-    () =>
-      (scanList?.data ?? [])
-        .map((scan) => mapScanToRow(scan, scanList?.at ?? 0))
-        .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)),
-    [scanList],
-  );
-
-  // A running scan changes on its own, so the list follows it until it ends,
-  // reading only those: the whole list holds every result of every scan. A failed
-  // read changes nothing, and the next one tries again.
-  const runningScans = scanRows.filter((row) => row.progress !== null && !row.stale).map((row) => row.id);
-  usePolling(
-    () => {
-      Promise.allSettled(runningScans.map((id) => getScan(id, { mode: "premium" }))).then((reads) => {
-        const fresh = new Map(
-          reads.flatMap((read) => (read.status === "fulfilled" ? [[read.value.id, read.value] as const] : [])),
-        );
-        setScanList((current) =>
-          current?.request === listRequest
-            ? { ...current, data: current.data.map((scan) => fresh.get(scan.id) ?? scan), at: Date.now() }
-            : current,
-        );
-      });
-    },
-    runningScans.length > 0 ? LIST_REFRESH_MS : null,
-  );
-
   const testsLoading = testConfig?.request !== testsRequest;
   const testsError = testsLoading ? null : (testConfig?.error ?? null);
   const testCategories = testConfig?.data ?? [];
@@ -296,54 +115,11 @@ export default function DashboardScannerPage() {
   const testsToRun = selectedTests.filter((id) => allTestIds.includes(id));
   const allSelected = totalTests > 0 && testsToRun.length === totalTests;
 
-  const filteredScans = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return scanRows.filter(
-      (row) =>
-        row.url.toLowerCase().includes(query) &&
-        (statusFilter === "all" ||
-          (statusFilter === "active" ? row.progress !== null : row.status === statusFilter)) &&
-        (riskFilter === "all" || (row.risk !== null && riskBand(row.risk) === riskFilter)),
-    );
-  }, [scanRows, searchQuery, statusFilter, riskFilter]);
-
-  useKeepFirstRow(pageSize, currentPage, sizeChoice === "fit", setCurrentPage);
-
-  const totalPages = Math.max(1, Math.ceil(filteredScans.length / pageSize));
-  const page = Math.min(currentPage, totalPages);
-  const pageStart = (page - 1) * pageSize;
-  const paginatedScans = filteredScans.slice(pageStart, pageStart + pageSize);
-
-  const numberFormats = useMemo(
-    () => ({
-      seconds: new Intl.NumberFormat(INTL_LOCALES[locale], {
-        style: "unit",
-        unit: "second",
-        unitDisplay: "narrow",
-        maximumFractionDigits: 1,
-      }),
-    }),
-    [locale],
-  );
-
   if (!initialized || !authenticated) return <PagePending layout="table" />;
 
   const categoryName = (name: string) => (name ? (t.scan.categories[name] ?? name) : t.scan.categoryOther);
   const testName = (test: ScanTestOption) =>
     t.scan.testsShort[test.id] ?? test.label.charAt(0).toLocaleUpperCase(INTL_LOCALES[locale]) + test.label.slice(1);
-
-  const formatDuration = (seconds: number | null) => {
-    if (seconds === null) return "—";
-    if (seconds < 1) {
-      return (
-        <>
-          <span aria-hidden="true">{`<${numberFormats.seconds.format(1)}`}</span>
-          <span className="sr-only">{t.scanner.list.underOneSecond}</span>
-        </>
-      );
-    }
-    return numberFormats.seconds.format(seconds);
-  };
 
   function toggleTest(testId: string) {
     setSelectedTests((previous) =>
@@ -376,34 +152,11 @@ export default function DashboardScannerPage() {
     }
   }
 
-  /** Back from a scan's page: focus returns to its row, or to the heading if it is not on this page. */
-  function returnFocus(scanId: string) {
-    (document.getElementById(detailsButtonId(scanId)) ?? listHeadingRef.current)?.focus();
-  }
-
-  function openReport(row: ScanRow) {
-    setReportScan({ id: row.id, url: row.url, favicon: row.favicon });
-  }
-
-  const hasResults = !isLoadingScans && !scanListError && filteredScans.length > 0;
   const noTestsSelected = !testsLoading && !testsError && testsToRun.length === 0;
-
-  let listMessage = "";
-  if (isLoadingScans) {
-    listMessage = t.scanner.list.loading;
-  } else if (!scanListError && scanRows.length === 0) {
-    listMessage = t.scanner.list.empty;
-  } else if (!scanListError && filteredScans.length === 0) {
-    listMessage = t.scanner.list.noMatches;
-  }
 
   return (
     <DashboardShell area="dashboard" activePage="scanner">
       <div className={PAGE_PADDING}>
-        <Suspense fallback={null}>
-          <AddressRequests ready={!isLoadingScans} onReturn={returnFocus} />
-        </Suspense>
-
         <div className="page-in">
             <PageHeader
               title={t.scanner.title}
@@ -646,229 +399,15 @@ export default function DashboardScannerPage() {
             )}
 
             {!showNewScan && (
-              <div ref={listPanelRef} className={PANEL}>
-                <div className={TOOLBAR}>
-                  <label htmlFor={searchId} className="sr-only">
-                    {t.scanner.list.searchLabel}
-                  </label>
-                  <div className="relative w-full sm:w-72">
-                    <i
-                      className="ri-search-line pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400"
-                      aria-hidden="true"
-                    ></i>
-                    <input
-                      id={searchId}
-                      type="search"
-                      value={searchQuery}
-                      onChange={(event) => {
-                        setSearchQuery(event.target.value);
-                        setCurrentPage(1);
-                      }}
-                      placeholder={t.scanner.list.searchPlaceholder}
-                      className={`${CONTROL} w-full pl-9 pr-3 placeholder:text-zinc-500 dark:placeholder:text-zinc-500`}
-                    />
-                  </div>
-                  <Dropdown
-                    label={t.scanner.list.filterLabel}
-                    value={statusFilter}
-                    options={STATUS_FILTERS.map((status) => ({
-                      value: status,
-                      label: status === "all" ? t.scanner.list.allStatuses : t.scanner.list.filters[status],
-                    }))}
-                    onChange={(next) => {
-                      setStatusFilter(next);
-                      setCurrentPage(1);
-                    }}
-                  />
-                  <Dropdown
-                    label={t.scanner.list.riskFilterLabel}
-                    value={riskFilter}
-                    options={RISK_FILTERS.map((band) => ({
-                      value: band,
-                      label: band === "all" ? t.scanner.list.allRisks : t.scan.riskBands[band],
-                    }))}
-                    onChange={(next) => {
-                      setRiskFilter(next);
-                      setCurrentPage(1);
-                    }}
-                  />
-                  <p role="status" className={`${DATA} ml-auto text-xs text-zinc-600 dark:text-zinc-400`}>
-                    {hasResults ? t.table.records(filteredScans.length, format.number(filteredScans.length)) : ""}
-                  </p>
-                </div>
-
-                {scanListError ? (
-                  <LoadFailure
-                    error={
-                      scanListError === "network"
-                        ? { kind: "network" }
-                        : { kind: "failed", message: t.common.genericError }
-                    }
-                    title={t.scanner.list.loadError}
-                    onRetry={() => setListRequest((request) => request + 1)}
-                  />
-                ) : isLoadingScans ? (
-                  <TableLoading columns={6} />
-                ) : !hasResults ? (
-                  <TableMessage>
-                    <p>{listMessage}</p>
-                    {scanRows.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setStatusFilter("all");
-                          setRiskFilter("all");
-                          setCurrentPage(1);
-                        }}
-                        className="mt-2 cursor-pointer font-medium text-cyan-700 hover:underline dark:text-cyan-400"
-                      >
-                        {t.scanner.list.clearFilters}
-                      </button>
-                    ) : null}
-                  </TableMessage>
-                ) : (
-                  // Six columns do not fit a phone: the table scrolls sideways
-                  // instead of squeezing, and is focusable so that works from the keyboard.
-                  <div role="region" aria-label={t.scanner.list.caption} tabIndex={0} className={SCROLL_REGION}>
-                    <table className={`${TABLE} min-w-[48rem]`}>
-                      <caption className="sr-only">{t.scanner.list.caption}</caption>
-                      <thead className={THEAD}>
-                        <tr>
-                          <th scope="col" className={TH}>
-                            {t.scan.target}
-                          </th>
-                          <th scope="col" className={`${TH} w-32`}>
-                            {t.scanner.list.columns.status}
-                          </th>
-                          <th scope="col" className={`${TH} w-36`}>
-                            {t.scan.riskScore}
-                          </th>
-                          <th scope="col" className={`${TH} w-40`}>
-                            {t.scanner.list.columns.date}
-                          </th>
-                          <th scope="col" className={`${TH} w-24`}>
-                            {t.scanner.list.columns.duration}
-                          </th>
-                          <th scope="col" className={`${TH} w-32 text-right`}>
-                            <span className="sr-only">{t.common.actions}</span>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedScans.map((row) => (
-                          <tr key={row.id} className={ROW}>
-                            <td className={`${TD} w-full max-w-0`}>
-                              <SiteAddress url={row.url} favicon={row.favicon}>
-                                {/* Cut short on screen; the full address stays in the text and the tooltip. */}
-                                <Link
-                                  href={chartsHref(row.url, row.createdAt)}
-                                  title={t.scan.siteCharts(row.url)}
-                                  className={ADDRESS_LINK}
-                                >
-                                  {row.url}
-                                </Link>
-                              </SiteAddress>
-                            </td>
-                            <td className={TD}>
-                              <span className="inline-flex items-baseline gap-1.5">
-                                {row.stale ? (
-                                  <span className="font-medium text-amber-700 dark:text-amber-400">
-                                    {t.scan.live.noSignal}
-                                  </span>
-                                ) : (
-                                  <StatusLabel status={row.status} />
-                                )}
-                                {row.progress?.total && !row.stale ? (
-                                  <span className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
-                                    {format.number(row.progress.done)}/{format.number(row.progress.total)}
-                                  </span>
-                                ) : null}
-                              </span>
-                            </td>
-                            <td className={TD}>
-                              {row.risk === null ? <span className={DATA}>—</span> : <RiskLabel score={row.risk} />}
-                            </td>
-                            <td className={TD}>
-                              <Stamp value={row.createdAt} />
-                            </td>
-                            <td className={`${TD} ${DATA} text-zinc-600 dark:text-zinc-400`}>
-                              {formatDuration(row.durationSeconds)}
-                            </td>
-                            <td className={`${TD} text-right`}>
-                              <Link
-                                id={detailsButtonId(row.id)}
-                                href={`/dashboard/scanner/${encodeURIComponent(row.id)}`}
-                                aria-label={t.scanner.list.viewDetails(row.url)}
-                                title={t.scanner.list.viewDetails(row.url)}
-                                className={`${ICON_BUTTON} h-8 w-8`}
-                              >
-                                <i className="ri-eye-line" aria-hidden="true"></i>
-                              </Link>
-                              <button
-                                type="button"
-                                onClick={() => openReport(row)}
-                                aria-haspopup="dialog"
-                                aria-label={t.scanner.list.downloadReport(row.url)}
-                                title={t.scanner.list.downloadReport(row.url)}
-                                // The backend reports on finished scans only, failed ones included.
-                                disabled={row.progress !== null}
-                                className={`${ICON_BUTTON} h-8 w-8 disabled:cursor-not-allowed disabled:opacity-40`}
-                              >
-                                <i className="ri-download-line" aria-hidden="true"></i>
-                              </button>
-                              {/* Deleting scans is not built yet: the button stays, marked as coming soon. */}
-                              <button
-                                type="button"
-                                disabled
-                                aria-label={t.scanner.list.deleteComingSoon(row.url)}
-                                title={t.scanner.list.deleteComingSoon(row.url)}
-                                className={`${ICON_BUTTON} h-8 w-8 cursor-not-allowed opacity-40`}
-                              >
-                                <i className="ri-delete-bin-line" aria-hidden="true"></i>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {hasResults ? (
-                  <TableFooter
-                    total={filteredScans.length}
-                    offset={pageStart}
-                    size={pageSize}
-                    choice={sizeChoice}
-                    fit={fit}
-                    sizes={PAGE_SIZES}
-                    onPageChange={setCurrentPage}
-                    onSizeChange={(next) => {
-                      setSizeChoice(next);
-                      setCurrentPage(1);
-                    }}
-                  />
-                ) : null}
-              </div>
+              <Suspense fallback={null}>
+                <ScanList headingRef={listHeadingRef} />
+              </Suspense>
             )}
         </div>
       </div>
 
       {startError ? <ScanErrorModal isOpen onClose={() => setStartError(null)} error={startError} /> : null}
 
-      {reportScan && (
-        <ReportDialog
-          key={reportScan.id}
-          open
-          onClose={() => setReportScan(null)}
-          scanId={reportScan.id}
-          targetUrl={reportScan.url}
-          favicon={reportScan.favicon}
-          mode="premium"
-          variant="page"
-        />
-      )}
     </DashboardShell>
   );
 }
