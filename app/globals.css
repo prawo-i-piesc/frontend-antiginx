@@ -8,6 +8,35 @@
   /* Identifiers in the admin tables: the system's own monospace, the way
      GitHub shows a commit hash, rather than a display face. */
   --font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  /* Severity as text-severity-* and friends; the values switch with the theme below. */
+  --color-severity-critical: var(--severity-critical);
+  --color-severity-high: var(--severity-high);
+  --color-severity-medium: var(--severity-medium);
+  --color-severity-low: var(--severity-low);
+  --color-severity-info: var(--severity-info);
+}
+
+/*
+ * The colour of each severity, one set for the whole app: the scanner's
+ * labels, the risk bands and the charts. Each weight has its own hue, from
+ * rose for critical down to yellow for low, with sky for information, so the
+ * hue alone says how bad it is. The step is the one that keeps text readable
+ * on the theme's surface: 700 on white, 400 (300 for yellow) on the dark one.
+ */
+:root {
+  --severity-critical: var(--color-rose-700);
+  --severity-high: var(--color-orange-700);
+  --severity-medium: var(--color-amber-700);
+  --severity-low: var(--color-yellow-700);
+  --severity-info: var(--color-sky-700);
+}
+
+.dark {
+  --severity-critical: var(--color-rose-400);
+  --severity-high: var(--color-orange-400);
+  --severity-medium: var(--color-amber-400);
+  --severity-low: var(--color-yellow-300);
+  --severity-info: var(--color-sky-400);
 }
 
 /* @ts-ignore */
@@ -54,9 +83,6 @@ body {
  * own steps, checked against its card with the dataviz palette validator
  * rather than flipped from the other theme:
  *   - accent: the one hue of a single-series chart;
- *   - severity: one rose ramp, ordered INFO to CRITICAL. On white the worst
- *     is the darkest, on the dark card the lightest: the further a step is
- *     from the surface, the more it matters;
  *   - grid, axis, ring: recessive structure, and the gap a marker keeps from
  *     the line it sits on.
  */
@@ -64,11 +90,6 @@ body {
   --viz-accent: #0891b2;
   /* The second series beside the accent; checked with it for colour-blind separation. */
   --viz-series-2: #c2410c;
-  --viz-severity-info: #fb7185;
-  --viz-severity-low: #f43f5e;
-  --viz-severity-medium: #be123c;
-  --viz-severity-high: #881337;
-  --viz-severity-critical: #4c0519;
   --viz-grid: #e4e4e7;
   --viz-axis: #52525b;
   --viz-track: #f4f4f5;
@@ -78,11 +99,6 @@ body {
 .dark {
   --viz-accent: #0ea5c6;
   --viz-series-2: #ea580c;
-  --viz-severity-info: #9f1239;
-  --viz-severity-low: #e11d48;
-  --viz-severity-medium: #fb7185;
-  --viz-severity-high: #fda4af;
-  --viz-severity-critical: #fecdd3;
   --viz-grid: #27272a;
   --viz-axis: #a1a1aa;
   --viz-track: #27272a;

@@ -14,13 +14,13 @@ export const VIZ = {
   accent: "var(--viz-accent)",
   /** The second series of a two-series chart, after the accent. */
   series2: "var(--viz-series-2)",
-  /** One ordered ramp: the further from the card, the more severe. */
+  /** The app's severity colours (globals.css), so a bar is the colour of its label in the scanner. */
   severity: {
-    CRITICAL: "var(--viz-severity-critical)",
-    HIGH: "var(--viz-severity-high)",
-    MEDIUM: "var(--viz-severity-medium)",
-    LOW: "var(--viz-severity-low)",
-    INFO: "var(--viz-severity-info)",
+    CRITICAL: "var(--severity-critical)",
+    HIGH: "var(--severity-high)",
+    MEDIUM: "var(--severity-medium)",
+    LOW: "var(--severity-low)",
+    INFO: "var(--severity-info)",
   } satisfies Record<SeverityLevel, string>,
   /** Solid hairlines behind the data; never dashed. */
   grid: "var(--viz-grid)",

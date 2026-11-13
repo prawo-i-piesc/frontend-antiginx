@@ -9,12 +9,13 @@ import type { RowState } from "@/app/lib/scanRows";
  * with an icon or a number beside them, so colour never carries it alone.
  */
 
+/** Each weight in its colour from globals.css, the same the charts draw it in. */
 export const SEVERITY_TONES: Record<string, string> = {
-  CRITICAL: "text-rose-700 dark:text-rose-400",
-  HIGH: "text-orange-700 dark:text-orange-400",
-  MEDIUM: "text-amber-700 dark:text-amber-400",
-  LOW: "text-yellow-700 dark:text-yellow-300",
-  INFO: "text-sky-700 dark:text-sky-400",
+  CRITICAL: "text-severity-critical",
+  HIGH: "text-severity-high",
+  MEDIUM: "text-severity-medium",
+  LOW: "text-severity-low",
+  INFO: "text-severity-info",
 };
 
 const RISK_TONES: Record<RiskBand, string> = {
