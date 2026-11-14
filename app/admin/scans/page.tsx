@@ -13,7 +13,6 @@ import {
   ICON_BUTTON,
   IdCell,
   LoadFailure,
-  PANEL,
   RECORD_COUNT,
   ROW,
   SCROLL_REGION,
@@ -72,7 +71,7 @@ function ScansView() {
   const q = params.get("q")?.trim() ?? "";
   const inspectedScan = params.get("scan");
   const inspectedUser = params.get("user");
-  const { page, size, offset, choice, fit, panelRef, ready } = useAddressPaging(params, update, "admin-scans");
+  const { page, size, offset, choice, fit, pager, panel, ready } = useAddressPaging(params, update, "admin-scans");
 
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
   const [doomed, setDoomed] = useState<AdminScan | null>(null);
@@ -108,7 +107,7 @@ function ScansView() {
 
   return (
     <>
-      <div ref={panelRef} className={PANEL}>
+      <div {...panel}>
         <div className={TOOLBAR}>
           <div className="relative w-full sm:w-72">
             <i
@@ -182,7 +181,7 @@ function ScansView() {
         {error ? (
           <LoadFailure error={error} title={t.admin.loadError} onRetry={reload} />
         ) : !data ? (
-          <TableLoading columns={7} />
+          <TableLoading columns={7} rows={size} pager={pager} />
         ) : scans.length === 0 ? (
           <TableMessage>
             {filtered ? (

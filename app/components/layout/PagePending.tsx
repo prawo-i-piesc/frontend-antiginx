@@ -41,10 +41,19 @@ export default function PagePending({ layout = "table" }: { layout?: PendingLayo
           <Bone className="h-6 w-24" />
         </div>
 
-        <div className="@container flex-1 overflow-hidden bg-zinc-100 p-4 sm:p-6 lg:pt-8 dark:bg-zinc-950">
-          <div className="mb-6 space-y-2">
-            <Bone className="h-7 w-48" />
-            <Bone className="h-4 w-72 max-w-full" />
+        <div
+          className={`@container flex-1 overflow-hidden bg-zinc-100 p-4 sm:p-6 lg:pt-8 dark:bg-zinc-950 ${
+            layout === "table" ? "flex flex-col" : ""
+          }`}
+        >
+          {/* As tall as PageHeader: a line of text-2xl, then one of text-sm. */}
+          <div className="mb-6">
+            <div className="flex h-8 items-center">
+              <Bone className="h-7 w-48" />
+            </div>
+            <div className="mt-1 flex h-5 items-center">
+              <Bone className="h-4 w-72 max-w-full" />
+            </div>
           </div>
           <Content layout={layout} />
         </div>
@@ -95,24 +104,28 @@ function Content({ layout }: { layout: PendingLayout }) {
     );
   }
 
+  // Down to the foot of the page, as a table that fits the window is
+  // (useFitRows): rows for the tallest screen, cut off where the panel ends.
   return (
-    <div className={`${SURFACE} overflow-hidden`}>
+    <div className={`${SURFACE} flex min-h-0 flex-1 flex-col overflow-hidden`}>
       <div className="flex items-center gap-3 border-b border-zinc-200 px-3 py-3 sm:px-4 dark:border-zinc-800">
         <Bone className="h-9 w-full max-w-72 rounded-lg" />
         <Bone className="hidden h-9 w-40 rounded-lg sm:block" />
       </div>
-      {ROW_WIDTHS.map((width) => (
-        <div
-          key={width}
-          className="flex h-11 items-center gap-6 border-b border-zinc-100 px-3 last:border-0 dark:border-zinc-800/60"
-        >
-          <span className="min-w-0 flex-1">
-            <Bone className={`h-3 max-w-full ${width}`} />
-          </span>
-          <Bone className="hidden h-3 w-16 sm:block" />
-          <Bone className="hidden h-3 w-24 sm:block" />
-        </div>
-      ))}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {Array.from({ length: 40 }, (_, row) => (
+          <div
+            key={row}
+            className="flex h-11 items-center gap-6 border-b border-zinc-100 px-3 dark:border-zinc-800/60"
+          >
+            <span className="min-w-0 flex-1">
+              <Bone className={`h-3 max-w-full ${ROW_WIDTHS[row % ROW_WIDTHS.length]}`} />
+            </span>
+            <Bone className="hidden h-3 w-16 sm:block" />
+            <Bone className="hidden h-3 w-24 sm:block" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

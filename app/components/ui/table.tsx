@@ -64,18 +64,23 @@ export const CONTROL = `h-9 text-sm ${CONTROL_SKIN}`;
 /**
  * Page and page size of a table that keeps them in the address. Without
  * `size` the table fits the window (useFitRows): `key` names the table, and
- * the returned `panelRef` goes on its panel. Anything unparseable falls back
- * to the first page.
+ * the returned `panel` props go on its panel, which holds the toolbar, the
+ * rows and the pager. Anything unparseable falls back to the first page.
  *
  * `ready` stays false until a fitted size has been measured. Load nothing
  * before it: the size, and with it the offset, are only stand-ins until then.
+ * While the page loads, pass `size` and `pager` to TableLoading.
+ *
+ * A fitted panel is held at the height of a full page, with the pager at its
+ * foot, so it keeps its size whatever comes in: placeholders, a short page,
+ * or no rows at all.
  */
 export function useAddressPaging(
   params: URLSearchParams,
   update: (changes: Record<string, string | number | null>) => void,
   key: string,
 ) {
-  const { fit, panelRef } = useFitRows(key);
+  const { fit, pager, panel: fullPanel, panelRef } = useFitRows(key);
   const chosen = PAGE_SIZES.find((option) => String(option) === params.get("size")) ?? null;
   const ready = chosen !== null || fit !== null;
   const size = chosen ?? fit ?? FIT_FALLBACK;
@@ -87,7 +92,12 @@ export function useAddressPaging(
   );
 
   const choice: SizeChoice = chosen ?? "fit";
-  return { page, size, offset: (page - 1) * size, choice, fit, panelRef, ready };
+  const panel = {
+    ref: panelRef,
+    className: `${PANEL} flex flex-col`,
+    style: chosen === null && fullPanel !== null ? { minHeight: fullPanel } : undefined,
+  };
+  return { page, size, offset: (page - 1) * size, choice, fit, pager, panel, ready };
 }
 
 /**
@@ -242,7 +252,8 @@ export function StatusLabel({ status }: { status: ScanStatus }) {
 }
 
 export function TableMessage({ children }: { children: React.ReactNode }) {
-  return <div className="px-4 py-14 text-center text-sm text-zinc-600 dark:text-zinc-400">{children}</div>;
+  // Centred in a panel held taller than what it shows (useAddressPaging).
+  return <div className="my-auto px-4 py-14 text-center text-sm text-zinc-600 dark:text-zinc-400">{children}</div>;
 }
 
 /**
@@ -250,32 +261,49 @@ export function TableMessage({ children }: { children: React.ReactNode }) {
  * as tall as the real ones, so nothing moves when the data arrives. A table
  * that fits the window (useFitRows) is measured from them before its first
  * page is loaded, so they must stay as tall as TH and TD.
+ *
+ * A paged table passes its page size as `rows` and the room its pager will
+ * take as `pager` (useAddressPaging), so while it loads the panel is already
+ * as tall as the page it is loading.
  */
-export function TableLoading({ rows = 6, columns = 5 }: { rows?: number; columns?: number }) {
+export function TableLoading({
+  rows = 6,
+  columns = 5,
+  pager = null,
+}: {
+  rows?: number;
+  columns?: number;
+  pager?: number | null;
+}) {
   const rest = Array.from({ length: Math.max(columns - 1, 0) }, (_, index) => index);
   return (
-    <SkeletonRegion>
-      <div className={`${THEAD} flex h-9 items-center gap-6 px-3`}>
-        <Bone className="h-2.5 w-20" />
-        {rest.map((column) => (
-          <Bone key={column} className="hidden h-2.5 w-14 sm:block" />
-        ))}
-      </div>
-      {Array.from({ length: rows }, (_, row) => (
-        <div
-          key={row}
-          data-placeholder-row
-          className="flex h-11 items-center gap-6 border-b border-zinc-100 px-3 last:border-0 dark:border-zinc-800/60"
-        >
-          <span className="min-w-0 flex-1">
-            <Bone className={`h-3 max-w-full ${ROW_WIDTHS[row % ROW_WIDTHS.length]}`} />
-          </span>
+    <>
+      <SkeletonRegion>
+        <div className={`${THEAD} flex h-9 items-center gap-6 px-3`}>
+          <Bone className="h-2.5 w-20" />
           {rest.map((column) => (
-            <Bone key={column} className="hidden h-3 w-16 sm:block" />
+            <Bone key={column} className="hidden h-2.5 w-14 sm:block" />
           ))}
         </div>
-      ))}
-    </SkeletonRegion>
+        {Array.from({ length: rows }, (_, row) => (
+          <div
+            key={row}
+            data-placeholder-row
+            className="flex h-11 items-center gap-6 border-b border-zinc-100 px-3 last:border-0 dark:border-zinc-800/60"
+          >
+            <span className="min-w-0 flex-1">
+              <Bone className={`h-3 max-w-full ${ROW_WIDTHS[row % ROW_WIDTHS.length]}`} />
+            </span>
+            {rest.map((column) => (
+              <Bone key={column} className="hidden h-3 w-16 sm:block" />
+            ))}
+          </div>
+        ))}
+      </SkeletonRegion>
+      {pager ? (
+        <div style={{ height: pager }} className="mt-auto border-t border-zinc-200 dark:border-zinc-800" />
+      ) : null}
+    </>
   );
 }
 
@@ -286,7 +314,7 @@ export function LoadFailure({ error, title, onRetry }: { error: LoadError; title
     error.kind === "network" ? t.common.networkError : error.kind === "failed" ? error.message : t.errors.status.forbidden;
 
   return (
-    <div className="px-4 py-12 text-center">
+    <div className="my-auto px-4 py-12 text-center">
       <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
         {title} {reason}
       </p>
@@ -335,12 +363,23 @@ export function TableFooter({
     onPageChange(next);
   }
 
+  // Laid out by the room the page has, never by what the pager holds: on one
+  // line on a wide page, with the page buttons under the rest on a narrower
+  // one, each part on a line of its own on a phone. The page buttons are there
+  // for a single page too. So a list of one page and a list of many have a
+  // pager of the same height, switching between them moves nothing, and
+  // useFitRows can count on its height before the data comes.
   return (
-    <div ref={ref} data-pager className="flex flex-col gap-3 border-t border-zinc-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 dark:border-zinc-800">
-      <p className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
-        {t.common.pagination.range(Math.min(offset + 1, total), Math.min(offset + size, total), total)}
-      </p>
-      <div className="flex flex-wrap items-center gap-3">
+    <div
+      ref={ref}
+      data-pager
+      // At the foot of a panel held at a full page's height (useAddressPaging).
+      className="mt-auto flex flex-col gap-3 border-t border-zinc-200 px-3 py-3 sm:px-4 @5xl:flex-row @5xl:items-center dark:border-zinc-800"
+    >
+      <div className="flex flex-col gap-3 @xl:flex-row @xl:items-center @xl:justify-between @5xl:flex-1">
+        <p className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
+          {t.common.pagination.range(Math.min(offset + 1, total), Math.min(offset + size, total), total)}
+        </p>
         <span className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
           <span id={sizeLabelId}>{t.table.pageSize}</span>
           <Dropdown
@@ -354,8 +393,13 @@ export function TableFooter({
             onChange={(next) => onSizeChange(next === "fit" ? "fit" : Number(next))}
           />
         </span>
-        {totalPages > 1 ? <Pagination page={page} totalPages={totalPages} onPageChange={changePage} /> : null}
       </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={changePage}
+        className="@xl:self-end @5xl:self-auto"
+      />
     </div>
   );
 }

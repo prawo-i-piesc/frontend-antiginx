@@ -14,7 +14,6 @@ import {
   DATA,
   ICON_BUTTON,
   LoadFailure,
-  PANEL,
   RECORD_COUNT,
   ROW,
   SCROLL_REGION,
@@ -119,7 +118,7 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
   const q = params.get("q")?.trim() ?? "";
   // A value the API would reject is ignored rather than sent on to fail validation.
   const status = SCAN_LIST_STATUSES.find((option) => option === params.get("status"));
-  const { page, size, offset, choice, fit, panelRef, ready: sized } = useAddressPaging(params, update, "scanner");
+  const { page, size, offset, choice, fit, pager, panel, ready: sized } = useAddressPaging(params, update, "scanner");
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
 
   const key = `scans:${q}:${status ?? ""}:${size}:${offset}`;
@@ -194,7 +193,7 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
   const failed = error !== null && shownKey !== key ? error : null;
 
   return (
-    <div ref={panelRef} className={PANEL}>
+    <div {...panel}>
       <div className={TOOLBAR}>
         <div className="relative w-full sm:w-72">
           <i
@@ -228,7 +227,7 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
       {failed ? (
         <LoadFailure error={failed} title={copy.loadError} onRetry={reload} />
       ) : !data ? (
-        <TableLoading columns={6} />
+        <TableLoading columns={6} rows={size} pager={pager} />
       ) : rows.length === 0 ? (
         <TableMessage>
           <p>{filtered ? copy.noMatches : copy.empty}</p>

@@ -8,5 +8,10 @@ export type PageSize = (typeof PAGE_SIZES)[number];
  */
 export type SizeChoice = "fit" | number;
 
-/** Stands in for a fitted page size until the window has been measured. Nothing is loaded with it: see useAddressPaging's `ready`. */
-export const FIT_FALLBACK = 14;
+/**
+ * Stands in for a fitted page size until the window has been measured, which
+ * happens before the first paint. Nothing is loaded with it (useAddressPaging's
+ * `ready`), and it is as few rows as a fitted page has, so the placeholders
+ * standing in for the rows never make the page scroll before that.
+ */
+export const FIT_FALLBACK = 5;
