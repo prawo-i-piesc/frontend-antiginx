@@ -5,12 +5,11 @@ import UserInspector from "@/app/components/admin/UserInspector";
 import { Empty } from "@/app/components/admin/Sheet";
 import {
   CONTROL,
-  DATA,
   Flag,
   ICON_BUTTON,
   IdCell,
   LoadFailure,
-  PANEL,
+  RECORD_COUNT,
   ROW,
   SCROLL_REGION,
   Stamp,
@@ -51,11 +50,11 @@ function UsersView() {
 
   const q = params.get("q")?.trim() ?? "";
   const userParam = params.get("user");
-  const { page, size, offset, choice, fit, panelRef } = useAddressPaging(params, update, "admin-users");
+  const { page, size, offset, choice, fit, pager, panel, ready } = useAddressPaging(params, update, "admin-users");
 
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
 
-  const { data, loading, error, reload } = useApiQuery(`users:${q}:${size}:${offset}`, (signal) =>
+  const { data, loading, error, reload } = useApiQuery(ready ? `users:${q}:${size}:${offset}` : null, (signal) =>
     listUsers({ q: q || undefined, limit: size, offset }, signal),
   );
 
@@ -67,7 +66,7 @@ function UsersView() {
 
   return (
     <>
-      <div ref={panelRef} className={PANEL}>
+      <div {...panel}>
         <div className={TOOLBAR}>
           <div className="relative w-full sm:w-80">
             <i
@@ -84,7 +83,7 @@ function UsersView() {
               className={`${CONTROL} w-full pl-9 pr-3 placeholder:text-zinc-500 dark:placeholder:text-zinc-500`}
             />
           </div>
-          <p role="status" className={`${DATA} ml-auto text-xs text-zinc-600 dark:text-zinc-400`}>
+          <p role="status" className={RECORD_COUNT}>
             {data ? t.table.records(data.total, format.number(data.total)) : null}
           </p>
         </div>
@@ -92,7 +91,7 @@ function UsersView() {
         {error ? (
           <LoadFailure error={error} title={t.admin.loadError} onRetry={reload} />
         ) : !data ? (
-          <TableLoading columns={9} />
+          <TableLoading columns={9} rows={size} pager={pager} />
         ) : users.length === 0 ? (
           <TableMessage>
             {q ? (

@@ -4,74 +4,102 @@ import { useLayoutEffect, useState } from "react";
 
 import { MAIN_CONTENT_ID } from "@/app/components/ui/SkipLink";
 
-/** A table row: TD is h-11. Measured from the table once it has rows. */
-const ROW_HEIGHT = 44;
-/**
- * Everything on a dashboard page that is not a row, as it is laid out from lg
- * up: the page header, the toolbar, the column headings, the pager and the
- * padding under it. Only a first guess; the table's own measure replaces it
- * and is kept for the next visit.
- */
-const RESERVED_GUESS = 303;
 const MIN_ROWS = 5;
 const MAX_ROWS = 100;
-/** Tailwind's lg. Below it a phone's browser bars come and go as the page scrolls. */
-const WIDE = 1024;
+/** Tailwind's lg: below it a phone's browser bars come and go as the page scrolls. */
+const LG = 1024;
 
-type Measure = { reserved: number; row: number };
+/**
+ * How TableFooter lays itself out in the page's main content, by the
+ * container sizes it switches at (@xl and @5xl, in rem), and how tall it is
+ * then: each part on a line of its own, the page buttons under the rest, or
+ * all on one line. It comes only with the data, so before the first request
+ * on this device it is taken from here; once it has been on screen its real
+ * height is kept instead.
+ */
+const PAGER_LAYOUTS = [
+  { name: "wide", from: 64, guess: 67 },
+  { name: "medium", from: 36, guess: 111 },
+  { name: "narrow", from: 0, guess: 139 },
+] as const;
 
-const GUESS: Measure = { reserved: RESERVED_GUESS, row: ROW_HEIGHT };
-
-function storageKey(key: string): string {
-  return `fitRows:${key}:${window.innerWidth >= WIDE ? "wide" : "narrow"}`;
+function pagerLayout(main: HTMLElement): (typeof PAGER_LAYOUTS)[number] {
+  const style = getComputedStyle(main);
+  const width = main.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  return PAGER_LAYOUTS.find((layout) => width >= layout.from * rem) ?? PAGER_LAYOUTS[PAGER_LAYOUTS.length - 1];
 }
 
-function readMeasure(key: string): Measure | null {
+function readPager(key: string, main: HTMLElement): number {
+  const layout = pagerLayout(main);
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey(key)) ?? "null") as Partial<Measure> | null;
-    return saved && typeof saved.reserved === "number" && typeof saved.row === "number" && saved.row > 0
-      ? { reserved: saved.reserved, row: saved.row }
-      : null;
+    const saved = Number(localStorage.getItem(`fitPager:${key}:${layout.name}`));
+    if (Number.isFinite(saved) && saved > 0) return saved;
   } catch {
-    return null;
+    // Without storage every visit starts from the guess.
   }
+  return layout.guess;
 }
 
-function saveMeasure(key: string, measure: Measure): void {
+function savePager(key: string, main: HTMLElement, height: number): void {
   try {
-    localStorage.setItem(storageKey(key), JSON.stringify(measure));
+    localStorage.setItem(`fitPager:${key}:${pagerLayout(main).name}`, String(height));
   } catch {
-    // Without storage the next visit starts from the guess and corrects itself.
+    // The next visit starts from the guess and corrects itself.
   }
-}
-
-function rowsFor(height: number, measure: Measure): number {
-  return Math.min(MAX_ROWS, Math.max(MIN_ROWS, Math.floor((height - measure.reserved) / measure.row)));
-}
-
-/** The first answer, before anything is laid out: the last measure of this table, or the guess. */
-function initialFit(key: string): number | null {
-  if (typeof window === "undefined") return null;
-  const height = document.getElementById(MAIN_CONTENT_ID)?.clientHeight ?? window.innerHeight;
-  return rowsFor(height, readMeasure(key) ?? GUESS);
 }
 
 /**
- * What a panel holding a table takes on the page besides its rows: everything
- * above the first row, and under the last one the pager plus whatever padding
- * closes the page. Null until the table has a row to measure.
+ * The first row in a panel: the table's, or while it loads the first of the
+ * placeholders standing in for the rows, which TableLoading lays out at the
+ * same heights. With it, the scrollbar under a table that scrolls sideways.
  */
-function measure(main: HTMLElement, panel: HTMLElement): Measure | null {
+function firstRow(panel: HTMLElement): { row: HTMLElement; scrollbar: number } | null {
   const table = panel.querySelector("table");
-  const rows = table?.tBodies[0]?.rows;
-  if (!table || !rows || rows.length === 0) return null;
+  const row = table?.tBodies[0]?.rows[0];
+  if (table && row) {
+    const region = table.parentElement?.getBoundingClientRect().bottom ?? 0;
+    return { row, scrollbar: Math.max(0, region - table.getBoundingClientRect().bottom) };
+  }
+  const placeholder = panel.querySelector<HTMLElement>("[data-placeholder-row]");
+  return placeholder ? { row: placeholder, scrollbar: 0 } : null;
+}
 
-  // The top of the page's content, wherever it is scrolled to.
-  const origin = main.getBoundingClientRect().top - main.scrollTop;
-  const box = table.getBoundingClientRect();
-  const firstRow = box.top + (table.tHead?.getBoundingClientRect().height ?? 0) - origin;
+type Fit = {
+  /** How many rows fit. */
+  rows: number;
+  /** The room under the rows held for the pager. */
+  pager: number;
+  /** How tall the panel is with a full page of rows. */
+  panel: number;
+};
 
-  let below = panel.getBoundingClientRect().bottom - box.bottom;
+/**
+ * How many rows fit under what the page shows above them, with the pager
+ * and whatever padding closes the page below them. Null when the panel has
+ * neither rows nor placeholders to measure, e.g. while it shows a message.
+ *
+ * Only what the panel holds besides its rows is measured, never its own
+ * height: that is held at a full page (`panel`), and a short page leaves room
+ * above the pager.
+ */
+function measure(key: string, main: HTMLElement, panel: HTMLElement, height: number): Fit | null {
+  const first = firstRow(panel);
+  if (!first) return null;
+
+  // A table's rows can sit half a pixel lower than the placeholders; that is
+  // no reason to load the page again, so the half pixel is dropped.
+  const box = first.row.getBoundingClientRect();
+  const top = Math.floor(box.top - (main.getBoundingClientRect().top - main.scrollTop));
+  const head = Math.floor(box.top - panel.getBoundingClientRect().top);
+  const row = box.height;
+
+  const shown = panel.querySelector<HTMLElement>("[data-pager]");
+  const pager = shown ? Math.ceil(first.scrollbar + shown.getBoundingClientRect().height) : readPager(key, main);
+  if (shown) savePager(key, main, pager);
+
+  const border = parseFloat(getComputedStyle(panel).borderBottomWidth) || 0;
+  let below = pager + border;
   for (let element: HTMLElement | null = panel; element && element !== main; element = element.parentElement) {
     const style = getComputedStyle(element);
     below += parseFloat(style.marginBottom) || 0;
@@ -79,48 +107,65 @@ function measure(main: HTMLElement, panel: HTMLElement): Measure | null {
   }
   below += parseFloat(getComputedStyle(main).paddingBottom) || 0;
 
-  return { reserved: Math.ceil(firstRow + below), row: rows[0].getBoundingClientRect().height };
+  const rows = Math.min(MAX_ROWS, Math.max(MIN_ROWS, Math.floor((height - top - Math.ceil(below)) / row)));
+  return { rows, pager, panel: Math.ceil(head + rows * row + pager + border) };
 }
 
 /**
  * How many rows of a table fit on screen with the whole panel, pager
  * included, so a page of them needs no scrolling. Put `panelRef` on the panel
- * that holds the toolbar, the table and the pager.
+ * that holds the toolbar, the table and the pager; it scrolls with the page's
+ * main content (MAIN_CONTENT_ID), which every page has for its skip link.
  *
- * The answer comes before the first paint: from this table's last measure, or
- * a guess on the first visit. Once the table has rows the panel is measured
- * and the result kept, so the next visit starts right. It is worked out again
- * when the window or the panel changes size. What the panel takes besides its
- * rows does not depend on how many there are, so a new page size measures the
- * same and settles. On a phone the height is only read again when the width
- * changes, since the browser's bars change it as the page scrolls.
+ * `fit` is null until the panel is laid out, so a table that loads a page of
+ * this size waits for it rather than asking for a guess and then again. That
+ * happens before the first paint: while loading, the panel shows placeholder
+ * rows as tall as the real ones under a header as tall as the real one. The
+ * pager comes with the data, so its height is the one kept from the last time
+ * this table was shown at this width, or a guess the first time. `pager` is
+ * that height, for TableLoading to hold the room.
+ *
+ * `panel` is how tall the panel is with a full page. Held as its minimum
+ * height, the panel keeps its size whatever comes in: placeholders, a short
+ * last page, a filter that leaves a few rows, or none.
+ *
+ * The answer is worked out again when the window or the panel changes size.
+ * On a phone the height is only read again when the width changes, since the
+ * browser's bars change it as the page scrolls.
  */
-export default function useFitRows(key: string): { fit: number | null; panelRef: (element: HTMLElement | null) => void } {
-  const [fit, setFit] = useState<number | null>(() => initialFit(key));
+export default function useFitRows(key: string): {
+  fit: number | null;
+  pager: number | null;
+  panel: number | null;
+  panelRef: (element: HTMLElement | null) => void;
+} {
+  const [fit, setFit] = useState<Fit | null>(null);
   const [panel, panelRef] = useState<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     const main = document.getElementById(MAIN_CONTENT_ID);
-    if (!main) return;
+    if (!panel || !main) return;
     let width = main.clientWidth;
     let height = main.clientHeight;
 
     const update = () => {
-      if (main.clientWidth !== width || window.innerWidth >= WIDE) {
+      if (main.clientWidth !== width || window.innerWidth >= LG) {
         width = main.clientWidth;
         height = main.clientHeight;
       }
-      const measured = panel ? measure(main, panel) : null;
-      if (measured) saveMeasure(key, measured);
-      setFit(rowsFor(height, measured ?? readMeasure(key) ?? GUESS));
+      const next = measure(key, main, panel, height);
+      if (!next) return;
+      setFit((current) =>
+        current?.rows === next.rows && current.pager === next.pager && current.panel === next.panel ? current : next,
+      );
     };
 
     update();
     const observer = new ResizeObserver(update);
     observer.observe(main);
-    if (panel) observer.observe(panel);
+    observer.observe(panel);
     return () => observer.disconnect();
   }, [key, panel]);
 
-  return { fit, panelRef };
+  return { fit: fit?.rows ?? null, pager: fit?.pager ?? null, panel: fit?.panel ?? null, panelRef };
 }
