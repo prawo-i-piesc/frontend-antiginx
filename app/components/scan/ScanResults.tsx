@@ -102,19 +102,26 @@ function isPageHost(target: string, pageHost: string | null): boolean {
   }
 }
 
-/** Over the results of a scan of AntiGinx itself: the mascot points back at whoever ran it. */
+/**
+ * Over the results of a scan of AntiGinx itself: the mascot wags a raised
+ * finger at whoever ran it. The motion is inside the image, which page styles
+ * cannot stop, so anyone who asked for less motion gets a still copy instead.
+ */
 function SelfScan() {
   const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 border-b border-zinc-200 px-3 py-2 sm:px-4 dark:border-zinc-800">
-      {/* The wings are white: on a light page an outline keeps them in sight. */}
-      <Image
-        src="/logo404.svg"
-        alt=""
-        width={525}
-        height={254}
-        className="h-7 w-auto shrink-0 drop-shadow-[0_0_1px_rgb(0_0_0/0.6)] dark:drop-shadow-none"
-      />
+      <picture className="shrink-0">
+        <source srcSet="/logo-nope-still.svg" media="(prefers-reduced-motion: reduce)" />
+        {/* The wings are white: on a light page an outline keeps them in sight. */}
+        <Image
+          src="/logo-nope.svg"
+          alt=""
+          width={525}
+          height={254}
+          className="block h-7 w-auto drop-shadow-[0_0_1px_rgb(0_0_0/0.6)] dark:drop-shadow-none"
+        />
+      </picture>
       <p className="text-sm text-zinc-700 dark:text-zinc-300">{t.scan.live.selfScan}</p>
     </div>
   );
