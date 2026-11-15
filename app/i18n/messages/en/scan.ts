@@ -45,6 +45,8 @@ const scan = {
   live: {
     /** The scan never reported its end, or has not yet. */
     noSignal: "No end signal",
+    /** Over the results of a scan of AntiGinx itself, beside the mascot pointing back. */
+    selfScan: "Scanning us? Bold move.",
     summary: {
       status: "Status",
       tests: "Tests",

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Google_Sans } from "next/font/google";
+import { headers } from "next/headers";
+// The ri-* icon classes, bundled and served with the app's own files: the
+// policy in proxy.ts loads nothing from other origins.
+import "remixicon/fonts/remixicon.css";
 import "./globals.css";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { getLocale, getMessages } from "./i18n/server";
@@ -55,15 +59,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
+  // The script below runs inline, so it carries this request's nonce (proxy.ts).
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>
       <head>
         {/* Applies a saved light theme before the first paint, instead of
             flashing the dark one until ThemeProvider's effect runs. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
-        {/* Remix Icon stylesheet (CDN) - enables classes like ri-*/}
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       {/*

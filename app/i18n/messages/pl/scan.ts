@@ -36,6 +36,7 @@ const scan: Messages["scan"] = {
 
   live: {
     noSignal: "Bez sygnału końca",
+    selfScan: "Skanujesz nas? Odważnie.",
     summary: {
       status: "Status",
       tests: "Testy",
