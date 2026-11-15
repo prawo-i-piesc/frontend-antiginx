@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { RiskLabel, SeverityLabel, SEVERITY_TONES, Verdict } from "@/app/components/scan/labels";
 import Dropdown from "@/app/components/ui/Dropdown";
@@ -75,6 +76,53 @@ function SummaryCell({ label, children, wide }: { label: string; children: React
     <div className={`min-w-0 ${wide ? "col-span-2" : ""}`}>
       <dt className={CELL_LABEL}>{label}</dt>
       <dd className="mt-0.5 flex h-5 items-center gap-x-2.5 text-sm text-zinc-900 dark:text-zinc-100">{children}</dd>
+    </div>
+  );
+}
+
+const noSubscription = () => () => {};
+
+/** The host this page is served from; null while rendering on the server. */
+function usePageHost(): string | null {
+  return useSyncExternalStore(
+    noSubscription,
+    () => window.location.hostname,
+    () => null,
+  );
+}
+
+/** Whether a scan's target is the site this page is served from. */
+function isPageHost(target: string, pageHost: string | null): boolean {
+  if (!pageHost) return false;
+  const bare = (host: string) => host.replace(/^www\./, "");
+  try {
+    return bare(new URL(target).hostname) === bare(pageHost);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Over the results of a scan of AntiGinx itself: the mascot wags a raised
+ * finger at whoever ran it. The motion is inside the image, which page styles
+ * cannot stop, so anyone who asked for less motion gets a still copy instead.
+ */
+function SelfScan() {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center gap-3 border-b border-zinc-200 px-3 py-2 sm:px-4 dark:border-zinc-800">
+      <picture className="shrink-0">
+        <source srcSet="/logo-nope-still.svg" media="(prefers-reduced-motion: reduce)" />
+        {/* The wings are white: on a light page an outline keeps them in sight. */}
+        <Image
+          src="/logo-nope.svg"
+          alt=""
+          width={525}
+          height={254}
+          className="block h-7 w-auto drop-shadow-[0_0_1px_rgb(0_0_0/0.6)] dark:drop-shadow-none"
+        />
+      </picture>
+      <p className="text-sm text-zinc-700 dark:text-zinc-300">{t.scan.live.selfScan}</p>
     </div>
   );
 }
@@ -357,6 +405,7 @@ export default function ScanResults({ live, bare = false }: { live: LiveScan; ba
   const finished = scan !== null && isFinishedStatus(scan.status);
   const baseId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const pageHost = usePageHost();
 
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<ResultFilter>("all");
@@ -437,6 +486,8 @@ export default function ScanResults({ live, bare = false }: { live: LiveScan; ba
       <p role="status" className="sr-only">
         {announcement}
       </p>
+
+      {isPageHost(scan.target_url, pageHost) ? <SelfScan /> : null}
 
       <div className="border-b border-zinc-200 dark:border-zinc-800">
         <Summary live={live} scan={scan} rows={rows} />
