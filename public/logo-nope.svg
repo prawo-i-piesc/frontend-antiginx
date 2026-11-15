@@ -190,7 +190,7 @@ SOFTWARE
          that pass the setting into images keep this one still too. */
       @media (prefers-reduced-motion: no-preference) {
         #logo-hand {
-          transform-origin: 377px 240px;
+          transform-origin: 409px 240px;
           animation: logo-nope 2.8s ease-in-out 0.3s infinite;
         }
       }
@@ -227,7 +227,7 @@ SOFTWARE
     <path d="M283.74 179.8A2.8 2.8 0 0 1 286.54 177L299.19 177A3.1 3.1 0 0 1 302.29 180.1L302.29 207.31A2.8 2.8 0 0 1 300.35 209.98L283.74 215.36Z"/>
   </g>
   <g id="logo-hand">
-    <g transform="translate(299.2 93.5) scale(5.2)">
+    <g transform="translate(487.0 93.5) scale(-5.2 5.2)">
 <g filter="url(#filter0_i-nope)">
 <path d="M22.4095 1.90627C20.9426 1.90627 19.7533 3.0955 19.7533 4.56252V15.8125H4.95801V20.0399C4.95801 25.5925 9.45929 30.0938 15.0119 30.0938C19.2551 30.0938 22.8843 27.4651 24.36 23.7475L24.3627 23.75C25.3783 21.3594 25.3783 17.0469 25.2064 15.8906C25.1024 15.1908 25.0726 14.6854 25.0658 14.3942V4.56252C25.0658 3.0955 23.8765 1.90627 22.4095 1.90627Z" fill="#FFC051"/>
 </g>
