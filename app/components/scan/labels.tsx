@@ -26,6 +26,11 @@ const RISK_TONES: Record<RiskBand, string> = {
   critical: SEVERITY_TONES.CRITICAL,
 };
 
+/** The colour of a risk score's band, for an icon or text that stands for the scan. */
+export function riskTone(score: number): string {
+  return RISK_TONES[riskBand(score)];
+}
+
 export function SeverityLabel({ value }: { value: string }) {
   const { t } = useI18n();
   const label = (t.scan.severity as Record<string, string | undefined>)[value] ?? value;

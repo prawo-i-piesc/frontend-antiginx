@@ -14,6 +14,7 @@ import pricing from "./pricing";
 import profile from "./profile";
 import scan from "./scan";
 import scanner from "./scanner";
+import schedules from "./schedules";
 import shell from "./shell";
 import system from "./system";
 import table from "./table";
@@ -40,6 +41,7 @@ const en = {
   widgets,
   adminOverview,
   scanner,
+  schedules,
   charts,
   admin,
   system,

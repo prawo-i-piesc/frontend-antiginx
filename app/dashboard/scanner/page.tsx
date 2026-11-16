@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -9,12 +8,12 @@ import PageHeader, { PAGE_ACTION, PAGE_ACTION_LABEL, PAGE_PADDING } from "@/app/
 import PagePending from "@/app/components/layout/PagePending";
 import ScanErrorModal from "@/app/components/ScanErrorModal";
 import ScanList from "@/app/components/scan/ScanList";
+import TestPicker from "@/app/components/scan/TestPicker";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import { SURFACE } from "@/app/components/ui/surface";
 import { Bone, SkeletonRegion } from "@/app/components/ui/Skeleton";
 import { CONTROL, DATA, TOOLBAR } from "@/app/components/ui/table";
 import useRequireAuth from "@/app/hooks/useRequireAuth";
-import { INTL_LOCALES } from "@/app/i18n/config";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import {
   ApiRequestError,
@@ -46,13 +45,8 @@ function loadErrorOf(error: unknown): LoadError {
   return error instanceof TypeError ? "network" : "other";
 }
 
-/** Key for a category's open/closed state; the backend may send an empty name. */
-function categoryKey(category: TestCategory, index: number): string {
-  return category.category || `other-${index}`;
-}
-
 export default function DashboardScannerPage() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { authenticated, initialized, auth } = useRequireAuth();
   const router = useRouter();
 
@@ -116,10 +110,6 @@ export default function DashboardScannerPage() {
   const allSelected = totalTests > 0 && testsToRun.length === totalTests;
 
   if (!initialized || !authenticated) return <PagePending layout="table" />;
-
-  const categoryName = (name: string) => (name ? (t.scan.categories[name] ?? name) : t.scan.categoryOther);
-  const testName = (test: ScanTestOption) =>
-    t.scan.testsShort[test.id] ?? test.label.charAt(0).toLocaleUpperCase(INTL_LOCALES[locale]) + test.label.slice(1);
 
   function toggleTest(testId: string) {
     setSelectedTests((previous) =>
@@ -307,75 +297,14 @@ export default function DashboardScannerPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        {testCategories.map((category, index) => {
-                          const key = categoryKey(category, index);
-                          const name = categoryName(category.category);
-                          const headingId = `${baseId}-category-${index}`;
-                          const selectable = category.tests.filter((test) => !isLocked(test));
-                          const selectedCount = selectable.filter((test) => selectedTests.includes(test.id)).length;
-
-                          return (
-                            <div key={key} role="group" aria-labelledby={headingId}>
-                              <div className="mb-2 flex items-baseline gap-3">
-                                <p id={headingId} className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                  {name}
-                                </p>
-                                <span className={`${DATA} text-xs text-zinc-600 dark:text-zinc-400`}>
-                                  <span aria-hidden="true">
-                                    {selectedCount}/{selectable.length}
-                                  </span>
-                                  <span className="sr-only">
-                                    {t.scanner.form.selectedCount(selectedCount, selectable.length)}
-                                  </span>
-                                </span>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {category.tests.map((test) => {
-                                  if (isLocked(test)) {
-                                    return (
-                                      <Link
-                                        key={test.id}
-                                        href="/pricing"
-                                        title={t.scanner.form.proTest}
-                                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-zinc-300 px-2.5 text-sm text-zinc-500 transition-colors hover:border-zinc-400 hover:text-zinc-800 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
-                                      >
-                                        <i className="ri-lock-line text-sm leading-none" aria-hidden="true"></i>
-                                        {testName(test)}
-                                        <span className="text-xs font-medium">{t.shell.plans.pro}</span>
-                                        <span className="sr-only">. {t.scanner.form.proTest}</span>
-                                      </Link>
-                                    );
-                                  }
-                                  const on = selectedTests.includes(test.id);
-                                  return (
-                                    <button
-                                      key={test.id}
-                                      type="button"
-                                      onClick={() => toggleTest(test.id)}
-                                      aria-pressed={on}
-                                      disabled={isScanning}
-                                      title={test.id}
-                                      className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                                        on
-                                          ? "border-zinc-300 bg-white text-zinc-900 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600"
-                                          : "border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-400 hover:text-zinc-800 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
-                                      }`}
-                                    >
-                                      {/* On or off in a shape too, not only in colour. */}
-                                      <i
-                                        className={`text-sm leading-none ${on ? "ri-check-line text-cyan-700 dark:text-cyan-400" : "ri-add-line"}`}
-                                        aria-hidden="true"
-                                      ></i>
-                                      {testName(test)}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <TestPicker
+                        idPrefix={baseId}
+                        categories={testCategories}
+                        selected={selectedTests}
+                        onToggle={toggleTest}
+                        isLocked={isLocked}
+                        disabled={isScanning}
+                      />
                     )}
                   </fieldset>
                 </div>

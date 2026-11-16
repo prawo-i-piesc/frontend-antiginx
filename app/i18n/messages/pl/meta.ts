@@ -22,11 +22,13 @@ const meta: Messages["meta"] = {
     welcome: "Witamy",
     dashboard: "Przegląd",
     scanner: "Skaner",
+    schedules: "Harmonogramy",
     charts: "Wykresy",
     profile: "Ustawienia profilu",
     admin: "Panel administratora",
     adminUsers: "Użytkownicy",
     adminScans: "Skany",
+    adminSchedules: "Harmonogramy",
   },
 };
 

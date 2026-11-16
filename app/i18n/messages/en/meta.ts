@@ -21,11 +21,13 @@ const meta = {
     welcome: "Welcome",
     dashboard: "Overview",
     scanner: "Scanner",
+    schedules: "Schedules",
     charts: "Charts",
     profile: "Profile settings",
     admin: "Admin panel",
     adminUsers: "Users",
     adminScans: "Scans",
+    adminSchedules: "Schedules",
   },
 };
 

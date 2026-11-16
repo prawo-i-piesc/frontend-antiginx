@@ -9,11 +9,13 @@ interface NavLinkProps {
   isActive?: boolean;
   /** Icon only, in the collapsed sidebar; the label moves to a tooltip and stays the link's name. */
   collapsed?: boolean;
+  /** Said after the label when the page needs a plan the account does not have; shown as a lock. */
+  locked?: string;
 }
 
-export default function NavLink({ href, icon, label, isActive = false, collapsed = false }: NavLinkProps) {
+export default function NavLink({ href, icon, label, isActive = false, collapsed = false, locked }: NavLinkProps) {
   return (
-    <RailTooltip label={label} enabled={collapsed}>
+    <RailTooltip label={locked ? `${label} · ${locked}` : label} enabled={collapsed}>
       <Link
         href={href}
         aria-current={isActive ? "page" : undefined}
@@ -30,6 +32,12 @@ export default function NavLink({ href, icon, label, isActive = false, collapsed
           aria-hidden="true"
         ></i>
         <span className={collapsed ? "sr-only" : "truncate"}>{label}</span>
+        {locked ? (
+          <>
+            {collapsed ? null : <i className="ri-lock-line ml-auto text-sm leading-none" aria-hidden="true"></i>}
+            <span className="sr-only">. {locked}</span>
+          </>
+        ) : null}
       </Link>
     </RailTooltip>
   );

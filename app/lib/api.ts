@@ -335,6 +335,8 @@ export interface ScanListItem {
   risk: number | null;
   /** Hash of the site's icon (see SiteIcon); null until the backend has fetched it. */
   favicon?: string | null;
+  /** The schedule that started it; null for a scan started by hand. */
+  schedule_id?: string | null;
 }
 
 /** "active" is a scan still on its way: PENDING or RUNNING. */
@@ -350,11 +352,11 @@ export interface ScanListPage {
 
 /** One page of the account's scans, newest first, paged and filtered by the backend. */
 export function getUserScans(
-  params: { q?: string; status?: ScanListStatus; limit: number; offset: number },
+  params: { q?: string; status?: ScanListStatus; schedule?: string; limit: number; offset: number },
   signal?: AbortSignal,
 ): Promise<ScanListPage> {
   return request<ScanListPage>(
-    `/api/users/scans${query({ q: params.q, status: params.status, limit: params.limit, offset: params.offset })}`,
+    `/api/users/scans${query({ q: params.q, status: params.status, schedule: params.schedule, limit: params.limit, offset: params.offset })}`,
     { signal },
   );
 }

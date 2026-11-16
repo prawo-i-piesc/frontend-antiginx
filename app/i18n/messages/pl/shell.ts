@@ -13,6 +13,7 @@ const shell: Messages["shell"] = {
   links: {
     overview: "Przegląd",
     scanner: "Skaner",
+    schedules: "Harmonogramy",
     charts: "Wykresy",
     profile: "Profil",
     users: "Użytkownicy",
@@ -23,6 +24,8 @@ const shell: Messages["shell"] = {
   },
 
   plans: { free: "Free", pro: "Pro" },
+  /** After a menu link whose page needs the Pro plan; a lock on screen. */
+  proOnly: "Plan Pro",
   administrator: "Administrator",
   defaultUserName: "Użytkownik",
   defaultAdminName: "Administrator",

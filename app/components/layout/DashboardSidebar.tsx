@@ -12,15 +12,15 @@ import type { Plan } from "@/app/lib/billingApi";
 import { useTheme } from "@/app/providers/ThemeProvider";
 
 export type DashboardArea = "dashboard" | "admin";
-export type DashboardPage = "overview" | "scanner" | "charts" | "profile";
-export type AdminPage = "overview" | "users" | "scans" | "system" | "profile";
+export type DashboardPage = "overview" | "scanner" | "schedules" | "charts" | "profile";
+export type AdminPage = "overview" | "users" | "scans" | "schedules" | "system" | "profile";
 
 type LinkKey = keyof Messages["shell"]["links"];
 type SectionKey = keyof Messages["shell"]["sections"];
 
 interface NavSection {
   label: SectionKey;
-  links: { href: string; icon: string; label: LinkKey; page?: DashboardPage | AdminPage }[];
+  links: { href: string; icon: string; label: LinkKey; page?: DashboardPage | AdminPage; pro?: boolean }[];
 }
 
 const NAVIGATION: Record<DashboardArea, NavSection[]> = {
@@ -30,6 +30,7 @@ const NAVIGATION: Record<DashboardArea, NavSection[]> = {
       links: [
         { href: "/dashboard", icon: "ri-dashboard-line", label: "overview", page: "overview" },
         { href: "/dashboard/scanner", icon: "ri-search-line", label: "scanner", page: "scanner" },
+        { href: "/dashboard/schedules", icon: "ri-calendar-schedule-line", label: "schedules", page: "schedules", pro: true },
         { href: "/dashboard/charts", icon: "ri-bar-chart-line", label: "charts", page: "charts" },
       ],
     },
@@ -45,6 +46,7 @@ const NAVIGATION: Record<DashboardArea, NavSection[]> = {
         { href: "/admin", icon: "ri-shield-star-line", label: "overview", page: "overview" },
         { href: "/admin/users", icon: "ri-group-line", label: "users", page: "users" },
         { href: "/admin/scans", icon: "ri-radar-line", label: "scans", page: "scans" },
+        { href: "/admin/schedules", icon: "ri-calendar-schedule-line", label: "schedules", page: "schedules" },
         { href: "/admin/system", icon: "ri-pulse-line", label: "system", page: "system" },
       ],
     },
@@ -245,6 +247,7 @@ export default function DashboardSidebar({
                       label={t.shell.links[link.label]}
                       isActive={link.page !== undefined && link.page === activePage}
                       collapsed={collapsed}
+                      locked={link.pro && profilePlan !== "pro" ? t.shell.proOnly : undefined}
                     />
                   </li>
                 ))}
