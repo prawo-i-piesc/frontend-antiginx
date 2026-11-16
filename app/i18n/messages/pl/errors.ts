@@ -43,6 +43,10 @@ const errors: Messages["errors"] = {
     NO_BILLING_ACCOUNT: "Na tym koncie nie było jeszcze żadnych płatności.",
     USER_NOT_FOUND: "To konto już nie istnieje.",
     SCAN_NOT_FOUND: "Ten skan już nie istnieje.",
+    NO_VALID_TESTS: "Wybierz co najmniej jeden test.",
+    SCHEDULE_NOT_FOUND: "Ten harmonogram już nie istnieje.",
+    SCHEDULE_LIMIT_REACHED: "Masz już tyle harmonogramów, ile pozwala plan. Usuń któryś, żeby dodać nowy.",
+    SCHEDULE_BLOCKED: "Administrator zablokował ten harmonogram, więc nie da się go wznowić.",
     ADMIN_SELF_ACTION:
       "Własnej roli ani konta nie zmienisz w panelu administratora. Zrób to w swoim profilu.",
     LAST_ADMIN: "To ostatni administrator. Najpierw nadaj tę rolę komuś innemu.",

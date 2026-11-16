@@ -12,6 +12,7 @@ const shell = {
   links: {
     overview: "Overview",
     scanner: "Scanner",
+    schedules: "Schedules",
     charts: "Charts",
     profile: "Profile",
     users: "Users",
@@ -22,6 +23,8 @@ const shell = {
   },
 
   plans: { free: "Free", pro: "Pro" },
+  /** After a menu link whose page needs the Pro plan; a lock on screen. */
+  proOnly: "Pro plan",
   administrator: "Administrator",
   defaultUserName: "User",
   defaultAdminName: "Admin",

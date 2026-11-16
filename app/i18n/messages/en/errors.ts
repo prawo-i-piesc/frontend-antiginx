@@ -47,6 +47,10 @@ const errors = {
     NO_BILLING_ACCOUNT: "This account has no payments yet.",
     USER_NOT_FOUND: "This account no longer exists.",
     SCAN_NOT_FOUND: "This scan no longer exists.",
+    NO_VALID_TESTS: "Choose at least one test.",
+    SCHEDULE_NOT_FOUND: "This schedule no longer exists.",
+    SCHEDULE_LIMIT_REACHED: "You have as many schedules as your plan allows. Delete one to add another.",
+    SCHEDULE_BLOCKED: "An administrator has blocked this schedule, so it cannot be resumed.",
     ADMIN_SELF_ACTION:
       "You cannot change your own role or delete your own account here. Use your profile instead.",
     LAST_ADMIN: "This is the last administrator. Make someone else an administrator first.",

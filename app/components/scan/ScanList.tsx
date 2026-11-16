@@ -63,6 +63,8 @@ type ScanRow = {
   risk: number | null;
   createdAt: string;
   durationSeconds: number | null;
+  /** Started by a schedule rather than by hand. */
+  scheduled: boolean;
 };
 
 /** A page of scans, stamped with when it came, so a long-silent scan can be told apart. */
@@ -90,6 +92,7 @@ function rowOf(scan: ScanListItem, at: number): ScanRow {
     risk: scan.risk,
     createdAt: scan.created_at,
     durationSeconds: durationSeconds(scan.started_at, scan.completed_at),
+    scheduled: Boolean(scan.schedule_id),
   };
 }
 
@@ -101,6 +104,9 @@ function rowOf(scan: ScanListItem, at: number): ScanRow {
  * While a scan on the page is running the page is read again every few
  * seconds, without dimming it: only a new search, filter or page dims the
  * rows on screen until the answer comes.
+ *
+ * `?schedule=` keeps the scans one schedule started; the schedules page
+ * links here with it.
  *
  * `?scan=` is an older link to a scan, now at its own address. `?opened=`
  * comes back from a scan's page and says whose row gets the focus back; when
@@ -118,12 +124,14 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
   const q = params.get("q")?.trim() ?? "";
   // A value the API would reject is ignored rather than sent on to fail validation.
   const status = SCAN_LIST_STATUSES.find((option) => option === params.get("status"));
+  // Only something shaped like an ID is sent; anything else would fail validation.
+  const schedule = /^[0-9a-f-]{36}$/i.test(params.get("schedule") ?? "") ? (params.get("schedule") ?? undefined) : undefined;
   const { page, size, offset, choice, fit, pager, panel, ready: sized } = useAddressPaging(params, update, "scanner");
   const [draft, setDraft] = useSearchDraft(q, (next) => update({ q: next || null, page: null }));
 
-  const key = `scans:${q}:${status ?? ""}:${size}:${offset}`;
+  const key = `scans:${q}:${status ?? ""}:${schedule ?? ""}:${size}:${offset}`;
   const { data, loading, error, reload } = useApiQuery<Loaded>(sized ? key : null, async (signal) => ({
-    page: await getUserScans({ q: q || undefined, status, limit: size, offset }, signal),
+    page: await getUserScans({ q: q || undefined, status, schedule, limit: size, offset }, signal),
     at: Date.now(),
   }));
 
@@ -182,11 +190,11 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
     return seconds.format(value);
   }
 
-  const filtered = q !== "" || status !== undefined;
+  const filtered = q !== "" || status !== undefined || schedule !== undefined;
 
   function clearFilters() {
     setDraft("");
-    update({ q: null, status: null, page: null });
+    update({ q: null, status: null, schedule: null, page: null });
   }
 
   // A refresh that fails keeps the rows on screen; the next one tries again.
@@ -219,6 +227,19 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
           ]}
           onChange={(next) => update({ status: next === "all" ? null : next, page: null })}
         />
+        {schedule ? (
+          <button
+            type="button"
+            onClick={() => update({ schedule: null, page: null })}
+            title={t.schedules.clearSchedule}
+            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          >
+            <i className="ri-calendar-schedule-line text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
+            {t.schedules.onlySchedule}
+            <i className="ri-close-line text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
+            <span className="sr-only">. {t.schedules.clearSchedule}</span>
+          </button>
+        ) : null}
         <p role="status" className={RECORD_COUNT}>
           {data && total > 0 ? t.table.records(total, format.number(total)) : ""}
         </p>
@@ -278,6 +299,12 @@ export default function ScanList({ headingRef }: { headingRef: RefObject<HTMLHea
                       <Link href={chartsHref(row.url, row.createdAt)} title={t.scan.siteCharts(row.url)} className={ADDRESS_LINK}>
                         {row.url}
                       </Link>
+                      {row.scheduled ? (
+                        <span title={t.schedules.fromSchedule} className="inline-flex shrink-0 text-zinc-500 dark:text-zinc-400">
+                          <i className="ri-calendar-schedule-line" aria-hidden="true" />
+                          <span className="sr-only">{t.schedules.fromSchedule}</span>
+                        </span>
+                      ) : null}
                     </SiteAddress>
                   </td>
                   <td className={TD}>
