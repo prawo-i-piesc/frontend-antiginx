@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { riskTone } from "@/app/components/scan/labels";
 import { PANEL, TOOLBAR, ICON_BUTTON, DATA } from "@/app/components/ui/table";
@@ -10,7 +10,7 @@ import useApiQuery from "@/app/hooks/useApiQuery";
 import { INTL_LOCALES } from "@/app/i18n/config";
 import { useI18n } from "@/app/i18n/I18nProvider";
 import type { ScanStatus } from "@/app/lib/api";
-import { getScheduleCalendar } from "@/app/lib/schedulesApi";
+import { getScheduleCalendar, type ScheduleCalendar as CalendarData } from "@/app/lib/schedulesApi";
 
 /** Six weeks: every month fits, and the grid is the same height whatever the month. */
 const WEEKS = 6;
@@ -97,13 +97,16 @@ function EntryLine({ entry, label }: { entry: Entry; label: string }) {
  * once and their entries fill in. On a phone a day shows its entries as
  * icons, and the one picked is listed under the grid.
  *
- * `version` changes when a schedule does, to load the month again.
+ * `version` changes when a schedule does, to load the month again. `sample`
+ * draws the given entries instead of loading any: the preview an account
+ * without Pro sees.
  */
-export default function ScheduleCalendar({ version }: { version: number }) {
+export default function ScheduleCalendar({ version, sample }: { version: number; sample?: CalendarData }) {
   const { t, locale } = useI18n();
   const copy = t.schedules.calendar;
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [picked, setPicked] = useState<Date>(() => new Date());
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   const first = useMemo(() => {
     // Back to the Monday on or before the first of the month.
@@ -114,9 +117,11 @@ export default function ScheduleCalendar({ version }: { version: number }) {
   const end = days[days.length - 1];
   const until = addDays(end, 1);
 
-  const { data, error, reload } = useApiQuery(`schedule-calendar:${first.toISOString()}:${version}`, (signal) =>
+  const loaded = useApiQuery(sample ? null : `schedule-calendar:${first.toISOString()}:${version}`, (signal) =>
     getScheduleCalendar(first, until, signal),
   );
+  const data = sample ?? loaded.data;
+  const { error, reload } = loaded;
 
   const byDay = useMemo(() => {
     const map = new Map<string, Entry[]>();
@@ -147,6 +152,7 @@ export default function ScheduleCalendar({ version }: { version: number }) {
   }, [data]);
 
   const today = dayKey(new Date());
+  const thisMonth = startOfMonth(new Date()).getTime() === month.getTime();
   const intl = INTL_LOCALES[locale];
   const title = new Intl.DateTimeFormat(intl, { month: "long", year: "numeric" }).format(month);
   const monthTitle = title.charAt(0).toLocaleUpperCase(intl) + title.slice(1);
@@ -182,19 +188,30 @@ export default function ScheduleCalendar({ version }: { version: number }) {
             <i className="ri-arrow-right-s-line text-lg" aria-hidden="true" />
           </button>
         </div>
-        <h2 aria-live="polite" className="min-w-36 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        <h2
+          ref={titleRef}
+          tabIndex={-1}
+          aria-live="polite"
+          className="min-w-36 text-base font-semibold text-zinc-900 focus:outline-none dark:text-zinc-100"
+        >
           {monthTitle}
         </h2>
-        <button
-          type="button"
-          onClick={() => {
-            setMonth(startOfMonth(new Date()));
-            setPicked(new Date());
-          }}
-          className={buttonClass("secondary", "sm")}
-        >
-          {copy.today}
-        </button>
+        {/* Only away from this month, where it has somewhere to go back to. It
+            follows the title, so showing it moves nothing. */}
+        {thisMonth ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              setMonth(startOfMonth(new Date()));
+              setPicked(new Date());
+              // The button goes with the click; the month it brought back keeps the focus.
+              titleRef.current?.focus();
+            }}
+            className={buttonClass("secondary", "sm")}
+          >
+            {copy.today}
+          </button>
+        )}
         {/* Where a failed load says so, in a slot that is always there. On a
             phone it holds only that, so it takes no line of its own until then. */}
         <div

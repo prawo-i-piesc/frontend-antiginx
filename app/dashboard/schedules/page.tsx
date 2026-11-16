@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 
 import ConfirmDialog from "@/app/components/admin/ConfirmDialog";
 import { chartsHref } from "@/app/components/charts/domain";
@@ -11,6 +11,7 @@ import PagePending from "@/app/components/layout/PagePending";
 import { LastRun, NextRun, ScheduleStateLabel, useCadenceText } from "@/app/components/schedules/parts";
 import ScheduleCalendar from "@/app/components/schedules/ScheduleCalendar";
 import ScheduleForm from "@/app/components/schedules/ScheduleForm";
+import { sampleSchedules } from "@/app/components/schedules/sample";
 import { buttonClass } from "@/app/components/ui/buttonStyles";
 import SiteAddress, { ADDRESS_LINK } from "@/app/components/ui/SiteAddress";
 import { SURFACE } from "@/app/components/ui/surface";
@@ -87,6 +88,9 @@ export default function SchedulesPage() {
   }
 
   const formOpen = form !== null;
+  // Without Pro: the page as it would look, greyed out under the offer. An
+  // account that had Pro and kept its schedules sees those instead.
+  const lapsed = !pro && schedules.length > 0;
 
   return (
     <DashboardShell area="dashboard" activePage="schedules">
@@ -109,11 +113,22 @@ export default function SchedulesPage() {
                   <i className={formOpen ? "ri-close-line" : "ri-add-line"} aria-hidden="true"></i>
                   <span className={PAGE_ACTION_LABEL}>{copy.newSchedule}</span>
                 </button>
-              ) : null
+              ) : (
+                <Link
+                  href="/pricing"
+                  title={copy.paywall.title}
+                  className={`${buttonClass("primary")} ${PAGE_ACTION}`}
+                >
+                  <i className="ri-lock-line" aria-hidden="true"></i>
+                  <span className={PAGE_ACTION_LABEL}>{copy.newSchedule}</span>
+                  <span className="sr-only">, {copy.paywall.title}</span>
+                </Link>
+              )
             }
           />
 
-          {!pro ? <Paywall /> : null}
+          {lapsed ? <Paywall className={`${SURFACE} mb-6 px-4 py-6 sm:px-6`} /> : null}
+          {!pro && !lapsed ? <Preview /> : null}
 
           {formOpen ? (
             <ScheduleForm
@@ -190,13 +205,13 @@ export default function SchedulesPage() {
 }
 
 /** For an account without Pro: what schedules do, and the way to the plans. */
-function Paywall() {
+function Paywall({ className }: { className: string }) {
   const { t } = useI18n();
   const copy = t.schedules.paywall;
   const headingId = useId();
 
   return (
-    <section aria-labelledby={headingId} className={`${SURFACE} mb-6 px-4 py-6 sm:px-6`}>
+    <section aria-labelledby={headingId} className={className}>
       <div className="flex max-w-2xl items-start gap-3">
         <i className="ri-lock-line mt-0.5 text-lg text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
         <div>
@@ -210,6 +225,35 @@ function Paywall() {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The page in use, on made-up schedules, greyed out and out of reach, with
+ * the offer over it. The offer stays in view while the table scrolls past.
+ */
+function Preview() {
+  const { t } = useI18n();
+  const copy = t.schedules;
+  const sample = useMemo(() => sampleSchedules(), []);
+  const noop = () => {};
+
+  return (
+    <div className="relative">
+      <div inert aria-hidden="true" className="opacity-60 grayscale select-none">
+        <ScheduleCalendar version={0} sample={sample.calendar} />
+        <div className={PANEL}>
+          <div className={TOOLBAR}>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{copy.table.caption}</h2>
+            <p className={RECORD_COUNT}>{copy.table.count(sample.schedules.length, 10)}</p>
+          </div>
+          <ScheduleTable schedules={sample.schedules} pro busy={null} onToggle={noop} onEdit={noop} onDelete={noop} />
+        </div>
+      </div>
+      <div className="absolute inset-0 px-3 pt-16 sm:px-6 sm:pt-32">
+        <Paywall className="sticky top-16 mx-auto max-w-md rounded-xl border border-zinc-300 bg-white px-5 py-5 shadow-lg sm:top-24 sm:px-6 dark:border-zinc-700 dark:bg-zinc-900" />
+      </div>
+    </div>
   );
 }
 
